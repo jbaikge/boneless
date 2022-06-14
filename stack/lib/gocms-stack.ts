@@ -17,7 +17,7 @@ export class GocmsStack extends Stack {
       handler: 'ping-pong'
     });
 
-    const api = new apigw.RestApi(this, 'Endpoint', {});
+    const api = new apigw.RestApi(this, 'GoCMS Endpoint', {});
 
     const pingPongResource = api.root.addResource('ping-pong');
     pingPongResource.addMethod('GET', new LambdaIntegration(pingPongFunction));
