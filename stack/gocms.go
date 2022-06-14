@@ -1,10 +1,14 @@
 package main
 
 import (
+	"log"
+	"os"
+	"path/filepath"
+
 	"github.com/aws/aws-cdk-go/awscdk/v2"
-	// "github.com/aws/aws-cdk-go/awscdk/v2/awssqs"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
 	"github.com/aws/constructs-go/constructs/v10"
-	// "github.com/aws/jsii-runtime-go"
+	"github.com/aws/jsii-runtime-go"
 )
 
 type GocmsStackProps struct {
@@ -18,12 +22,39 @@ func NewGocmsStack(scope constructs.Construct, id string, props *GocmsStackProps
 	}
 	stack := awscdk.NewStack(scope, &id, &sprops)
 
-	// The code that defines your stack goes here
-
-	// example resource
-	// queue := awssqs.NewQueue(stack, jsii.String("GocmsQueue"), &awssqs.QueueProps{
-	// 	VisibilityTimeout: awscdk.Duration_Seconds(jsii.Number(300)),
+	// table := awsdynamodb.NewTable(stack, jsii.String("GoCMS"), &awsdynamodb.TableProps{
+	// 	PartitionKey: &awsdynamodb.Attribute{
+	// 		Name: jsii.String("Id"),
+	// 		Type: awsdynamodb.AttributeType_STRING,
+	// 	},
+	// 	BillingMode: awsdynamodb.BillingMode_PAY_PER_REQUEST,
+	// 	TableClass:  awsdynamodb.TableClass_STANDARD,
 	// })
+
+	// table.AddGlobalSecondaryIndex(&awsdynamodb.GlobalSecondaryIndexProps{
+	// 	IndexName: jsii.String("FrontendIndex"),
+	// 	PartitionKey: &awsdynamodb.Attribute{
+	// 		Name: jsii.String("Class"),
+	// 		Type: awsdynamodb.AttributeType_STRING,
+	// 	},
+	// 	SortKey: &awsdynamodb.Attribute{
+	// 		Name: jsii.String("Slug"),
+	// 		Type: awsdynamodb.AttributeType_STRING,
+	// 	},
+	// })
+
+	currentDir, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("Could not get current working directory: %v", err)
+	}
+	assetDir := filepath.Join(filepath.Dir(currentDir), "assets")
+
+	awslambda.NewFunction(stack, jsii.String("PingPong"), &awslambda.FunctionProps{
+		Code:    awslambda.NewAssetCode(jsii.String(filepath.Join(assetDir, "ping-pong")), nil),
+		Handler: jsii.String("ping-pong"),
+		Runtime: awslambda.Runtime_GO_1_X(),
+		Timeout: awscdk.Duration_Seconds(jsii.Number(300)),
+	})
 
 	return stack
 }
