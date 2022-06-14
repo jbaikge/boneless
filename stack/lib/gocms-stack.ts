@@ -1,16 +1,25 @@
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as apigw from 'aws-cdk-lib/aws-apigateway';
+import { join } from 'path';
+import { LambdaIntegration } from 'aws-cdk-lib/aws-apigateway';
 
 export class GocmsStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    // The code that defines your stack goes here
+    const assetDir = join(__dirname, '..', '..', 'assets');
 
-    // example resource
-    // const queue = new sqs.Queue(this, 'GocmsQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
+    const pingPongFunction = new lambda.Function(this, 'PingPongHandler', {
+      runtime: lambda.Runtime.GO_1_X,
+      code:    lambda.Code.fromAsset(join(assetDir, 'ping-pong')),
+      handler: 'ping-pong'
+    });
+
+    const api = new apigw.RestApi(this, 'Endpoint', {});
+
+    const pingPongResource = api.root.addResource('ping-pong');
+    pingPongResource.addMethod('GET', new LambdaIntegration(pingPongFunction));
   }
 }
