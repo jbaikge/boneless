@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/aws/aws-cdk-go/awscdk/v2"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
@@ -49,12 +50,24 @@ func NewGocmsStack(scope constructs.Construct, id string, props *GocmsStackProps
 	}
 	assetDir := filepath.Join(filepath.Dir(currentDir), "assets")
 
-	awslambda.NewFunction(stack, jsii.String("PingPong"), &awslambda.FunctionProps{
+	pingPongFunction := awslambda.NewFunction(stack, jsii.String("PingPong"), &awslambda.FunctionProps{
 		Code:    awslambda.NewAssetCode(jsii.String(filepath.Join(assetDir, "ping-pong")), nil),
 		Handler: jsii.String("ping-pong"),
 		Runtime: awslambda.Runtime_GO_1_X(),
 		Timeout: awscdk.Duration_Seconds(jsii.Number(300)),
 	})
+
+	// AWS API Gateway V1 Implementation
+	api := awsapigateway.NewLambdaRestApi(stack, jsii.String("GoCMSAPI"), &awsapigateway.LambdaRestApiProps{
+		Handler: pingPongFunction,
+	})
+
+	pingPongResource := api.Root().AddResource(jsii.String("ping-pong"), nil)
+	pingPongGetIntegration := awsapigateway.NewLambdaIntegration(
+		pingPongFunction,
+		&awsapigateway.LambdaIntegrationOptions{},
+	)
+	pingPongResource.AddMethod(jsii.String("GET"), pingPongGetIntegration, nil)
 
 	return stack
 }
