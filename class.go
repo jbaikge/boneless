@@ -1,6 +1,7 @@
 package gocms
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -19,11 +20,11 @@ type Class struct {
 }
 
 type ClassRepository interface {
-	DeleteClass(string) error
-	GetAllClasses() ([]Class, error)
-	GetClassById(string) (Class, error)
-	InsertClass(*Class) error
-	UpdateClass(*Class) error
+	DeleteClass(context.Context, string) error
+	GetAllClasses(context.Context) ([]Class, error)
+	GetClassById(context.Context, string) (Class, error)
+	InsertClass(context.Context, *Class) error
+	UpdateClass(context.Context, *Class) error
 }
 
 type ClassService struct {
@@ -36,11 +37,11 @@ func NewClassService(repo ClassRepository) ClassService {
 	}
 }
 
-func (s ClassService) All() ([]Class, error) {
-	return s.repo.GetAllClasses()
+func (s ClassService) All(ctx context.Context) ([]Class, error) {
+	return s.repo.GetAllClasses(ctx)
 }
 
-func (s ClassService) Insert(class *Class) (err error) {
+func (s ClassService) Insert(ctx context.Context, class *Class) (err error) {
 	// TODO validate internal fields
 
 	if class.Id != "" {
@@ -54,10 +55,10 @@ func (s ClassService) Insert(class *Class) (err error) {
 	class.Created = now
 	class.Updated = now
 
-	return s.repo.InsertClass(class)
+	return s.repo.InsertClass(ctx, class)
 }
 
-func (s ClassService) Update(class *Class) (err error) {
+func (s ClassService) Update(ctx context.Context, class *Class) (err error) {
 	if class.Id == "" {
 		return fmt.Errorf("class has no ID")
 	}
@@ -66,5 +67,5 @@ func (s ClassService) Update(class *Class) (err error) {
 
 	class.Updated = time.Now()
 
-	return s.repo.UpdateClass(class)
+	return s.repo.UpdateClass(ctx, class)
 }
