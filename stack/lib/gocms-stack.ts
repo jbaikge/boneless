@@ -14,7 +14,7 @@ export class GocmsStack extends Stack {
     const pingPongFunction = new lambda.Function(this, 'PingPongHandler', {
       runtime: lambda.Runtime.GO_1_X,
       code:    lambda.Code.fromAsset(join(assetDir, 'ping-pong')),
-      handler: 'ping-pong'
+      handler: 'handler'
     });
 
     const api = new apigw.RestApi(this, 'GoCMS Endpoint', {});
