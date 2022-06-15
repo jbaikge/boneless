@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -10,14 +10,25 @@ import (
 	"github.com/rs/xid"
 )
 
+type Response struct {
+	Id string `json:"id"`
+}
+
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse, err error) {
-	fmt.Printf("Processing request %s\n", request.RequestContext.RequestID)
+	r := Response{
+		Id: xid.New().String(),
+	}
+
+	encoded, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return
+	}
 
 	response.Headers = map[string]string{
-		"X-XID": xid.New().String(),
+		"Content-Type": "application/json",
 	}
 	response.StatusCode = http.StatusOK
-	response.Body = request.Body
+	response.Body = string(encoded)
 	return
 }
 
