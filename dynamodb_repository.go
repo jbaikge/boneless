@@ -22,10 +22,33 @@ func NewDynamoDBRepository(config aws.Config, table string) Repository {
 }
 
 func (r DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err error) {
+	keyId, err := attributevalue.Marshal(id)
+	if err != nil {
+		return
+	}
+
+	params := &dynamodb.DeleteItemInput{
+		TableName: &r.table,
+		Key: map[string]types.AttributeValue{
+			"Id": keyId,
+		},
+	}
+
+	_, err = r.client.DeleteItem(ctx, params)
 	return
 }
 
 func (r DynamoDBRepository) GetAllClasses(ctx context.Context) (classes []Class, err error) {
+	params := &dynamodb.ScanInput{
+		TableName: &r.table,
+	}
+	result, err := r.client.Scan(ctx, params)
+	if err != nil {
+		return
+	}
+
+	classes = make([]Class, 0, result.Count)
+	err = attributevalue.UnmarshalListOfMaps(result.Items, &classes)
 	return
 }
 
