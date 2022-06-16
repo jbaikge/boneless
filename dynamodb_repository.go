@@ -70,7 +70,7 @@ func (r DynamoDBRepository) GetClassById(ctx context.Context, id string) (class 
 		return
 	}
 
-	err = attributevalue.Unmarshal(response.Item, &class)
+	err = attributevalue.UnmarshalMap(response.Item, &class)
 	return
 }
 
