@@ -6,6 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
@@ -42,8 +43,18 @@ func (r DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err err
 }
 
 func (r DynamoDBRepository) GetAllClasses(ctx context.Context) (classes []Class, err error) {
+	// Ref: https://github.com/awsdocs/aws-doc-sdk-examples/blob/main/gov2/dynamodb/actions/table_basics.go
+	filter := expression.Name("Id").BeginsWith("class#")
+	expr, err := expression.NewBuilder().WithFilter(filter).Build()
+	if err != nil {
+		return
+	}
+
 	params := &dynamodb.ScanInput{
-		TableName: &r.table,
+		TableName:                 &r.table,
+		FilterExpression:          expr.Filter(),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
 	}
 	result, err := r.client.Scan(ctx, params)
 	if err != nil {
