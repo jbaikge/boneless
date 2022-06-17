@@ -2,12 +2,15 @@ package gocms
 
 import (
 	"context"
+	"errors"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
+
+var ErrNotFound = errors.New("item not found")
 
 type DynamoDBRepository struct {
 	client *dynamodb.Client
@@ -67,6 +70,12 @@ func (r DynamoDBRepository) GetClassById(ctx context.Context, id string) (class 
 
 	response, err := r.client.GetItem(ctx, params)
 	if err != nil {
+		return
+	}
+
+	// Check for no-item-found condition
+	if len(response.Item) == 0 {
+		err = ErrNotFound
 		return
 	}
 
