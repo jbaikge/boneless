@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.16.5
 	github.com/aws/aws-sdk-go-v2/config v1.15.10
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.9.3
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression v1.4.9
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.15.6
 	github.com/rs/xid v1.4.0
 	github.com/zeebo/assert v1.3.0
@@ -14,7 +15,6 @@ require (
 
 require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.12.5 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression v1.4.9 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.6 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.12 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.6 // indirect
