@@ -2,6 +2,7 @@ package gocms
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -55,15 +56,55 @@ func TestDynamoDBRepository(t *testing.T) {
 
 	repo := NewDynamoDBRepository(cfg, table)
 
+	// Use of UnixMicro trims off the m variable in the Time struct to make
+	// reflect.DeepEqual function properly
+	now := time.UnixMicro(time.Now().UnixMicro())
+	class1 := Class{
+		Id:      "class#1",
+		Name:    "My Class",
+		Slug:    "my_class",
+		Created: now,
+		Updated: now,
+	}
+
 	t.Run("InsertClass", func(t *testing.T) {
-		now := time.Now()
-		class := Class{
-			Id:      "class#1",
-			Name:    "My Class",
-			Slug:    "my_class",
-			Created: now,
-			Updated: now,
+		assert.NoError(t, repo.InsertClass(context.Background(), &class1))
+	})
+
+	t.Run("GetClassById", func(t *testing.T) {
+		check, err := repo.GetClassById(context.Background(), class1.Id)
+		assert.NoError(t, err)
+		assert.DeepEqual(t, class1, check)
+	})
+
+	t.Run("UpdateClass", func(t *testing.T) {
+		class1.Slug = "my_new_class"
+		assert.NoError(t, repo.UpdateClass(context.Background(), &class1))
+		check, err := repo.GetClassById(context.Background(), class1.Id)
+		assert.NoError(t, err)
+		assert.DeepEqual(t, class1, check)
+	})
+
+	t.Run("GetAllClasses", func(t *testing.T) {
+		count := 10
+		for i := 2; i <= count; i++ {
+			class := Class{
+				Id:      fmt.Sprintf("class#%d", i),
+				Name:    fmt.Sprintf("Class %d", i),
+				Slug:    fmt.Sprintf("class_%d", i),
+				Created: now,
+				Updated: now,
+			}
+			assert.NoError(t, repo.InsertClass(context.Background(), &class))
 		}
-		assert.NoError(t, repo.InsertClass(context.Background(), &class))
+		classes, err := repo.GetAllClasses(context.Background())
+		assert.NoError(t, err)
+		assert.Equal(t, count, len(classes))
+	})
+
+	t.Run("DeleteClass", func(t *testing.T) {
+		assert.NoError(t, repo.DeleteClass(context.Background(), class1.Id))
+		_, err := repo.GetClassById(context.Background(), class1.Id)
+		assert.Error(t, err)
 	})
 }
