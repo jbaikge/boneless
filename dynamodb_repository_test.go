@@ -2,6 +2,7 @@ package gocms
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"testing"
 	"time"
@@ -13,6 +14,12 @@ import (
 	"github.com/zeebo/assert"
 )
 
+var regionFlag string
+
+func init() {
+	flag.StringVar(&regionFlag, "region", "local", "DynamoDB region: local for dy compatibility; localhost for nosql workbench compatibility")
+}
+
 func TestDynamoDBRepository(t *testing.T) {
 	table := t.Name() + time.Now().Format("-20060102-150405")
 
@@ -20,7 +27,7 @@ func TestDynamoDBRepository(t *testing.T) {
 		endpoint = aws.Endpoint{
 			PartitionID:   "aws",
 			URL:           "http://localhost:8000",
-			SigningRegion: "local", // local to be compatible with dy command
+			SigningRegion: regionFlag,
 		}
 		return
 	}
