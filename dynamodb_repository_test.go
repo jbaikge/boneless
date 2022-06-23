@@ -40,14 +40,22 @@ func TestDynamoDBRepository(t *testing.T) {
 		TableName: &table,
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
-				AttributeName: aws.String("Id"),
+				AttributeName: aws.String("PrimaryKey"),
+				AttributeType: types.ScalarAttributeTypeS,
+			},
+			{
+				AttributeName: aws.String("SortKey"),
 				AttributeType: types.ScalarAttributeTypeS,
 			},
 		},
 		KeySchema: []types.KeySchemaElement{
 			{
-				AttributeName: aws.String("Id"),
+				AttributeName: aws.String("PrimaryKey"),
 				KeyType:       types.KeyTypeHash,
+			},
+			{
+				AttributeName: aws.String("SortKey"),
+				KeyType:       types.KeyTypeRange,
 			},
 		},
 		BillingMode: types.BillingModePayPerRequest,
@@ -61,6 +69,7 @@ func TestDynamoDBRepository(t *testing.T) {
 	now := time.UnixMicro(time.Now().UnixMicro())
 	class1 := Class{
 		Id:      "class#1",
+		SortKey: "class#1",
 		Name:    "My Class",
 		Slug:    "my_class",
 		Created: now,
@@ -90,6 +99,7 @@ func TestDynamoDBRepository(t *testing.T) {
 		for i := 2; i <= count; i++ {
 			class := Class{
 				Id:      fmt.Sprintf("class#%d", i),
+				SortKey: fmt.Sprintf("class#%d", i),
 				Name:    fmt.Sprintf("Class %d", i),
 				Slug:    fmt.Sprintf("class_%d", i),
 				Created: now,

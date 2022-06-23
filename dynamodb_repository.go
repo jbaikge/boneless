@@ -34,7 +34,8 @@ func (r DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err err
 	params := &dynamodb.DeleteItemInput{
 		TableName: &r.table,
 		Key: map[string]types.AttributeValue{
-			"Id": keyId,
+			"PrimaryKey": keyId,
+			"SortKey":    keyId,
 		},
 	}
 
@@ -44,19 +45,21 @@ func (r DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err err
 
 func (r DynamoDBRepository) GetAllClasses(ctx context.Context) (classes []Class, err error) {
 	// Ref: https://github.com/awsdocs/aws-doc-sdk-examples/blob/main/gov2/dynamodb/actions/table_basics.go
-	filter := expression.Name("Id").BeginsWith("class#")
-	expr, err := expression.NewBuilder().WithFilter(filter).Build()
+	filterPK := expression.Name("PrimaryKey").BeginsWith("class#")
+	filterSK := expression.Key("SortKey").BeginsWith("class#")
+	expr, err := expression.NewBuilder().WithFilter(filterPK).WithKeyCondition(filterSK).Build()
 	if err != nil {
 		return
 	}
 
-	params := &dynamodb.ScanInput{
+	params := &dynamodb.QueryInput{
 		TableName:                 &r.table,
+		KeyConditionExpression:    expr.KeyCondition(),
 		FilterExpression:          expr.Filter(),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 	}
-	result, err := r.client.Scan(ctx, params)
+	result, err := r.client.Query(ctx, params)
 	if err != nil {
 		return
 	}
@@ -75,7 +78,8 @@ func (r DynamoDBRepository) GetClassById(ctx context.Context, id string) (class 
 	params := &dynamodb.GetItemInput{
 		TableName: &r.table,
 		Key: map[string]types.AttributeValue{
-			"Id": keyId,
+			"PrimaryKey": keyId,
+			"SortKey":    keyId,
 		},
 	}
 
