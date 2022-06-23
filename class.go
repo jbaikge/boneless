@@ -9,7 +9,8 @@ import (
 )
 
 type Class struct {
-	Id          string    `json:"id"`
+	Id          string    `json:"id" dynamodbav:"PrimaryKey"`
+	SortKey     string    `json:"-" dynamodbav:"SortKey"`
 	Slug        string    `json:"slug"`
 	Name        string    `json:"name"`
 	TableLabels string    `json:"table_labels"`
