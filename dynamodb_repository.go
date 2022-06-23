@@ -46,20 +46,18 @@ func (r DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err err
 func (r DynamoDBRepository) GetAllClasses(ctx context.Context) (classes []Class, err error) {
 	// Ref: https://github.com/awsdocs/aws-doc-sdk-examples/blob/main/gov2/dynamodb/actions/table_basics.go
 	filterPK := expression.Name("PrimaryKey").BeginsWith("class#")
-	filterSK := expression.Key("SortKey").BeginsWith("class#")
-	expr, err := expression.NewBuilder().WithFilter(filterPK).WithKeyCondition(filterSK).Build()
+	expr, err := expression.NewBuilder().WithFilter(filterPK).Build()
 	if err != nil {
 		return
 	}
 
-	params := &dynamodb.QueryInput{
+	params := &dynamodb.ScanInput{
 		TableName:                 &r.table,
-		KeyConditionExpression:    expr.KeyCondition(),
-		FilterExpression:          expr.Filter(),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
+		FilterExpression:          expr.Filter(),
 	}
-	result, err := r.client.Query(ctx, params)
+	result, err := r.client.Scan(ctx, params)
 	if err != nil {
 		return
 	}
