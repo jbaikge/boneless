@@ -42,11 +42,25 @@ export class GocmsStack extends Stack {
     });
     table.grantWriteData(insertClassLambda);
 
+    // Get class lambda function
+    const getClassLambda = new lambda.Function(this, 'GetClassHandler', {
+      environment: {
+        'DYNAMODB_TABLE': table.tableName
+      },
+      runtime: lambda.Runtime.GO_1_X,
+      code:    lambda.Code.fromAsset(join(assetDir, 'get-class')),
+      handler: 'handler'
+    });
+    table.grantReadData(getClassLambda);
+
     // REST API
     const api = new apigw.RestApi(this, 'GoCMS Endpoint', {});
 
     // Class endpoints
     const classResource = api.root.addResource('class');
     classResource.addMethod('POST', new LambdaIntegration(insertClassLambda));
+
+    const classIdResource = classResource.addResource('{id}')
+    classIdResource.addMethod('GET', new LambdaIntegration(getClassLambda));
   }
 }
