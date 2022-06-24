@@ -15,5 +15,5 @@ diff:
 synth:
 	$(MAKE) -C _stack synth
 
-assets/%/handler: ./lambda/%/*.go
-	CGO_ENABLED=0 go build -o $@ $^
+assets/%/handler: ./lambda/%/*.go *.go
+	CGO_ENABLED=0 go build -o $@ $<
