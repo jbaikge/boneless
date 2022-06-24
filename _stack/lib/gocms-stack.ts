@@ -11,8 +11,10 @@ export class GocmsStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
+    // DynamoDB table
     const table = new dynamodb.Table(this, 'GoCMSTable', {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      // Not used when billingMode is PAY_PER_REQUEST
       // readCapacity: 1,
       // writeCapacity: 1,
       removalPolicy: RemovalPolicy.DESTROY,
@@ -26,22 +28,25 @@ export class GocmsStack extends Stack {
       },
     });
 
-
+    // Asset directory where all the lambda binaries come from
     const assetDir = join(__dirname, '..', '..', 'assets');
 
-    const pingPongFunction = new lambda.Function(this, 'PingPongHandler', {
+    // Insert class lambda function
+    const insertClassLambda = new lambda.Function(this, 'InsertClassHandler', {
       environment: {
         'DYNAMODB_TABLE': table.tableName
       },
       runtime: lambda.Runtime.GO_1_X,
-      code:    lambda.Code.fromAsset(join(assetDir, 'ping-pong')),
+      code:    lambda.Code.fromAsset(join(assetDir, 'insert-class')),
       handler: 'handler'
     });
-    table.grantReadWriteData(pingPongFunction);
+    table.grantWriteData(insertClassLambda);
 
+    // REST API
     const api = new apigw.RestApi(this, 'GoCMS Endpoint', {});
 
-    const pingPongResource = api.root.addResource('ping-pong');
-    pingPongResource.addMethod('GET', new LambdaIntegration(pingPongFunction));
+    // Class endpoints
+    const classResource = api.root.addResource('class');
+    classResource.addMethod('POST', new LambdaIntegration(insertClassLambda));
   }
 }
