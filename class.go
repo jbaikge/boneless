@@ -8,6 +8,8 @@ import (
 	"github.com/rs/xid"
 )
 
+const ClassIdPrefix = "class#"
+
 type Class struct {
 	Id          string    `json:"id" dynamodbav:"PrimaryKey"`
 	SortKey     string    `json:"-" dynamodbav:"SortKey"`
@@ -46,7 +48,7 @@ func (s ClassService) ById(ctx context.Context, id string) (Class, error) {
 	if _, err := xid.FromString(id); err != nil {
 		return Class{}, err
 	}
-	return s.repo.GetClassById(ctx, id)
+	return s.repo.GetClassById(ctx, ClassIdPrefix+id)
 }
 
 func (s ClassService) Insert(ctx context.Context, class *Class) (err error) {
@@ -59,7 +61,8 @@ func (s ClassService) Insert(ctx context.Context, class *Class) (err error) {
 	// TODO check for existing class with same slug
 
 	now := time.Now()
-	class.Id = "class#" + xid.NewWithTime(now).String()
+	class.Id = ClassIdPrefix + xid.NewWithTime(now).String()
+	class.SortKey = class.Id
 	class.Created = now
 	class.Updated = now
 
