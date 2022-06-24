@@ -42,6 +42,13 @@ func (s ClassService) All(ctx context.Context) ([]Class, error) {
 	return s.repo.GetAllClasses(ctx)
 }
 
+func (s ClassService) ById(ctx context.Context, id string) (Class, error) {
+	if _, err := xid.FromString(id); err != nil {
+		return Class{}, err
+	}
+	return s.repo.GetClassById(ctx, id)
+}
+
 func (s ClassService) Insert(ctx context.Context, class *Class) (err error) {
 	// TODO validate internal fields
 
