@@ -1,0 +1,152 @@
+openapi: 3.0.3
+info:
+  title: GoCMS
+  description: Headless CMS with no bones. Define classes then build documents from those classes.
+  contact:
+    name: Jake
+    email: bigjake2s@gmail.com
+  license:
+    name: MIT
+    url: https://mit-license.org/
+  version: 0.0.0
+paths:
+  /class:
+    post:
+      tags:
+        - class
+      operationId: InsertClass
+      requestBody:
+        description: Add a new class to the repository
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassRequest'
+        required: true
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Class'
+  /class/{id}:
+    get:
+      tags:
+        - class
+      operationId: GetClass
+      parameters:
+        - $ref: '#/components/parameters/classIdParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Class'
+    post:
+      tags:
+        - class
+      operationId: UpdateClass
+      parameters:
+        - $ref: '#/components/parameters/classIdParam'
+      requestBody:
+        description: Update an existing class
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassRequest'
+      responses:
+        200:
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Class'
+components:
+  schemas:
+    Field:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+            - textarea
+            - date
+            - datetime
+        name:
+          type: string
+          pattern: '^[a-z_]+$'
+          example: my_field
+        label:
+          type: string
+        min:
+          type: string
+        max:
+          type: string
+        step:
+          type: string
+        format:
+          type: string
+        options:
+          type: string
+    ClassRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: xid
+        slug:
+          type: string
+          format: slug
+          pattern: '^[a-z_]+$'
+          example: my_class
+        name:
+          type: string
+          format: name
+        table_labels:
+          type: string
+          format: labels
+        table_fields:
+          type: string
+          format: fields
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/Field'
+    Class:
+      type: object
+      properties:
+        id:
+          type: string
+          format: xid
+        slug:
+          type: string
+          format: slug
+        name:
+          type: string
+          format: name
+        table_labels:
+          type: string
+          format: labels
+        table_fields:
+          type: string
+          format: fields
+        created:
+          type: string
+          format: date-time
+        updated:
+          type: string
+          format: date-time
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/Field'
+  parameters:
+    classIdParam:
+      name: id
+      in: path
+      description: Class ID
+      required: true
+      schema:
+        type: string
