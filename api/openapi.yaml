@@ -11,6 +11,17 @@ info:
   version: 0.0.0
 paths:
   /class:
+    get:
+      tags:
+        - class
+      operationId: GetAllClasses
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArrayOfClasses'
     post:
       tags:
         - class
@@ -30,6 +41,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/Class'
   /class/{id}:
+    delete:
+      tags:
+        - class
+      operationId: DeleteClass
+      parameters:
+        - $ref: '#/components/parameters/classIdParam'
+      responses:
+        200:
+          description: OK
+        404:
+          description: Not found
     get:
       tags:
         - class
@@ -43,7 +65,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Class'
-    post:
+        404:
+          description: Not found
+    put:
       tags:
         - class
       operationId: UpdateClass
@@ -62,6 +86,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Class'
+        404:
+          description: Not found
 components:
   schemas:
     Field:
@@ -142,6 +168,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Field'
+    ArrayOfClasses:
+      type: array
+      items:
+        $ref: '#/components/schemas/Class'
   parameters:
     classIdParam:
       name: id
