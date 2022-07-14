@@ -3,6 +3,7 @@ package gocms
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
@@ -11,7 +12,47 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
+const classPrefix = "class#"
+
 var ErrNotFound = errors.New("item not found")
+
+type dynamoClass struct {
+	PrimaryKey  string
+	SortKey     string
+	Slug        string
+	Name        string
+	TableLabels string
+	TableFields string
+	Created     time.Time
+	Updated     time.Time
+	Fields      []Field
+}
+
+func (d *dynamoClass) FromClass(c Class) {
+	d.PrimaryKey = classPrefix + c.Id
+	d.SortKey = classPrefix + c.Id
+	d.Slug = c.Slug
+	d.Name = c.Name
+	d.TableLabels = c.TableLabels
+	d.TableFields = c.TableFields
+	d.Created = c.Created
+	d.Updated = c.Updated
+	d.Fields = make([]Field, len(c.Fields))
+	copy(d.Fields, c.Fields)
+}
+
+func (d *dynamoClass) ToClass() (c Class) {
+	c.Id = d.PrimaryKey[len(classPrefix)-1:]
+	c.Slug = d.Slug
+	c.Name = d.Name
+	c.TableLabels = d.TableLabels
+	c.TableFields = d.TableFields
+	c.Created = d.Created
+	c.Updated = d.Updated
+	d.Fields = make([]Field, len(d.Fields))
+	copy(c.Fields, d.Fields)
+	return
+}
 
 type DynamoDBRepository struct {
 	client *dynamodb.Client
@@ -45,7 +86,7 @@ func (r DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err err
 
 func (r DynamoDBRepository) GetAllClasses(ctx context.Context) (classes []Class, err error) {
 	// Ref: https://github.com/awsdocs/aws-doc-sdk-examples/blob/main/gov2/dynamodb/actions/table_basics.go
-	filterPK := expression.Name("PrimaryKey").BeginsWith("class#")
+	filterPK := expression.Name("PrimaryKey").BeginsWith(classPrefix)
 	expr, err := expression.NewBuilder().WithFilter(filterPK).Build()
 	if err != nil {
 		return
