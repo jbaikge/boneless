@@ -11,8 +11,7 @@ import (
 const ClassIdPrefix = "class#"
 
 type Class struct {
-	Id          string    `json:"id" dynamodbav:"PrimaryKey"`
-	SortKey     string    `json:"-" dynamodbav:"SortKey"`
+	Id          string    `json:"id"`
 	Slug        string    `json:"slug"`
 	Name        string    `json:"name"`
 	TableLabels string    `json:"table_labels"`
@@ -62,7 +61,6 @@ func (s ClassService) Insert(ctx context.Context, class *Class) (err error) {
 
 	now := time.Now()
 	class.Id = ClassIdPrefix + xid.NewWithTime(now).String()
-	class.SortKey = class.Id
 	class.Created = now
 	class.Updated = now
 
