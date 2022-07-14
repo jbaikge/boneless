@@ -75,8 +75,7 @@ func TestDynamoDBRepository(t *testing.T) {
 	// reflect.DeepEqual function properly
 	now := time.UnixMicro(time.Now().UnixMicro())
 	class1 := Class{
-		Id:      "class#1",
-		SortKey: "class#1",
+		Id:      "1",
 		Name:    "My Class",
 		Slug:    "my_class",
 		Created: now,
@@ -105,8 +104,7 @@ func TestDynamoDBRepository(t *testing.T) {
 		count := 10
 		for i := 2; i <= count; i++ {
 			class := Class{
-				Id:      fmt.Sprintf("class#%d", i),
-				SortKey: fmt.Sprintf("class#%d", i),
+				Id:      fmt.Sprintf("%d", i),
 				Name:    fmt.Sprintf("Class %d", i),
 				Slug:    fmt.Sprintf("class_%d", i),
 				Created: now,
