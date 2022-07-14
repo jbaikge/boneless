@@ -1,7 +1,7 @@
 import { fetchUtils } from 'react-admin';
 import { stringify } from 'query-string';
 
-const apiUrl = '';
+const apiUrl = 'https://jsonplaceholder.typicode.com';
 const httpClient = fetchUtils.fetchJson;
 
 // https://marmelab.com/react-admin/DataProviderWriting.html
@@ -35,14 +35,16 @@ const dataProvider = {
         const url = `${apiUrl}/${resource}?${stringify(query)}`;
 
         // TODO add options.headers with Range using page and perPage
-        // const range = [
-        //     (page - 1) * perPage,
-        //     page * perPage - 1,
-        // ];
+        const range = [
+            (page - 1) * perPage,
+            page * perPage - 1,
+        ];
+        console.log(range);
 
         return httpClient(url).then(({ headers, json }) => ({
             data: json,
-            total: parseInt(headers.get('content-range').split('/').pop(), 10),
+            total: json.length,
+            // total: parseInt(headers.get('content-range').split('/').pop(), 10),
         }));
     },
 
