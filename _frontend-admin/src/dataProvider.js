@@ -1,7 +1,10 @@
 import { fetchUtils } from 'react-admin';
 import { stringify } from 'query-string';
 
-const apiUrl = 'https://jsonplaceholder.typicode.com';
+// Referencing environment variables from env.js in the public folder. This
+// allows for compile-once and deploy-anywhere behavior
+// https://www.freecodecamp.org/news/how-to-implement-runtime-environment-variables-with-create-react-app-docker-and-nginx-7f9d42a91d70/
+const apiUrl = window._env_.API_URL;
 const httpClient = fetchUtils.fetchJson;
 
 // https://marmelab.com/react-admin/DataProviderWriting.html
