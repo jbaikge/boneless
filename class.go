@@ -21,11 +21,23 @@ type Class struct {
 	Fields      []Field   `json:"fields"`
 }
 
+// Struct names derived from docs here:
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Range
+type Range struct {
+	Start int
+	End   int
+	Size  int
+}
+
+type ClassFilter struct {
+	Range Range
+}
+
 type ClassRepository interface {
+	CreateClass(context.Context, *Class) error
 	DeleteClass(context.Context, string) error
-	GetAllClasses(context.Context) ([]Class, error)
+	GetClassList(context.Context, ClassFilter) ([]Class, error)
 	GetClassById(context.Context, string) (Class, error)
-	InsertClass(context.Context, *Class) error
 	UpdateClass(context.Context, *Class) error
 }
 
@@ -39,8 +51,8 @@ func NewClassService(repo ClassRepository) ClassService {
 	}
 }
 
-func (s ClassService) All(ctx context.Context) ([]Class, error) {
-	return s.repo.GetAllClasses(ctx)
+func (s ClassService) All(ctx context.Context, filter ClassFilter) ([]Class, error) {
+	return s.repo.GetClassList(ctx, filter)
 }
 
 func (s ClassService) ById(ctx context.Context, id string) (Class, error) {
@@ -50,7 +62,7 @@ func (s ClassService) ById(ctx context.Context, id string) (Class, error) {
 	return s.repo.GetClassById(ctx, ClassIdPrefix+id)
 }
 
-func (s ClassService) Insert(ctx context.Context, class *Class) (err error) {
+func (s ClassService) Create(ctx context.Context, class *Class) (err error) {
 	// TODO validate internal fields
 
 	if class.Id != "" {
@@ -64,7 +76,7 @@ func (s ClassService) Insert(ctx context.Context, class *Class) (err error) {
 	class.Created = now
 	class.Updated = now
 
-	return s.repo.InsertClass(ctx, class)
+	return s.repo.CreateClass(ctx, class)
 }
 
 func (s ClassService) Update(ctx context.Context, class *Class) (err error) {

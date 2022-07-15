@@ -66,6 +66,21 @@ func NewDynamoDBRepository(config aws.Config, table string) Repository {
 	}
 }
 
+func (r DynamoDBRepository) CreateClass(ctx context.Context, class *Class) (err error) {
+	item, err := attributevalue.MarshalMap(class)
+	if err != nil {
+		return
+	}
+
+	params := &dynamodb.PutItemInput{
+		TableName: &r.table,
+		Item:      item,
+	}
+
+	_, err = r.client.PutItem(ctx, params)
+	return
+}
+
 func (r DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err error) {
 	keyId, err := attributevalue.Marshal(id)
 	if err != nil {
@@ -84,7 +99,7 @@ func (r DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err err
 	return
 }
 
-func (r DynamoDBRepository) GetAllClasses(ctx context.Context) (classes []Class, err error) {
+func (r DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFilter) (classes []Class, err error) {
 	// Ref: https://github.com/awsdocs/aws-doc-sdk-examples/blob/main/gov2/dynamodb/actions/table_basics.go
 	filterPK := expression.Name("PrimaryKey").BeginsWith(classPrefix)
 	expr, err := expression.NewBuilder().WithFilter(filterPK).Build()
@@ -134,21 +149,6 @@ func (r DynamoDBRepository) GetClassById(ctx context.Context, id string) (class 
 	}
 
 	err = attributevalue.UnmarshalMap(response.Item, &class)
-	return
-}
-
-func (r DynamoDBRepository) InsertClass(ctx context.Context, class *Class) (err error) {
-	item, err := attributevalue.MarshalMap(class)
-	if err != nil {
-		return
-	}
-
-	params := &dynamodb.PutItemInput{
-		TableName: &r.table,
-		Item:      item,
-	}
-
-	_, err = r.client.PutItem(ctx, params)
 	return
 }
 

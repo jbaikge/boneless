@@ -82,8 +82,8 @@ func TestDynamoDBRepository(t *testing.T) {
 		Updated: now,
 	}
 
-	t.Run("InsertClass", func(t *testing.T) {
-		assert.NoError(t, repo.InsertClass(context.Background(), &class1))
+	t.Run("CreateClass", func(t *testing.T) {
+		assert.NoError(t, repo.CreateClass(context.Background(), &class1))
 	})
 
 	t.Run("GetClassById", func(t *testing.T) {
@@ -100,7 +100,7 @@ func TestDynamoDBRepository(t *testing.T) {
 		assert.DeepEqual(t, class1, check)
 	})
 
-	t.Run("GetAllClasses", func(t *testing.T) {
+	t.Run("GetClassList", func(t *testing.T) {
 		count := 10
 		for i := 2; i <= count; i++ {
 			class := Class{
@@ -110,9 +110,17 @@ func TestDynamoDBRepository(t *testing.T) {
 				Created: now,
 				Updated: now,
 			}
-			assert.NoError(t, repo.InsertClass(context.Background(), &class))
+			assert.NoError(t, repo.CreateClass(context.Background(), &class))
 		}
-		classes, err := repo.GetAllClasses(context.Background())
+
+		filter := ClassFilter{
+			Range: Range{
+				Start: 0,
+				End:   count - 1,
+			},
+		}
+
+		classes, err := repo.GetClassList(context.Background(), filter)
 		assert.NoError(t, err)
 		assert.Equal(t, count, len(classes))
 	})

@@ -27,7 +27,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	repo := gocms.NewDynamoDBRepository(dynamoConfig, os.Getenv("DYNAMODB_TABLE"))
 	service := gocms.NewClassService(repo)
 
-	if err = service.Insert(context.Background(), &class); err != nil {
+	if err = service.Create(context.Background(), &class); err != nil {
 		return
 	}
 
