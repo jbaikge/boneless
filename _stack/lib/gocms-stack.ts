@@ -31,16 +31,16 @@ export class GocmsStack extends Stack {
     // Asset directory where all the lambda binaries come from
     const assetDir = join(__dirname, '..', '..', 'assets');
 
-    // Insert class lambda function
-    const insertClassLambda = new lambda.Function(this, 'InsertClassHandler', {
+    // Create class lambda function
+    const createClassLambda = new lambda.Function(this, 'CreateClassHandler', {
       environment: {
         'DYNAMODB_TABLE': table.tableName
       },
       runtime: lambda.Runtime.GO_1_X,
-      code:    lambda.Code.fromAsset(join(assetDir, 'insert-class')),
+      code:    lambda.Code.fromAsset(join(assetDir, 'create-class')),
       handler: 'handler'
     });
-    table.grantWriteData(insertClassLambda);
+    table.grantWriteData(createClassLambda);
 
     // Get class lambda function
     const getClassLambda = new lambda.Function(this, 'GetClassHandler', {
@@ -58,7 +58,7 @@ export class GocmsStack extends Stack {
 
     // Class endpoints
     const classResource = api.root.addResource('class');
-    classResource.addMethod('POST', new LambdaIntegration(insertClassLambda));
+    classResource.addMethod('POST', new LambdaIntegration(createClassLambda));
 
     const classIdResource = classResource.addResource('{id}')
     classIdResource.addMethod('GET', new LambdaIntegration(getClassLambda));
