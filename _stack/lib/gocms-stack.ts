@@ -4,7 +4,7 @@ import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import { join } from 'path';
-import { LambdaIntegration } from 'aws-cdk-lib/aws-apigateway';
+import { Cors, LambdaIntegration } from 'aws-cdk-lib/aws-apigateway';
 
 
 export class GocmsStack extends Stack {
@@ -65,10 +65,19 @@ export class GocmsStack extends Stack {
     table.grantReadData(listClassesLambda);
 
     // REST API
-    const api = new apigw.RestApi(this, 'GoCMS Endpoint', {});
+    const api = new apigw.RestApi(this, 'GoCMS Endpoint', {
+      defaultCorsPreflightOptions: {
+        allowOrigins: Cors.ALL_ORIGINS,
+        allowHeaders: [
+          'Content-Type',
+          'Range',
+          'Authorization'
+        ]
+      }
+    });
 
     // Class endpoints
-    const classResource = api.root.addResource('class');
+    const classResource = api.root.addResource('classes');
     classResource.addMethod('GET', new LambdaIntegration(listClassesLambda));
     classResource.addMethod('POST', new LambdaIntegration(createClassLambda));
 
