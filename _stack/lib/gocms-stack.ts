@@ -53,11 +53,23 @@ export class GocmsStack extends Stack {
     });
     table.grantReadData(getClassByIdLambda);
 
+    // List class lambda function
+    const listClassesLambda = new lambda.Function(this, 'ListClassesHandler', {
+      environment: {
+        'DYNAMODB_TABLE': table.tableName
+      },
+      runtime: lambda.Runtime.GO_1_X,
+      code:    lambda.Code.fromAsset(join(assetDir, 'list-classes')),
+      handler: 'handler'
+    });
+    table.grantReadData(listClassesLambda);
+
     // REST API
     const api = new apigw.RestApi(this, 'GoCMS Endpoint', {});
 
     // Class endpoints
     const classResource = api.root.addResource('class');
+    classResource.addMethod('GET', new LambdaIntegration(listClassesLambda));
     classResource.addMethod('POST', new LambdaIntegration(createClassLambda));
 
     const classIdResource = classResource.addResource('{id}')
