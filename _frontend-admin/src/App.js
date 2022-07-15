@@ -7,7 +7,7 @@ import dataProvider from './dataProvider';
 
 const App = () => (
   <Admin dataProvider={dataProvider}>
-    <Resource name="users" list={ListGuesser} />
+    <Resource name="classes" list={ListGuesser} />
   </Admin>
 );
 
