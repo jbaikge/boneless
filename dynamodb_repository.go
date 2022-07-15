@@ -28,7 +28,7 @@ type dynamoClass struct {
 	Fields      []Field
 }
 
-func (d *dynamoClass) FromClass(c Class) {
+func (d *dynamoClass) FromClass(c *Class) {
 	d.PrimaryKey = classIdPrefix + c.Id
 	d.SortKey = classIdPrefix + c.Id
 	d.Slug = c.Slug
@@ -67,7 +67,10 @@ func NewDynamoDBRepository(config aws.Config, table string) Repository {
 }
 
 func (r DynamoDBRepository) CreateClass(ctx context.Context, class *Class) (err error) {
-	item, err := attributevalue.MarshalMap(class)
+	dbClass := new(dynamoClass)
+	dbClass.FromClass(class)
+
+	item, err := attributevalue.MarshalMap(dbClass)
 	if err != nil {
 		return
 	}
@@ -82,7 +85,8 @@ func (r DynamoDBRepository) CreateClass(ctx context.Context, class *Class) (err 
 }
 
 func (r DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err error) {
-	keyId, err := attributevalue.Marshal(id)
+	prefixedId := classIdPrefix + id
+	keyId, err := attributevalue.Marshal(prefixedId)
 	if err != nil {
 		return
 	}
@@ -118,13 +122,21 @@ func (r DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFilter
 		return
 	}
 
-	classes = make([]Class, 0, result.Count)
-	err = attributevalue.UnmarshalListOfMaps(result.Items, &classes)
+	dbClasses := make([]dynamoClass, 0, result.Count)
+	if err = attributevalue.UnmarshalListOfMaps(result.Items, &dbClasses); err != nil {
+		return
+	}
+
+	classes = make([]Class, len(dbClasses))
+	for i, dbClass := range dbClasses {
+		classes[i] = dbClass.ToClass()
+	}
 	return
 }
 
 func (r DynamoDBRepository) GetClassById(ctx context.Context, id string) (class Class, err error) {
-	keyId, err := attributevalue.Marshal(id)
+	prefixedId := classIdPrefix + id
+	keyId, err := attributevalue.Marshal(prefixedId)
 	if err != nil {
 		return
 	}
@@ -148,12 +160,19 @@ func (r DynamoDBRepository) GetClassById(ctx context.Context, id string) (class 
 		return
 	}
 
-	err = attributevalue.UnmarshalMap(response.Item, &class)
+	dbClass := new(dynamoClass)
+	if err = attributevalue.UnmarshalMap(response.Item, dbClass); err != nil {
+		return
+	}
+	class = dbClass.ToClass()
+
 	return
 }
 
 func (r DynamoDBRepository) UpdateClass(ctx context.Context, class *Class) (err error) {
-	item, err := attributevalue.MarshalMap(class)
+	dbClass := new(dynamoClass)
+	dbClass.FromClass(class)
+	item, err := attributevalue.MarshalMap(dbClass)
 	if err != nil {
 		return
 	}
