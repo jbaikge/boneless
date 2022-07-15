@@ -128,7 +128,7 @@ const dataProvider = {
     create: (resource, params) => {
         const url = `${apiUrl}/${resource}`;
 
-        httpClient(url, {
+        return httpClient(url, {
             method: 'POST',
             body: JSON.stringify(params.data),
         }).then(({ json }) => ({
