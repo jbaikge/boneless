@@ -42,7 +42,7 @@ func (d *dynamoClass) FromClass(c *Class) {
 }
 
 func (d *dynamoClass) ToClass() (c Class) {
-	c.Id = d.PrimaryKey[len(classIdPrefix)-1:]
+	c.Id = d.PrimaryKey[len(classIdPrefix):]
 	c.Slug = d.Slug
 	c.Name = d.Name
 	c.TableLabels = d.TableLabels
