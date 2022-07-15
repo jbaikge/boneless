@@ -51,10 +51,6 @@ func NewClassService(repo ClassRepository) ClassService {
 	}
 }
 
-func (s ClassService) All(ctx context.Context, filter ClassFilter) ([]Class, error) {
-	return s.repo.GetClassList(ctx, filter)
-}
-
 func (s ClassService) ById(ctx context.Context, id string) (Class, error) {
 	if _, err := xid.FromString(id); err != nil {
 		return Class{}, err
@@ -77,6 +73,10 @@ func (s ClassService) Create(ctx context.Context, class *Class) (err error) {
 	class.Updated = now
 
 	return s.repo.CreateClass(ctx, class)
+}
+
+func (s ClassService) List(ctx context.Context, filter ClassFilter) ([]Class, error) {
+	return s.repo.GetClassList(ctx, filter)
 }
 
 func (s ClassService) Update(ctx context.Context, class *Class) (err error) {
