@@ -15,7 +15,10 @@ import (
 	"github.com/jbaikge/gocms"
 )
 
-var dynamoConfig aws.Config
+var (
+	dynamoConfig aws.Config
+	dynamoTable  string
+)
 
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse, err error) {
 	classId, ok := request.PathParameters["id"]
@@ -24,7 +27,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		return
 	}
 
-	repo := gocms.NewDynamoDBRepository(dynamoConfig, os.Getenv("DYNAMODB_TABLE"))
+	repo := gocms.NewDynamoDBRepository(dynamoConfig, dynamoTable)
 	service := gocms.NewClassService(repo)
 
 	class, err := service.ById(context.Background(), classId)
@@ -51,6 +54,10 @@ func main() {
 	dynamoConfig, err = config.LoadDefaultConfig(context.Background())
 	if err != nil {
 		log.Fatalf("Failed to load default config: %v", err)
+	}
+
+	if dynamoTable = os.Getenv("DYNAMODB_TABLE"); dynamoTable == "" {
+		log.Fatalf("DYNAMODB_TABLE environment variable not set")
 	}
 
 	lambda.Start(HandleRequest)

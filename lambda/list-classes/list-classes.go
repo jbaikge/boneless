@@ -15,8 +15,10 @@ import (
 	"github.com/jbaikge/gocms"
 )
 
-var dynamoConfig aws.Config
-var dynamoTable string
+var (
+	dynamoConfig aws.Config
+	dynamoTable  string
+)
 
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse, err error) {
 	fmt.Println("Headers:")
