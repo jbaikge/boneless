@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
-const classPrefix = "class#"
+const classIdPrefix = "class#"
 
 var ErrNotFound = errors.New("item not found")
 
@@ -29,8 +29,8 @@ type dynamoClass struct {
 }
 
 func (d *dynamoClass) FromClass(c Class) {
-	d.PrimaryKey = classPrefix + c.Id
-	d.SortKey = classPrefix + c.Id
+	d.PrimaryKey = classIdPrefix + c.Id
+	d.SortKey = classIdPrefix + c.Id
 	d.Slug = c.Slug
 	d.Name = c.Name
 	d.TableLabels = c.TableLabels
@@ -42,7 +42,7 @@ func (d *dynamoClass) FromClass(c Class) {
 }
 
 func (d *dynamoClass) ToClass() (c Class) {
-	c.Id = d.PrimaryKey[len(classPrefix)-1:]
+	c.Id = d.PrimaryKey[len(classIdPrefix)-1:]
 	c.Slug = d.Slug
 	c.Name = d.Name
 	c.TableLabels = d.TableLabels
@@ -101,7 +101,7 @@ func (r DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err err
 
 func (r DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFilter) (classes []Class, err error) {
 	// Ref: https://github.com/awsdocs/aws-doc-sdk-examples/blob/main/gov2/dynamodb/actions/table_basics.go
-	filterPK := expression.Name("PrimaryKey").BeginsWith(classPrefix)
+	filterPK := expression.Name("PrimaryKey").BeginsWith(classIdPrefix)
 	expr, err := expression.NewBuilder().WithFilter(filterPK).Build()
 	if err != nil {
 		return
