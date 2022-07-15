@@ -68,7 +68,7 @@ func (s ClassService) Create(ctx context.Context, class *Class) (err error) {
 	// TODO check for existing class with same slug
 
 	now := time.Now()
-	class.Id = ClassIdPrefix + xid.NewWithTime(now).String()
+	class.Id = xid.NewWithTime(now).String()
 	class.Created = now
 	class.Updated = now
 
