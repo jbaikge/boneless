@@ -36,8 +36,8 @@ type ClassFilter struct {
 type ClassRepository interface {
 	CreateClass(context.Context, *Class) error
 	DeleteClass(context.Context, string) error
-	GetClassList(context.Context, ClassFilter) ([]Class, error)
 	GetClassById(context.Context, string) (Class, error)
+	GetClassList(context.Context, ClassFilter) ([]Class, error)
 	UpdateClass(context.Context, *Class) error
 }
 

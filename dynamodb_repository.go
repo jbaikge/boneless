@@ -103,37 +103,6 @@ func (r DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err err
 	return
 }
 
-func (r DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFilter) (classes []Class, err error) {
-	// Ref: https://github.com/awsdocs/aws-doc-sdk-examples/blob/main/gov2/dynamodb/actions/table_basics.go
-	filterPK := expression.Name("PrimaryKey").BeginsWith(classIdPrefix)
-	expr, err := expression.NewBuilder().WithFilter(filterPK).Build()
-	if err != nil {
-		return
-	}
-
-	params := &dynamodb.ScanInput{
-		TableName:                 &r.table,
-		ExpressionAttributeNames:  expr.Names(),
-		ExpressionAttributeValues: expr.Values(),
-		FilterExpression:          expr.Filter(),
-	}
-	result, err := r.client.Scan(ctx, params)
-	if err != nil {
-		return
-	}
-
-	dbClasses := make([]dynamoClass, 0, result.Count)
-	if err = attributevalue.UnmarshalListOfMaps(result.Items, &dbClasses); err != nil {
-		return
-	}
-
-	classes = make([]Class, len(dbClasses))
-	for i, dbClass := range dbClasses {
-		classes[i] = dbClass.ToClass()
-	}
-	return
-}
-
 func (r DynamoDBRepository) GetClassById(ctx context.Context, id string) (class Class, err error) {
 	prefixedId := classIdPrefix + id
 	keyId, err := attributevalue.Marshal(prefixedId)
@@ -166,6 +135,37 @@ func (r DynamoDBRepository) GetClassById(ctx context.Context, id string) (class 
 	}
 	class = dbClass.ToClass()
 
+	return
+}
+
+func (r DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFilter) (classes []Class, err error) {
+	// Ref: https://github.com/awsdocs/aws-doc-sdk-examples/blob/main/gov2/dynamodb/actions/table_basics.go
+	filterPK := expression.Name("PrimaryKey").BeginsWith(classIdPrefix)
+	expr, err := expression.NewBuilder().WithFilter(filterPK).Build()
+	if err != nil {
+		return
+	}
+
+	params := &dynamodb.ScanInput{
+		TableName:                 &r.table,
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		FilterExpression:          expr.Filter(),
+	}
+	result, err := r.client.Scan(ctx, params)
+	if err != nil {
+		return
+	}
+
+	dbClasses := make([]dynamoClass, 0, result.Count)
+	if err = attributevalue.UnmarshalListOfMaps(result.Items, &dbClasses); err != nil {
+		return
+	}
+
+	classes = make([]Class, len(dbClasses))
+	for i, dbClass := range dbClasses {
+		classes[i] = dbClass.ToClass()
+	}
 	return
 }
 
