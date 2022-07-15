@@ -43,15 +43,15 @@ export class GocmsStack extends Stack {
     table.grantWriteData(createClassLambda);
 
     // Get class lambda function
-    const getClassLambda = new lambda.Function(this, 'GetClassHandler', {
+    const getClassByIdLambda = new lambda.Function(this, 'GetClassByIdHandler', {
       environment: {
         'DYNAMODB_TABLE': table.tableName
       },
       runtime: lambda.Runtime.GO_1_X,
-      code:    lambda.Code.fromAsset(join(assetDir, 'get-class')),
+      code:    lambda.Code.fromAsset(join(assetDir, 'get-class-by-id')),
       handler: 'handler'
     });
-    table.grantReadData(getClassLambda);
+    table.grantReadData(getClassByIdLambda);
 
     // REST API
     const api = new apigw.RestApi(this, 'GoCMS Endpoint', {});
@@ -61,6 +61,6 @@ export class GocmsStack extends Stack {
     classResource.addMethod('POST', new LambdaIntegration(createClassLambda));
 
     const classIdResource = classResource.addResource('{id}')
-    classIdResource.addMethod('GET', new LambdaIntegration(getClassLambda));
+    classIdResource.addMethod('GET', new LambdaIntegration(getClassByIdLambda));
   }
 }
