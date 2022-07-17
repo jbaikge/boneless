@@ -42,9 +42,14 @@ const dataProvider = {
             (page - 1) * perPage,
             page * perPage - 1,
         ];
-        console.log(range);
 
-        return httpClient(url).then(({ headers, json }) => ({
+        const options = {
+            headers: new Headers({
+                "Range": `${range[0]}-${range[1]}`,
+            })
+        };
+
+        return httpClient(url, options).then(({ headers, json }) => ({
             data: json,
             total: json.length,
             // total: parseInt(headers.get('content-range').split('/').pop(), 10),

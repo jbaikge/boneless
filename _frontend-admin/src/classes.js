@@ -1,28 +1,15 @@
 import {
-    useListContext,
-    CreateButton,
     Datagrid,
     DateField,
-    ExportButton,
     List,
     TextField,
-    TopToolbar,
     Create,
     SimpleForm,
     TextInput,
-    required
+    required,
+    EditButton,
+    Edit
 } from 'react-admin';
-
-const ListActions = () => {
-    const { total, isLoading } = useListContext();
-
-    return (
-        <TopToolbar>
-            <CreateButton />
-            <ExportButton disabled={isLoading || total === 0} />
-        </TopToolbar>
-    );
-}
 
 export const ClassCreate = () => (
     <Create>
@@ -35,6 +22,17 @@ export const ClassCreate = () => (
     </Create>
 )
 
+export const ClassEdit = (props) => (
+    <Edit {...props}>
+        <SimpleForm>
+            <TextInput source="name" validate={[required()]} fullWidth />
+            <TextInput source="slug" validate={[required()]} fullWidth />
+            <TextInput source="table_labels" />
+            <TextInput source="table_fields" />
+        </SimpleForm>
+    </Edit>
+)
+
 export const ClassList = () => (
     <List>
         <Datagrid rowClick="edit">
@@ -43,6 +41,7 @@ export const ClassList = () => (
             <TextField source="slug" />
             <DateField source="created" />
             <DateField source="updated" />
+            <EditButton />
         </Datagrid>
     </List>
 );

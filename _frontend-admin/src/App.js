@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { Admin, Resource, ListGuesser } from 'react-admin';
-import { ClassCreate, ClassList } from './classes';
+import { Admin, Resource } from 'react-admin';
+import { ClassCreate, ClassEdit, ClassList } from './classes';
 import dataProvider from './dataProvider';
 
 // import jsonServerProvider from 'ra-data-json-server';
@@ -8,7 +8,7 @@ import dataProvider from './dataProvider';
 
 const App = () => (
   <Admin dataProvider={dataProvider}>
-    <Resource name="classes" create={ClassCreate} list={ClassList} />
+    <Resource name="classes" create={ClassCreate} edit={ClassEdit} list={ClassList} />
   </Admin>
 );
 
