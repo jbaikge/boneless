@@ -9,10 +9,10 @@ all: $(ASSETS)
 deploy: $(ASSETS)
 	$(MAKE) -C _stack deploy
 
-diff:
+diff: $(ASSETS)
 	$(MAKE) -C _stack diff
 
-synth:
+synth: $(ASSETS)
 	$(MAKE) -C _stack synth
 
 assets/%/handler: ./lambda/%/*.go *.go
