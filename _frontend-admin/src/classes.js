@@ -8,8 +8,17 @@ import {
     TextInput,
     required,
     EditButton,
-    Edit
+    Edit,
+    ArrayInput,
+    SimpleFormIterator,
+    SelectInput
 } from 'react-admin';
+
+const fieldChoices = [
+    { id: 'date', name: 'Date' },
+    { id: 'text', name: 'Text' },
+    { id: 'time', name: 'Time' },
+];
 
 export const ClassCreate = () => (
     <Create>
@@ -29,6 +38,13 @@ export const ClassEdit = (props) => (
             <TextInput source="slug" validate={[required()]} fullWidth />
             <TextInput source="table_labels" />
             <TextInput source="table_fields" />
+            <ArrayInput source="fields">
+                <SimpleFormIterator>
+                    <TextInput source="label" />
+                    <TextInput source="name" />
+                    <SelectInput source="type" choices={fieldChoices} />
+                </SimpleFormIterator>
+            </ArrayInput>
         </SimpleForm>
     </Edit>
 )
