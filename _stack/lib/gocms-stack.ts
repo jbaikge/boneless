@@ -4,6 +4,10 @@ import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import { join } from 'path';
+import { Bucket, BucketAccessControl } from 'aws-cdk-lib/aws-s3';
+import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
+import { Distribution, OriginAccessIdentity } from 'aws-cdk-lib/aws-cloudfront';
+import { S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins';
 
 
 export class GocmsStack extends Stack {
@@ -94,5 +98,26 @@ export class GocmsStack extends Stack {
     const classIdResource = classResource.addResource('{id}')
     classIdResource.addMethod('GET', new apigw.LambdaIntegration(getClassByIdLambda));
     classIdResource.addMethod('PUT', new apigw.LambdaIntegration(updateClassLambda));
+
+    // Admin frontend
+    // https://aws-cdk.com/deploying-a-static-website-using-s3-and-cloudfront/
+    const adminBucket = new Bucket(this, 'FrontendAdminBucket', {
+      accessControl: BucketAccessControl.PRIVATE,
+    });
+
+    new BucketDeployment(this, 'FrontendAdminBucketDeployment', {
+      destinationBucket: adminBucket,
+      sources: [Source.asset(join(__dirname, '..', '..', '_frontend-admin', 'build'))],
+    });
+
+    const adminOriginAccessIdentity = new OriginAccessIdentity(this, 'FrontendAdminOAI');
+    adminBucket.grantRead(adminOriginAccessIdentity);
+
+    new Distribution(this, 'FrontendAdminDistribution', {
+      defaultRootObject: 'index.html',
+      defaultBehavior: {
+        origin: new S3Origin(adminBucket, {originAccessIdentity: adminOriginAccessIdentity}),
+      }
+    });
   }
 }
