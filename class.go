@@ -55,7 +55,7 @@ func (s ClassService) ById(ctx context.Context, id string) (Class, error) {
 	if _, err := xid.FromString(id); err != nil {
 		return Class{}, err
 	}
-	return s.repo.GetClassById(ctx, ClassIdPrefix+id)
+	return s.repo.GetClassById(ctx, id)
 }
 
 func (s ClassService) Create(ctx context.Context, class *Class) (err error) {
