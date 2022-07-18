@@ -4,7 +4,6 @@ import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import { join } from 'path';
-import { SPADeploy } from 'cdk-spa-deploy';
 
 
 export class GocmsStack extends Stack {
@@ -95,11 +94,5 @@ export class GocmsStack extends Stack {
     const classIdResource = classResource.addResource('{id}')
     classIdResource.addMethod('GET', new apigw.LambdaIntegration(getClassByIdLambda));
     classIdResource.addMethod('PUT', new apigw.LambdaIntegration(updateClassLambda));
-
-    // Admin Frontend
-    new SPADeploy(this, 'frontend-admin').createSiteWithCloudfront({
-      indexDoc: 'index.html',
-      websiteFolder: '../_frontend-admin',
-    });
   }
 }
