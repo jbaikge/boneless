@@ -28,7 +28,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	}
 	response.StatusCode = http.StatusOK
 
-	out, err := func(request events.APIGatewayProxyRequest) (out interface{}, err error) {
+	out, err := func() (out interface{}, err error) {
 		id, ok := request.PathParameters["id"]
 		if !ok {
 			response.StatusCode = http.StatusBadRequest
@@ -55,7 +55,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		}
 
 		return class, nil
-	}(request)
+	}()
 
 	if err != nil {
 		out = struct {
