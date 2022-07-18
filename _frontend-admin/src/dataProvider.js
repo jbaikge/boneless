@@ -32,20 +32,19 @@ const dataProvider = {
         const { page, perPage } = params.pagination;
         const { field, order } = params.sort;
         const query = {
-            sort:   `${field},${order}`,
+            sort:   field,
+            order:  order,
             filter: JSON.stringify(params.filter),
         };
         const url = `${apiUrl}/${resource}?${stringify(query)}`;
 
         // TODO add options.headers with Range using page and perPage
-        const range = [
-            (page - 1) * perPage,
-            page * perPage - 1,
-        ];
+        const rangeStart = (page - 1) * perPage;
+        const rangeEnd = page * perPage - 1;
 
         const options = {
             headers: new Headers({
-                "Range": `${range[0]}-${range[1]}`,
+                Range: `${resource}=${rangeStart}-${rangeEnd}`,
             })
         };
 
