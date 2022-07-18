@@ -63,6 +63,17 @@ export class GocmsStack extends Stack {
     });
     table.grantReadData(listClassesLambda);
 
+    // Update class lambda function
+    const updateClassLambda = new lambda.Function(this, 'UpdateClassesHandler', {
+      environment: {
+        'DYNAMODB_TABLE': table.tableName
+      },
+      runtime: lambda.Runtime.GO_1_X,
+      code:    lambda.Code.fromAsset(join(assetDir, 'update-class')),
+      handler: 'handler'
+    });
+    table.grantWriteData(updateClassLambda);
+
     // REST API
     const api = new apigw.RestApi(this, 'GoCMS Endpoint', {
       defaultCorsPreflightOptions: {
@@ -82,5 +93,6 @@ export class GocmsStack extends Stack {
 
     const classIdResource = classResource.addResource('{id}')
     classIdResource.addMethod('GET', new apigw.LambdaIntegration(getClassByIdLambda));
+    classIdResource.addMethod('PUT', new apigw.LambdaIntegration(updateClassLambda));
   }
 }
