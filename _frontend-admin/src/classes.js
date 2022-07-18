@@ -11,7 +11,10 @@ import {
     Edit,
     ArrayInput,
     SimpleFormIterator,
-    SelectInput
+    SelectInput,
+    useRecordContext,
+    FormDataConsumer,
+    DateInput
 } from 'react-admin';
 
 const fieldChoices = [
@@ -31,23 +34,46 @@ export const ClassCreate = () => (
     </Create>
 )
 
-export const ClassEdit = (props) => (
-    <Edit {...props}>
-        <SimpleForm>
-            <TextInput source="name" validate={[required()]} fullWidth />
-            <TextInput source="slug" validate={[required()]} fullWidth />
-            <TextInput source="table_labels" />
-            <TextInput source="table_fields" />
-            <ArrayInput source="fields">
-                <SimpleFormIterator>
-                    <TextInput source="label" />
-                    <TextInput source="name" />
-                    <SelectInput source="type" choices={fieldChoices} />
-                </SimpleFormIterator>
-            </ArrayInput>
-        </SimpleForm>
-    </Edit>
-)
+export const ClassEdit = (props) => {
+    const record = useRecordContext();
+
+    return (
+        <Edit {...props}>
+            <SimpleForm>
+                <TextInput source="name" validate={[required()]} fullWidth />
+                <TextInput source="slug" validate={[required()]} fullWidth />
+                <TextInput source="table_labels" />
+                <TextInput source="table_fields" />
+                <ArrayInput source="fields">
+                    <SimpleFormIterator >
+                        <TextInput source="label" />
+                        <TextInput source="name" />
+                        <SelectInput source="type" choices={fieldChoices} />
+                        <FormDataConsumer>
+                            {({
+                                formData,
+                                scopedFormData,
+                                getSource,
+                                ...rest
+                            }) => {
+                                switch (scopedFormData.type) {
+                                case 'date':
+                                    return (
+                                        <>
+                                            <DateInput source={getSource('min')} {...rest} />
+                                            <DateInput source={getSource('max')} {...rest} />
+                                        </>
+                                    );
+                                }
+                                return null;
+                            }}
+                        </FormDataConsumer>
+                    </SimpleFormIterator>
+                </ArrayInput>
+            </SimpleForm>
+        </Edit>
+    );
+}
 
 export const ClassList = () => (
     <List>
