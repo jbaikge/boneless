@@ -49,7 +49,7 @@ func (d *dynamoClass) ToClass() (c Class) {
 	c.TableFields = d.TableFields
 	c.Created = d.Created
 	c.Updated = d.Updated
-	d.Fields = make([]Field, len(d.Fields))
+	c.Fields = make([]Field, len(d.Fields))
 	copy(c.Fields, d.Fields)
 	return
 }

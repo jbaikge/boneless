@@ -2,8 +2,10 @@ package gocms
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,6 +20,26 @@ var regionFlag string
 
 func init() {
 	flag.StringVar(&regionFlag, "region", "local", "DynamoDB region: local for dy compatibility; localhost for nosql workbench compatibility")
+}
+
+func TestDynamoDBConversion(t *testing.T) {
+	classNilFields := &Class{
+		Id:   "NilFields",
+		Name: "Nil Fields",
+		Slug: "nil_fields",
+	}
+
+	dynamoNilFields := new(dynamoClass)
+	dynamoNilFields.FromClass(classNilFields)
+
+	jsonDynamoNilFields, err := json.Marshal(dynamoNilFields)
+	assert.NoError(t, err)
+	assert.True(t, strings.Contains(string(jsonDynamoNilFields), `"Fields":[]`))
+
+	classFromDynamo := dynamoNilFields.ToClass()
+	jsonClassNilFields, err := json.Marshal(classFromDynamo)
+	assert.NoError(t, err)
+	assert.True(t, strings.Contains(string(jsonClassNilFields), `"fields":[]`))
 }
 
 func TestDynamoDBRepository(t *testing.T) {
