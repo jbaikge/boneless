@@ -64,7 +64,7 @@ export class GocmsStack extends Stack {
     table.grantReadData(listClassesLambda);
 
     // Update class lambda function
-    const updateClassLambda = new lambda.Function(this, 'UpdateClassesHandler', {
+    const updateClassLambda = new lambda.Function(this, 'UpdateClassHandler', {
       environment: {
         'DYNAMODB_TABLE': table.tableName
       },
