@@ -126,7 +126,6 @@ export const ClassEdit = (props) => (
 export const ClassList = () => (
     <List>
         <Datagrid rowClick="edit">
-            <TextField source="id" />
             <TextField source="name" />
             <TextField source="slug" />
             <DateField source="created" />
