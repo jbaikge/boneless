@@ -153,12 +153,11 @@ const dataProvider = {
      * }
      * @returns { data: {Record} }
      */
-    update: (resource, params) => {
+    update: (resource, params) =>
         httpClient(`${apiUrl}/${resource}/${params.id}`, {
             method: 'PUT',
             body: JSON.stringify(params.data),
-        }).then(({ json }) => ({ data: json }));
-    },
+        }).then(({ json }) => ({ data: json })),
 
     /**
      * Update multiple resources
