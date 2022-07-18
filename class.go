@@ -8,8 +8,6 @@ import (
 	"github.com/rs/xid"
 )
 
-const ClassIdPrefix = "class#"
-
 type Class struct {
 	Id          string    `json:"id"`
 	Slug        string    `json:"slug"`
