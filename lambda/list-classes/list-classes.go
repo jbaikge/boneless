@@ -33,7 +33,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	repo := gocms.NewDynamoDBRepository(dynamoConfig, dynamoTable)
 	service := gocms.NewClassService(repo)
 
-	list, err := service.List(context.Background(), filter)
+	list, r, err := service.List(context.Background(), filter)
 	if err != nil {
 		return
 	}
@@ -46,6 +46,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	response.Headers = map[string]string{
 		"Content-Type":                "application/json",
 		"Access-Control-Allow-Origin": "*",
+		"Content-Range":               r.ContentRange("classes"),
 	}
 	response.StatusCode = http.StatusOK
 	response.Body = string(body)

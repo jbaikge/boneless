@@ -142,8 +142,11 @@ func TestDynamoDBRepository(t *testing.T) {
 			},
 		}
 
-		classes, err := repo.GetClassList(context.Background(), filter)
+		classes, r, err := repo.GetClassList(context.Background(), filter)
 		assert.NoError(t, err)
+		assert.Equal(t, 0, r.Start)
+		assert.Equal(t, count-1, r.End)
+		assert.Equal(t, count, r.Size)
 		assert.Equal(t, count, len(classes))
 	})
 

@@ -27,6 +27,10 @@ type Range struct {
 	Size  int
 }
 
+func (r Range) ContentRange(name string) string {
+	return fmt.Sprintf("%s %d-%d/%d", name, r.Start, r.End, r.Size)
+}
+
 type ClassFilter struct {
 	Range Range
 }
@@ -35,7 +39,7 @@ type ClassRepository interface {
 	CreateClass(context.Context, *Class) error
 	DeleteClass(context.Context, string) error
 	GetClassById(context.Context, string) (Class, error)
-	GetClassList(context.Context, ClassFilter) ([]Class, error)
+	GetClassList(context.Context, ClassFilter) ([]Class, Range, error)
 	UpdateClass(context.Context, *Class) error
 }
 
@@ -73,7 +77,7 @@ func (s ClassService) Create(ctx context.Context, class *Class) (err error) {
 	return s.repo.CreateClass(ctx, class)
 }
 
-func (s ClassService) List(ctx context.Context, filter ClassFilter) ([]Class, error) {
+func (s ClassService) List(ctx context.Context, filter ClassFilter) ([]Class, Range, error) {
 	return s.repo.GetClassList(ctx, filter)
 }
 
