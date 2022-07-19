@@ -102,6 +102,7 @@ func TestDynamoDBRepository(t *testing.T) {
 		Slug:    "my_class",
 		Created: now,
 		Updated: now,
+		Fields:  []Field{},
 	}
 
 	t.Run("CreateClass", func(t *testing.T) {
