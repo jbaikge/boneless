@@ -46,7 +46,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	response.Headers = map[string]string{
 		"Content-Type":                "application/json",
 		"Access-Control-Allow-Origin": "*",
-		"Content-Range":               r.ContentRange("classes"),
+		"Content-Range":               r.ContentRangeHeader("classes"),
 	}
 	response.StatusCode = http.StatusOK
 	response.Body = string(body)
