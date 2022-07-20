@@ -15,18 +15,14 @@ export class GocmsStack extends Stack {
     super(scope, id, props);
 
     // DynamoDB table
-    const table = new dynamodb.Table(this, 'GoCMSTable', {
+    const classTable = new dynamodb.Table(this, 'Classes', {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       // Not used when billingMode is PAY_PER_REQUEST
       // readCapacity: 1,
       // writeCapacity: 1,
       removalPolicy: RemovalPolicy.DESTROY,
       partitionKey: {
-        name: 'PrimaryKey',
-        type: dynamodb.AttributeType.STRING
-      },
-      sortKey: {
-        name: 'SortKey',
+        name: 'ClassId',
         type: dynamodb.AttributeType.STRING
       },
     });
@@ -37,46 +33,46 @@ export class GocmsStack extends Stack {
     // Create class lambda function
     const createClassLambda = new lambda.Function(this, 'CreateClassHandler', {
       environment: {
-        'DYNAMODB_TABLE': table.tableName
+        'DYNAMODB_CLASS_TABLE': classTable.tableName,
       },
       runtime: lambda.Runtime.GO_1_X,
       code:    lambda.Code.fromAsset(join(assetDir, 'create-class')),
       handler: 'handler'
     });
-    table.grantWriteData(createClassLambda);
+    classTable.grantWriteData(createClassLambda);
 
     // Get class lambda function
     const getClassByIdLambda = new lambda.Function(this, 'GetClassByIdHandler', {
       environment: {
-        'DYNAMODB_TABLE': table.tableName
+        'DYNAMODB_CLASS_TABLE': classTable.tableName,
       },
       runtime: lambda.Runtime.GO_1_X,
       code:    lambda.Code.fromAsset(join(assetDir, 'get-class-by-id')),
       handler: 'handler'
     });
-    table.grantReadData(getClassByIdLambda);
+    classTable.grantReadData(getClassByIdLambda);
 
     // List class lambda function
     const listClassesLambda = new lambda.Function(this, 'ListClassesHandler', {
       environment: {
-        'DYNAMODB_TABLE': table.tableName
+        'DYNAMODB_CLASS_TABLE': classTable.tableName,
       },
       runtime: lambda.Runtime.GO_1_X,
       code:    lambda.Code.fromAsset(join(assetDir, 'list-classes')),
       handler: 'handler'
     });
-    table.grantReadData(listClassesLambda);
+    classTable.grantReadData(listClassesLambda);
 
     // Update class lambda function
     const updateClassLambda = new lambda.Function(this, 'UpdateClassHandler', {
       environment: {
-        'DYNAMODB_TABLE': table.tableName
+        'DYNAMODB_CLASS_TABLE': classTable.tableName,
       },
       runtime: lambda.Runtime.GO_1_X,
       code:    lambda.Code.fromAsset(join(assetDir, 'update-class')),
       handler: 'handler'
     });
-    table.grantWriteData(updateClassLambda);
+    classTable.grantWriteData(updateClassLambda);
 
     // REST API
     const api = new apigw.RestApi(this, 'GoCMS Endpoint', {
