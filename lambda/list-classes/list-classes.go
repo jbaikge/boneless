@@ -23,9 +23,9 @@ var (
 
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse, err error) {
 	response.Headers = map[string]string{
-		"Content-Type":                 "application/json",
-		"Access-Control-Allow-Headers": "Content-Range",
-		"Access-Control-Allow-Origin":  "*",
+		"Content-Type":                  "application/json",
+		"Access-Control-Expose-Headers": "Content-Range",
+		"Access-Control-Allow-Origin":   "*",
 	}
 	response.StatusCode = http.StatusOK
 
