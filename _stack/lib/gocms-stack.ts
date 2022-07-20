@@ -82,7 +82,10 @@ export class GocmsStack extends Stack {
           'Content-Type',
           'Range',
           'Authorization'
-        ]
+        ],
+        exposeHeaders: [
+          'Content-Range',
+        ],
       }
     });
 
