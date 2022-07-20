@@ -33,16 +33,23 @@ const fieldChoices = [
     { id: 'upload',        name: 'Upload' },
 ];
 
-export const ClassCreate = () => (
-    <Create>
-        <SimpleForm>
-            <TextInput source="name" validate={[required()]} fullWidth />
-            <TextInput source="slug" validate={[required()]} fullWidth />
-            <TextInput source="table_labels" />
-            <TextInput source="table_fields" />
-        </SimpleForm>
-    </Create>
-)
+export const ClassCreate = (props) => {
+    const ensureFields = data => ({
+        ...data,
+        fields: [],
+    });
+
+    return (
+        <Create {...props} transform={ensureFields}>
+            <SimpleForm>
+                <TextInput source="name" validate={[required()]} fullWidth />
+                <TextInput source="slug" validate={[required()]} fullWidth />
+                <TextInput source="table_labels" />
+                <TextInput source="table_fields" />
+            </SimpleForm>
+        </Create>
+    );
+};
 
 export const ClassEdit = (props) => (
     <Edit {...props}>
