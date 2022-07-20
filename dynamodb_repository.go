@@ -21,8 +21,7 @@ var (
 )
 
 type dynamoClass struct {
-	PrimaryKey  string
-	SortKey     string
+	ClassId     string
 	Slug        string
 	Name        string
 	TableLabels string
@@ -33,8 +32,7 @@ type dynamoClass struct {
 }
 
 func (d *dynamoClass) FromClass(c *Class) {
-	d.PrimaryKey = classIdPrefix + c.Id
-	d.SortKey = classIdPrefix + c.Id
+	d.ClassId = classIdPrefix + c.Id
 	d.Slug = c.Slug
 	d.Name = c.Name
 	d.TableLabels = c.TableLabels
@@ -46,7 +44,7 @@ func (d *dynamoClass) FromClass(c *Class) {
 }
 
 func (d *dynamoClass) ToClass() (c Class) {
-	c.Id = d.PrimaryKey[len(classIdPrefix):]
+	c.Id = d.ClassId[len(classIdPrefix):]
 	c.Slug = d.Slug
 	c.Name = d.Name
 	c.TableLabels = d.TableLabels
@@ -106,8 +104,7 @@ func (repo DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err 
 	params := &dynamodb.DeleteItemInput{
 		TableName: &repo.tables.Class,
 		Key: map[string]types.AttributeValue{
-			"PrimaryKey": keyId,
-			"SortKey":    keyId,
+			"ClassId": keyId,
 		},
 	}
 
@@ -125,8 +122,7 @@ func (repo DynamoDBRepository) GetClassById(ctx context.Context, id string) (cla
 	params := &dynamodb.GetItemInput{
 		TableName: &repo.tables.Class,
 		Key: map[string]types.AttributeValue{
-			"PrimaryKey": keyId,
-			"SortKey":    keyId,
+			"ClassId": keyId,
 		},
 	}
 
@@ -155,7 +151,7 @@ func (repo DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFil
 	slicer := slicer.NewSlicer(filter.Range.Start, filter.Range.End)
 
 	// Ref: https://github.com/awsdocs/aws-doc-sdk-examples/blob/main/gov2/dynamodb/actions/table_basics.go
-	// filterPK := expression.Name("PrimaryKey").BeginsWith(classIdPrefix)
+	// filterPK := expression.Name("ClassId").BeginsWith(classIdPrefix)
 	// expr, err := expression.NewBuilder().WithFilter(filterPK).Build()
 	// if err != nil {
 	// 	return

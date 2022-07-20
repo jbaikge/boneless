@@ -71,22 +71,14 @@ func TestDynamoDBRepository(t *testing.T) {
 		TableName: &tables.Class,
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
-				AttributeName: aws.String("PrimaryKey"),
-				AttributeType: types.ScalarAttributeTypeS,
-			},
-			{
-				AttributeName: aws.String("SortKey"),
+				AttributeName: aws.String("ClassId"),
 				AttributeType: types.ScalarAttributeTypeS,
 			},
 		},
 		KeySchema: []types.KeySchemaElement{
 			{
-				AttributeName: aws.String("PrimaryKey"),
+				AttributeName: aws.String("ClassId"),
 				KeyType:       types.KeyTypeHash,
-			},
-			{
-				AttributeName: aws.String("SortKey"),
-				KeyType:       types.KeyTypeRange,
 			},
 		},
 		BillingMode: types.BillingModePayPerRequest,
