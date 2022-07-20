@@ -193,6 +193,12 @@ func (repo DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFil
 	}
 
 	r.Size = slicer.Total()
+
+	// No data returned, just return an empty slice
+	if r.Size == 0 {
+		return
+	}
+
 	if filter.Range.Start >= r.Size {
 		err = ErrBadRange
 		return
