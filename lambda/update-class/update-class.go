@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -18,7 +17,7 @@ import (
 
 var (
 	dynamoConfig aws.Config
-	dynamoTable  string
+	dynamoTables gocms.DynamoDBTables
 )
 
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse, err error) {
@@ -46,7 +45,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		// changing a class ID.
 		class.Id = id
 
-		repo := gocms.NewDynamoDBRepository(dynamoConfig, dynamoTable)
+		repo := gocms.NewDynamoDBRepository(dynamoConfig, dynamoTables)
 		service := gocms.NewClassService(repo)
 
 		if err = service.Update(ctx, &class); err != nil {
@@ -81,9 +80,7 @@ func main() {
 		log.Fatalf("Failed to load default config: %v", err)
 	}
 
-	if dynamoTable = os.Getenv("DYNAMODB_TABLE"); dynamoTable == "" {
-		log.Fatalf("DYNAMODB_TABLE environment variable not set")
-	}
+	dynamoTables.FromEnv()
 
 	lambda.Start(HandleRequest)
 }
