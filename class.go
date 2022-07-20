@@ -27,7 +27,7 @@ type Range struct {
 	Size  int
 }
 
-func (r Range) ContentRange(name string) string {
+func (r Range) ContentRangeHeader(name string) string {
 	return fmt.Sprintf("%s %d-%d/%d", name, r.Start, r.End, r.Size)
 }
 
