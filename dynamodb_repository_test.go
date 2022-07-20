@@ -136,19 +136,90 @@ func TestDynamoDBRepository(t *testing.T) {
 			assert.NoError(t, repo.CreateClass(context.Background(), &class))
 		}
 
-		filter := ClassFilter{
-			Range: Range{
-				Start: 0,
-				End:   count - 1,
-			},
-		}
+		t.Run("All", func(t *testing.T) {
+			filter := ClassFilter{
+				Range: Range{
+					Start: 0,
+					End:   count - 1,
+				},
+			}
 
-		classes, r, err := repo.GetClassList(context.Background(), filter)
-		assert.NoError(t, err)
-		assert.Equal(t, 0, r.Start)
-		assert.Equal(t, count-1, r.End)
-		assert.Equal(t, count, r.Size)
-		assert.Equal(t, count, len(classes))
+			classes, r, err := repo.GetClassList(context.Background(), filter)
+			assert.NoError(t, err)
+			assert.Equal(t, filter.Range.Start, r.Start)
+			assert.Equal(t, filter.Range.End, r.End)
+			assert.Equal(t, count, r.Size)
+			assert.Equal(t, count, len(classes))
+		})
+
+		t.Run("Front", func(t *testing.T) {
+			filter := ClassFilter{
+				Range: Range{
+					Start: 0,
+					End:   4,
+				},
+			}
+
+			total := filter.Range.End - filter.Range.Start + 1
+
+			classes, r, err := repo.GetClassList(context.Background(), filter)
+			assert.NoError(t, err)
+			assert.Equal(t, filter.Range.Start, r.Start)
+			assert.Equal(t, filter.Range.End, r.End)
+			assert.Equal(t, count, r.Size)
+			assert.Equal(t, total, len(classes))
+		})
+
+		t.Run("Middle", func(t *testing.T) {
+			filter := ClassFilter{
+				Range: Range{
+					Start: 3,
+					End:   6,
+				},
+			}
+
+			total := filter.Range.End - filter.Range.Start + 1
+
+			classes, r, err := repo.GetClassList(context.Background(), filter)
+			assert.NoError(t, err)
+			assert.Equal(t, filter.Range.Start, r.Start)
+			assert.Equal(t, filter.Range.End, r.End)
+			assert.Equal(t, count, r.Size)
+			assert.Equal(t, total, len(classes))
+		})
+
+		t.Run("Back", func(t *testing.T) {
+			filter := ClassFilter{
+				Range: Range{
+					Start: 5,
+					End:   9,
+				},
+			}
+
+			total := filter.Range.End - filter.Range.Start + 1
+
+			classes, r, err := repo.GetClassList(context.Background(), filter)
+			assert.NoError(t, err)
+			assert.Equal(t, filter.Range.Start, r.Start)
+			assert.Equal(t, filter.Range.End, r.End)
+			assert.Equal(t, count, r.Size)
+			assert.Equal(t, total, len(classes))
+		})
+
+		t.Run("Overflow", func(t *testing.T) {
+			// In the API this should throw an HTTP 416 Range Not Satisfiable
+			// Ref: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/416
+			filter := ClassFilter{
+				Range: Range{
+					Start: 15,
+					End:   19,
+				},
+			}
+
+			_, _, err := repo.GetClassList(context.Background(), filter)
+			assert.Error(t, err)
+		})
+
 	})
 
 	t.Run("DeleteClass", func(t *testing.T) {
