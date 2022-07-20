@@ -7,14 +7,17 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/jbaikge/gocms/internal/slicer"
 )
 
 const classIdPrefix = "class#"
 
-var ErrNotFound = errors.New("item not found")
+var (
+	ErrBadRange = errors.New("invalid range")
+	ErrNotFound = errors.New("item not found")
+)
 
 type dynamoClass struct {
 	PrimaryKey  string
@@ -139,33 +142,57 @@ func (repo DynamoDBRepository) GetClassById(ctx context.Context, id string) (cla
 }
 
 func (repo DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFilter) (classes []Class, r Range, err error) {
+	classes = make([]Class, 0, filter.Range.End-filter.Range.Start)
+	slicer := slicer.NewSlicer(filter.Range.Start, filter.Range.End)
+
 	// Ref: https://github.com/awsdocs/aws-doc-sdk-examples/blob/main/gov2/dynamodb/actions/table_basics.go
-	filterPK := expression.Name("PrimaryKey").BeginsWith(classIdPrefix)
-	expr, err := expression.NewBuilder().WithFilter(filterPK).Build()
-	if err != nil {
-		return
-	}
+	// filterPK := expression.Name("PrimaryKey").BeginsWith(classIdPrefix)
+	// expr, err := expression.NewBuilder().WithFilter(filterPK).Build()
+	// if err != nil {
+	// 	return
+	// }
 
 	params := &dynamodb.ScanInput{
-		TableName:                 &repo.table,
-		ExpressionAttributeNames:  expr.Names(),
-		ExpressionAttributeValues: expr.Values(),
-		FilterExpression:          expr.Filter(),
+		TableName: &repo.table,
+		Limit:     aws.Int32(14),
+		// ExpressionAttributeNames:  expr.Names(),
+		// ExpressionAttributeValues: expr.Values(),
+		// FilterExpression:          expr.Filter(),
 	}
-	result, err := repo.client.Scan(ctx, params)
-	if err != nil {
+	paginator := dynamodb.NewScanPaginator(repo.client, params)
+	for paginator.HasMorePages() {
+		page, pageErr := paginator.NextPage(ctx)
+		if pageErr != nil {
+			err = pageErr
+			return
+		}
+
+		slicer.Add(int(page.Count))
+		start := slicer.Start()
+		end := slicer.End()
+		if start == 0 && end == 0 {
+			continue
+		}
+
+		dbClasses := make([]dynamoClass, 0, end-start)
+		if err = attributevalue.UnmarshalListOfMaps(page.Items[start:end], &dbClasses); err != nil {
+			return
+		}
+
+		for _, dbClass := range dbClasses {
+			classes = append(classes, dbClass.ToClass())
+		}
+	}
+
+	r.Size = slicer.Total()
+	if filter.Range.Start >= r.Size {
+		err = ErrBadRange
 		return
 	}
 
-	dbClasses := make([]dynamoClass, 0, result.Count)
-	if err = attributevalue.UnmarshalListOfMaps(result.Items, &dbClasses); err != nil {
-		return
-	}
+	r.Start = filter.Range.Start
+	r.End = r.Start + len(classes) - 1
 
-	classes = make([]Class, len(dbClasses))
-	for i, dbClass := range dbClasses {
-		classes[i] = dbClass.ToClass()
-	}
 	return
 }
 
