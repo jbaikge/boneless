@@ -154,7 +154,6 @@ func (repo DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFil
 
 	params := &dynamodb.ScanInput{
 		TableName: &repo.table,
-		Limit:     aws.Int32(14),
 		// ExpressionAttributeNames:  expr.Names(),
 		// ExpressionAttributeValues: expr.Values(),
 		// FilterExpression:          expr.Filter(),
