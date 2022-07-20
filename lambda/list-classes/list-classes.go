@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -15,7 +14,7 @@ import (
 	"github.com/jbaikge/gocms"
 )
 
-const RangeKey = "classes"
+const RangeUnit = "classes"
 
 var (
 	dynamoConfig aws.Config
@@ -39,10 +38,8 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		}
 
 		rangeHeader, ok := request.Headers["range"]
-		if ok && strings.HasPrefix(rangeHeader, RangeKey) {
-			_, err = fmt.Scanf(RangeKey+"=%d-%d", &filter.Range.Start, &filter.Range.End)
-			if err != nil {
-				err = fmt.Errorf("bad range header: %s - %v", rangeHeader, err)
+		if ok && strings.HasPrefix(rangeHeader, RangeUnit) {
+			if err = filter.Range.ParseHeader(rangeHeader, RangeUnit); err != nil {
 				return
 			}
 		}
@@ -55,7 +52,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 			return
 		}
 
-		response.Headers["Content-Range"] = r.ContentRangeHeader(RangeKey)
+		response.Headers["Content-Range"] = r.ContentRangeHeader(RangeUnit)
 		return list, nil
 	}()
 
