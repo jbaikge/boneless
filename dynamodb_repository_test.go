@@ -43,7 +43,9 @@ func TestDynamoDBConversion(t *testing.T) {
 }
 
 func TestDynamoDBRepository(t *testing.T) {
-	table := t.Name() + time.Now().Format("-20060102-150405")
+	tables := DynamoDBTables{
+		Class: t.Name() + time.Now().Format("-20060102-150405") + "-Class",
+	}
 
 	endpointResolverFunc := func(service string, region string, options ...interface{}) (endpoint aws.Endpoint, err error) {
 		endpoint = aws.Endpoint{
@@ -66,7 +68,7 @@ func TestDynamoDBRepository(t *testing.T) {
 	// can match what is described in the deployment stack.
 	client := dynamodb.NewFromConfig(cfg)
 	_, err = client.CreateTable(context.Background(), &dynamodb.CreateTableInput{
-		TableName: &table,
+		TableName: &tables.Class,
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
 				AttributeName: aws.String("PrimaryKey"),
@@ -91,7 +93,7 @@ func TestDynamoDBRepository(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	repo := NewDynamoDBRepository(cfg, table)
+	repo := NewDynamoDBRepository(cfg, tables)
 
 	// Use of UnixMicro trims off the m variable in the Time struct to make
 	// reflect.DeepEqual function properly

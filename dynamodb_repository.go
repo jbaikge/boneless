@@ -3,6 +3,7 @@ package gocms
 import (
 	"context"
 	"errors"
+	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -57,15 +58,23 @@ func (d *dynamoClass) ToClass() (c Class) {
 	return
 }
 
-type DynamoDBRepository struct {
-	client *dynamodb.Client
-	table  string
+type DynamoDBTables struct {
+	Class string
 }
 
-func NewDynamoDBRepository(config aws.Config, table string) Repository {
+func (tables *DynamoDBTables) FromEnv() {
+	tables.Class = os.Getenv("DYNAMODB_CLASS_TABLE")
+}
+
+type DynamoDBRepository struct {
+	client *dynamodb.Client
+	tables DynamoDBTables
+}
+
+func NewDynamoDBRepository(config aws.Config, tables DynamoDBTables) Repository {
 	return &DynamoDBRepository{
 		client: dynamodb.NewFromConfig(config),
-		table:  table,
+		tables: tables,
 	}
 }
 
@@ -79,7 +88,7 @@ func (repo DynamoDBRepository) CreateClass(ctx context.Context, class *Class) (e
 	}
 
 	params := &dynamodb.PutItemInput{
-		TableName: &repo.table,
+		TableName: &repo.tables.Class,
 		Item:      item,
 	}
 
@@ -95,7 +104,7 @@ func (repo DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err 
 	}
 
 	params := &dynamodb.DeleteItemInput{
-		TableName: &repo.table,
+		TableName: &repo.tables.Class,
 		Key: map[string]types.AttributeValue{
 			"PrimaryKey": keyId,
 			"SortKey":    keyId,
@@ -114,7 +123,7 @@ func (repo DynamoDBRepository) GetClassById(ctx context.Context, id string) (cla
 	}
 
 	params := &dynamodb.GetItemInput{
-		TableName: &repo.table,
+		TableName: &repo.tables.Class,
 		Key: map[string]types.AttributeValue{
 			"PrimaryKey": keyId,
 			"SortKey":    keyId,
@@ -153,7 +162,7 @@ func (repo DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFil
 	// }
 
 	params := &dynamodb.ScanInput{
-		TableName: &repo.table,
+		TableName: &repo.tables.Class,
 		// ExpressionAttributeNames:  expr.Names(),
 		// ExpressionAttributeValues: expr.Values(),
 		// FilterExpression:          expr.Filter(),
@@ -204,7 +213,7 @@ func (repo DynamoDBRepository) UpdateClass(ctx context.Context, class *Class) (e
 	}
 
 	params := &dynamodb.PutItemInput{
-		TableName: &repo.table,
+		TableName: &repo.tables.Class,
 		Item:      item,
 	}
 
