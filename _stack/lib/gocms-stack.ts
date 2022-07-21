@@ -100,13 +100,14 @@ export class GocmsStack extends Stack {
       cacheKeyParameters: [
         'method.request.header.range',
       ],
+      cacheNamespace: 'GoCMS-GetClasses',
       requestParameters: {
         'integration.request.header.range': 'method.request.header.range',
       },
     });
     classResource.addMethod('GET', listClassesIntegration, {
       requestParameters: {
-        'method.request.header.range': false,
+        'method.request.header.range': true,
       },
     });
 
