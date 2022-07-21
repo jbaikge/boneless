@@ -91,7 +91,21 @@ export class GocmsStack extends Stack {
 
     // Class endpoints
     const classResource = api.root.addResource('classes');
-    classResource.addMethod('GET', new apigw.LambdaIntegration(listClassesLambda));
+
+    // Allow the Range header with requests for pagination
+    // Ref: https://rahullokurte.com/how-to-validate-requests-to-the-aws-api-gateway-using-cdk
+    // Ref: https://stackoverflow.com/a/68305757
+    const listClassesIntegration = new apigw.LambdaIntegration(listClassesLambda, {
+      requestParameters: {
+        "integration.request.header.range": "method.request.header.range",
+      },
+    });
+    classResource.addMethod('GET', listClassesIntegration, {
+      requestParameters: {
+        "method.request.header.range": false,
+      },
+    });
+
     classResource.addMethod('POST', new apigw.LambdaIntegration(createClassLambda));
 
     const classIdResource = classResource.addResource('{id}')
