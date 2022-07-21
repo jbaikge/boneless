@@ -54,5 +54,9 @@ func (r *Range) ParseHeader(header, unit string) (err error) {
 		return fmt.Errorf("malformed end value (%s): %v", end, err)
 	}
 
+	if r.End < r.Start {
+		return fmt.Errorf("invalid range, end before start (%d < %d)", r.End, r.Start)
+	}
+
 	return
 }

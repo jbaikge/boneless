@@ -76,4 +76,9 @@ func TestParseHeader(t *testing.T) {
 		var r Range
 		assert.Error(t, r.ParseHeader(unit+"=0-b", unit))
 	})
+
+	t.Run("EndBeforeStart", func(t *testing.T) {
+		var r Range
+		assert.Error(t, r.ParseHeader(unit+"=9-0", unit))
+	})
 }
