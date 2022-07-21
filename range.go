@@ -20,6 +20,10 @@ func (r Range) ContentRangeHeader(unit string) string {
 	return fmt.Sprintf("%s %d-%d/%d", unit, r.Start, r.End, r.Size)
 }
 
+func (r Range) IsZero() bool {
+	return r.Start == 0 && r.End == 0 && r.Size == 0
+}
+
 // Parses Range: <unit>=<start>-<end> into the range's Start and End members
 // Ref: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range
 func (r *Range) ParseHeader(header, unit string) (err error) {

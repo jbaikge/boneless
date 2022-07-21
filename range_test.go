@@ -22,6 +22,20 @@ func TestContentRangeHeader(t *testing.T) {
 	assert.Equal(t, unit+" 40-49/100", r.ContentRangeHeader(unit))
 }
 
+func TestRangeIsZero(t *testing.T) {
+	var r Range
+	assert.True(t, r.IsZero())
+
+	r.Size = 100
+	assert.False(t, r.IsZero())
+
+	r.Size, r.End = 0, 99
+	assert.False(t, r.IsZero())
+
+	r.End, r.Start = 0, 10
+	assert.False(t, r.IsZero())
+}
+
 func TestParseHeader(t *testing.T) {
 	unit := "test"
 
