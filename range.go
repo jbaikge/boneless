@@ -14,11 +14,13 @@ type Range struct {
 	Size  int
 }
 
-func (r Range) ContentRangeHeader(name string) string {
-	return fmt.Sprintf("%s %d-%d/%d", name, r.Start, r.End, r.Size)
+// Builds Content-Range header: <unit> <start>-<end>/<size>
+// Ref: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Range
+func (r Range) ContentRangeHeader(unit string) string {
+	return fmt.Sprintf("%s %d-%d/%d", unit, r.Start, r.End, r.Size)
 }
 
-// Parses Range: unit=x-y into the range value's Start and End members
+// Parses Range: <unit>=<start>-<end> into the range's Start and End members
 // Ref: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range
 func (r *Range) ParseHeader(header, unit string) (err error) {
 	if header[:len(unit)] != unit {
