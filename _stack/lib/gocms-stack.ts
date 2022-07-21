@@ -95,14 +95,18 @@ export class GocmsStack extends Stack {
     // Allow the Range header with requests for pagination
     // Ref: https://rahullokurte.com/how-to-validate-requests-to-the-aws-api-gateway-using-cdk
     // Ref: https://stackoverflow.com/a/68305757
+    // Ref: https://blog.kewah.com/2020/api-gateway-caching-with-aws-cdk/
     const listClassesIntegration = new apigw.LambdaIntegration(listClassesLambda, {
+      cacheKeyParameters: [
+        'method.request.header.range',
+      ],
       requestParameters: {
-        "integration.request.header.range": "method.request.header.range",
+        'integration.request.header.range': 'method.request.header.range',
       },
     });
     classResource.addMethod('GET', listClassesIntegration, {
       requestParameters: {
-        "method.request.header.range": false,
+        'method.request.header.range': false,
       },
     });
 
