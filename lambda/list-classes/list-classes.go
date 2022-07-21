@@ -40,14 +40,30 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		rangeHeader, ok := request.Headers["range"]
 		if ok && strings.HasPrefix(rangeHeader, RangeUnit) {
 			if err = filter.Range.ParseHeader(rangeHeader, RangeUnit); err != nil {
+				response.StatusCode = http.StatusRequestedRangeNotSatisfiable
 				return
 			}
+		}
+
+		rangeParam, ok := request.QueryStringParameters["range"]
+		if filter.Range.IsZero() && ok {
+			bounds := make([]int, 0, 2)
+			err = json.Unmarshal([]byte(rangeParam), &bounds)
+			if err != nil || len(bounds) != 2 {
+				response.StatusCode = http.StatusRequestedRangeNotSatisfiable
+				return
+			}
+			filter.Range.Start = bounds[0]
+			filter.Range.End = bounds[1]
 		}
 
 		repo := gocms.NewDynamoDBRepository(dynamoConfig, dynamoTables)
 		service := gocms.NewClassService(repo)
 
 		list, r, err := service.List(context.Background(), filter)
+		if err == gocms.ErrBadRange {
+			response.StatusCode = http.StatusRequestedRangeNotSatisfiable
+		}
 		if err != nil {
 			return
 		}
