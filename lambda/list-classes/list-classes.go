@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -23,7 +24,7 @@ var (
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse, err error) {
 	response.Headers = map[string]string{
 		"Content-Type":                  "application/json",
-		"Access-Control-Expose-Headers": "Content-Range",
+		"Access-Control-Expose-Headers": "Content-Range, X-Total-Count",
 		"Access-Control-Allow-Headers":  "Range",
 		"Access-Control-Allow-Origin":   "*",
 	}
@@ -53,6 +54,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		}
 
 		response.Headers["Content-Range"] = r.ContentRangeHeader(RangeUnit)
+		response.Headers["X-Total-Count"] = fmt.Sprint(r.Size)
 		return list, nil
 	}()
 

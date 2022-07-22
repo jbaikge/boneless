@@ -85,32 +85,20 @@ export class GocmsStack extends Stack {
         ],
         exposeHeaders: [
           'Content-Range',
+          'X-Total-Count',
         ],
       }
     });
 
     // Class endpoints
-    const classResource = api.root.addResource('classes');
-
     // Allow the Range header with requests for pagination
+    // 2022-07-22: After days of this not working, just leaving URLs here for
+    // posterity in case another attempt is made.
     // Ref: https://rahullokurte.com/how-to-validate-requests-to-the-aws-api-gateway-using-cdk
     // Ref: https://stackoverflow.com/a/68305757
     // Ref: https://blog.kewah.com/2020/api-gateway-caching-with-aws-cdk/
-    const listClassesIntegration = new apigw.LambdaIntegration(listClassesLambda, {
-      cacheKeyParameters: [
-        'method.request.header.range',
-      ],
-      cacheNamespace: 'GoCMS-GetClasses',
-      requestParameters: {
-        'integration.request.header.range': 'method.request.header.range',
-      },
-    });
-    classResource.addMethod('GET', listClassesIntegration, {
-      requestParameters: {
-        'method.request.header.range': true,
-      },
-    });
-
+    const classResource = api.root.addResource('classes');
+    classResource.addMethod('GET', new apigw.LambdaIntegration(listClassesLambda));
     classResource.addMethod('POST', new apigw.LambdaIntegration(createClassLambda));
 
     const classIdResource = classResource.addResource('{id}')
