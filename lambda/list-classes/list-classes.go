@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -37,33 +36,10 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 			},
 		}
 
-		rangeHeader, ok := request.Headers["range"]
-		if !ok {
-			rangeHeader, ok = request.Headers["Range"]
-			fmt.Printf("Capitalized ")
+		err = filter.Range.ParseParams(request.QueryStringParameters)
+		if err != nil {
+			return
 		}
-		fmt.Printf("Range Header: %v\n", rangeHeader)
-
-		if ok {
-			if err = filter.Range.ParseHeader(rangeHeader, RangeUnit); err != nil {
-				response.StatusCode = http.StatusRequestedRangeNotSatisfiable
-				return
-			}
-		}
-		fmt.Printf("Range From Header: %+v\n", filter.Range)
-
-		// rangeParam, ok := request.QueryStringParameters["range"]
-		// if filter.Range.IsZero() && ok {
-		// 	bounds := make([]int, 0, 2)
-		// 	err = json.Unmarshal([]byte(rangeParam), &bounds)
-		// 	if err != nil || len(bounds) != 2 {
-		// 		response.StatusCode = http.StatusRequestedRangeNotSatisfiable
-		// 		return
-		// 	}
-		// 	filter.Range.Start = bounds[0]
-		// 	filter.Range.End = bounds[1]
-		// }
-		// fmt.Printf("Range From Param: %+v\n", filter.Range)
 
 		repo := gocms.NewDynamoDBRepository(dynamoConfig, dynamoTables)
 		service := gocms.NewClassService(repo)
