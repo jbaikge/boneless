@@ -1,6 +1,7 @@
 package gocms
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -60,6 +61,7 @@ func (r *Range) ParseHeader(header, unit string) (err error) {
 // Supports two different combinations of parameters:
 // _start, _end: Zero-based indexes for the starting and ending items
 // _page, _per_page: paging with _page starting at 1; _per_page defaults to 10
+// range: JSON encoded 2-element array with zero-based indexes for start and end
 // If no useful parameters are available, defaults to the first 10 items
 func (r *Range) ParseParams(params map[string]string) (err error) {
 	var start, end, page, perPage int
@@ -68,10 +70,7 @@ func (r *Range) ParseParams(params map[string]string) (err error) {
 	endStr, hasEnd := params["_end"]
 	pageStr, hasPage := params["_page"]
 	perPageStr, hasPerPage := params["_per_page"]
-
-	if hasStart && hasEnd && hasPage && hasPerPage {
-		return fmt.Errorf("too many paging parameters; choose _start, _end or _page, _per_page")
-	}
+	rangeStr, hasRange := params["range"]
 
 	if hasStart && !hasEnd {
 		return fmt.Errorf("missing _end with _start")
@@ -81,14 +80,6 @@ func (r *Range) ParseParams(params map[string]string) (err error) {
 		return fmt.Errorf("missing _start with _end")
 	}
 
-	if !hasPage && hasPerPage {
-		page = 1
-	}
-
-	if hasPage && !hasPerPage {
-		perPage = 10
-	}
-
 	if hasStart && hasEnd {
 		if start, err = strconv.Atoi(startStr); err != nil {
 			return fmt.Errorf("parsing _start: %w", err)
@@ -96,14 +87,31 @@ func (r *Range) ParseParams(params map[string]string) (err error) {
 		if end, err = strconv.Atoi(endStr); err != nil {
 			return fmt.Errorf("parsing _end: %w", err)
 		}
+	}
+
+	// Process range JSON and let it turn into start/end and fall through that
+	// processing
+	if hasRange {
+		bounds := make([]int, 0, 2)
+		if err = json.Unmarshal([]byte(rangeStr), &bounds); err != nil {
+			return fmt.Errorf("invalid range: %w", err)
+		}
+		if num := len(bounds); num != 2 {
+			return fmt.Errorf("expect exactly 2 range elements; got %d", num)
+		}
+		hasStart, hasEnd = true, true
+		start, end = bounds[0], bounds[1]
+	}
+
+	if hasStart && hasEnd {
 		if start < 0 {
-			return fmt.Errorf("_start is less than zero")
+			return fmt.Errorf("start index is less than zero")
 		}
 		if end < 0 {
-			return fmt.Errorf("_end is less than zero")
+			return fmt.Errorf("end index is less than zero")
 		}
 		if start > end {
-			return fmt.Errorf("_start is greater than _end")
+			return fmt.Errorf("start index is greater than _end")
 		}
 
 		r.Start, r.End = start, end
@@ -129,6 +137,12 @@ func (r *Range) ParseParams(params map[string]string) (err error) {
 	}
 
 	if hasPage || hasPerPage {
+		if !hasPage {
+			page = 1
+		}
+		if !hasPerPage {
+			perPage = 10
+		}
 		r.Start = (page - 1) * perPage
 		r.End = page*perPage - 1
 		return

@@ -125,6 +125,38 @@ func TestParseParams(t *testing.T) {
 			Params: map[string]string{"_start": "0", "_end": "four"},
 			Error:  true,
 		},
+		// React Admin data provider: ra-data-simple-rest
+		{
+			Name:   "Range",
+			Params: map[string]string{"range": "[5,9]"},
+			Start:  5,
+			End:    9,
+		},
+		{
+			Name:   "TooManyRangeElements",
+			Params: map[string]string{"range": "[5,9,2]"},
+			Error:  true,
+		},
+		{
+			Name:   "TooFewRangeElements",
+			Params: map[string]string{"range": "[5]"},
+			Error:  true,
+		},
+		{
+			Name:   "BadRangeJSON",
+			Params: map[string]string{"range": "5,9"},
+			Error:  true,
+		},
+		{
+			Name:   "NegativeRangeStart",
+			Params: map[string]string{"range": "[-5,9]"},
+			Error:  true,
+		},
+		{
+			Name:   "NegativeRangeEnd",
+			Params: map[string]string{"range": "[5,-9]"},
+			Error:  true,
+		},
 		// page/per-page
 		{
 			Name:   "PageOnly",
@@ -168,17 +200,6 @@ func TestParseParams(t *testing.T) {
 			Name:   "InvalidPerPageInt",
 			Params: map[string]string{"_page": "1", "_per_page": "five"},
 			Error:  true,
-		},
-		// Cause chaos
-		{
-			Name: "Chaos",
-			Params: map[string]string{
-				"_start":    "0",
-				"_end":      "9",
-				"_page":     "5",
-				"_per_page": "5",
-			},
-			Error: true,
 		},
 	}
 
