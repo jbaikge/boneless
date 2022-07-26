@@ -27,8 +27,11 @@ export class GocmsStack extends Stack {
       },
     });
 
+    // Path back to repo root
+    const rootDir = join(__dirname, '..', '..');
+
     // Asset directory where all the lambda binaries come from
-    const assetDir = join(__dirname, '..', '..', 'assets');
+    const assetDir = join(rootDir, 'assets');
 
     // Create class lambda function
     const createClassLambda = new lambda.Function(this, 'CreateClassHandler', {
@@ -113,7 +116,7 @@ export class GocmsStack extends Stack {
 
     new BucketDeployment(this, 'FrontendAdminBucketDeployment', {
       destinationBucket: adminBucket,
-      sources: [Source.asset(join(__dirname, '..', '..', '_frontend-admin', 'build'))],
+      sources: [Source.asset(join(rootDir, '_frontend-admin', 'build'))],
     });
 
     const adminOriginAccessIdentity = new OriginAccessIdentity(this, 'FrontendAdminOAI');
