@@ -3,7 +3,7 @@ LAMBDAS := $(notdir $(SRC))
 ASSETS := $(addsuffix /handler,$(addprefix assets/,$(LAMBDAS)))
 ADMIN := _frontend-admin/build/index.html
 
-.PHONY: all deploy synth
+.PHONY: all deploy diff frontend synth
 
 all: $(ASSETS) $(ADMIN)
 
@@ -12,6 +12,9 @@ deploy: $(ASSETS) $(ADMIN)
 
 diff: $(ASSETS) $(ADMIN)
 	$(MAKE) -C _stack diff
+
+frontend:
+	$(MAKE) -C _frontend-admin start
 
 synth: $(ASSETS) $(ADMIN)
 	$(MAKE) -C _stack synth
