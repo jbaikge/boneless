@@ -10,7 +10,6 @@ import (
 
 type Class struct {
 	Id          string    `json:"id"`
-	Slug        string    `json:"slug"`
 	Name        string    `json:"name"`
 	TableLabels string    `json:"table_labels"`
 	TableFields string    `json:"table_fields"`

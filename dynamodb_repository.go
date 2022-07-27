@@ -33,7 +33,6 @@ type dynamoClass struct {
 
 func (d *dynamoClass) FromClass(c *Class) {
 	d.ClassId = classIdPrefix + c.Id
-	d.Slug = c.Slug
 	d.Name = c.Name
 	d.TableLabels = c.TableLabels
 	d.TableFields = c.TableFields
@@ -45,7 +44,6 @@ func (d *dynamoClass) FromClass(c *Class) {
 
 func (d *dynamoClass) ToClass() (c Class) {
 	c.Id = d.ClassId[len(classIdPrefix):]
-	c.Slug = d.Slug
 	c.Name = d.Name
 	c.TableLabels = d.TableLabels
 	c.TableFields = d.TableFields

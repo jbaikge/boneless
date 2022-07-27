@@ -26,7 +26,6 @@ func TestDynamoDBConversion(t *testing.T) {
 	classNilFields := &Class{
 		Id:   "NilFields",
 		Name: "Nil Fields",
-		Slug: "nil_fields",
 	}
 
 	dynamoNilFields := new(dynamoClass)
@@ -93,7 +92,6 @@ func TestDynamoDBRepository(t *testing.T) {
 	class1 := Class{
 		Id:      "1",
 		Name:    "My Class",
-		Slug:    "my_class",
 		Created: now,
 		Updated: now,
 		Fields:  []Field{},
@@ -110,7 +108,7 @@ func TestDynamoDBRepository(t *testing.T) {
 	})
 
 	t.Run("UpdateClass", func(t *testing.T) {
-		class1.Slug = "my_new_class"
+		class1.Name = "My New Class"
 		assert.NoError(t, repo.UpdateClass(context.Background(), &class1))
 		check, err := repo.GetClassById(context.Background(), class1.Id)
 		assert.NoError(t, err)
@@ -123,7 +121,6 @@ func TestDynamoDBRepository(t *testing.T) {
 			class := Class{
 				Id:      fmt.Sprintf("%d", i),
 				Name:    fmt.Sprintf("Class %d", i),
-				Slug:    fmt.Sprintf("class_%d", i),
 				Created: now,
 				Updated: now,
 			}
