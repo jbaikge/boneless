@@ -24,13 +24,14 @@ const fieldChoices = [
     { id: 'email',         name: 'Email' },
     { id: 'select',        name: 'Multi-Select' },
     { id: 'number',        name: 'Number' },
+    { id: 'richtext',      name: 'Rich Text' },
     // { id: 'select-class',  name: 'Select (Class)' }, // Need data_source_* fields on Field struct
     { id: 'select-static', name: 'Select (Static)' },
     { id: 'text',          name: 'Text' },
     { id: 'textarea',      name: 'Textarea' },
     { id: 'time',          name: 'Time' },
-    { id: 'tinymce',       name: 'TinyMCE' },
-    { id: 'upload',        name: 'Upload' },
+    { id: 'any-upload',    name: 'Upload (Any)' },
+    { id: 'image-upload',  name: 'Upload (Image)' },
 ];
 
 export const ClassCreate = (props) => {
@@ -50,17 +51,18 @@ export const ClassCreate = (props) => {
     );
 };
 
+
 export const ClassEdit = (props) => (
     <Edit {...props}>
         <SimpleForm>
             <TextInput source="name" validate={[required()]} fullWidth />
-            <TextInput source="table_labels" />
-            <TextInput source="table_fields" />
+            <TextInput source="table_labels" fullWidth />
+            <TextInput source="table_fields" fullWidth />
             <ArrayInput source="fields">
-                <SimpleFormIterator >
+                <SimpleFormIterator>
                     <TextInput source="label" />
                     <TextInput source="name" />
-                    <SelectInput source="type" choices={fieldChoices} />
+                    <SelectInput source="type" choices={fieldChoices} defaultValue="text" />
                     <FormDataConsumer>
                         {({
                             formData,
