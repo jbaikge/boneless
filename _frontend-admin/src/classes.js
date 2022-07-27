@@ -43,7 +43,6 @@ export const ClassCreate = (props) => {
         <Create {...props} transform={ensureFields}>
             <SimpleForm>
                 <TextInput source="name" validate={[required()]} fullWidth />
-                <TextInput source="slug" validate={[required()]} fullWidth />
                 <TextInput source="table_labels" />
                 <TextInput source="table_fields" />
             </SimpleForm>
@@ -55,7 +54,6 @@ export const ClassEdit = (props) => (
     <Edit {...props}>
         <SimpleForm>
             <TextInput source="name" validate={[required()]} fullWidth />
-            <TextInput source="slug" validate={[required()]} fullWidth />
             <TextInput source="table_labels" />
             <TextInput source="table_fields" />
             <ArrayInput source="fields">
@@ -134,7 +132,6 @@ export const ClassList = () => (
     <List>
         <Datagrid rowClick="edit">
             <TextField source="name" />
-            <TextField source="slug" />
             <DateField source="created" />
             <DateField source="updated" />
             <EditButton />
