@@ -54,12 +54,68 @@ func (d *dynamoClass) ToClass() (c Class) {
 	return
 }
 
+type dynamoDocument map[string]interface{}
+
+func (dyn dynamoDocument) FromDocument(d *Document) {
+	dyn["DocumentId"] = d.Id
+	dyn["ClassId"] = d.ClassId
+	dyn["ParentId"] = d.ParentId
+	dyn["Created"] = d.Created
+	dyn["Updated"] = d.Updated
+	for k, v := range d.Values {
+		dyn[k] = v
+	}
+}
+
+func (dyn dynamoDocument) ToDocument() (d Document) {
+	d.Values = make(map[string]interface{})
+	for k, v := range dyn {
+		d.Values[k] = v
+	}
+
+	stringTargets := []struct {
+		Target *string
+		Key    string
+	}{
+		{&d.Id, "DocumentId"},
+		{&d.ClassId, "ClassId"},
+		{&d.ParentId, "ParentId"},
+	}
+	for _, target := range stringTargets {
+		v, ok := dyn[target.Key]
+		if !ok {
+			continue
+		}
+		delete(d.Values, target.Key)
+		*target.Target, ok = v.(string)
+		if !ok {
+			continue
+		}
+	}
+	// d.Id = dyn["DocumentId"]
+	// d.Id = dyn.DocumentId
+	// d.ClassId = dyn.ClassId
+	// d.Created = dyn.Created
+	// d.Updated = dyn.Updated
+	// d.Values = make(map[string]interface{})
+	// for k, v := range dyn.Values {
+	// 	d.Values[k] = v
+	// }
+	return
+}
+
 type DynamoDBTables struct {
-	Class string
+	Class    string
+	Document string
+	Path     string
+	Template string
 }
 
 func (tables *DynamoDBTables) FromEnv() {
 	tables.Class = os.Getenv("DYNAMODB_CLASS_TABLE")
+	tables.Document = os.Getenv("DYNAMODB_DOCUMENT_TABLE")
+	tables.Path = os.Getenv("DYNAMODB_PATH_TABLE")
+	tables.Template = os.Getenv("DYNAMODB_TEMPLATE_TABLE")
 }
 
 type DynamoDBRepository struct {

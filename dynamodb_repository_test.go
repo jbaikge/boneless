@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"strings"
 	"testing"
 	"time"
@@ -22,7 +23,7 @@ func init() {
 	flag.StringVar(&regionFlag, "region", "local", "DynamoDB region: local for dy compatibility; localhost for nosql workbench compatibility")
 }
 
-func TestDynamoDBConversion(t *testing.T) {
+func TestDynamoDBClassConversion(t *testing.T) {
 	classNilFields := &Class{
 		Id:   "NilFields",
 		Name: "Nil Fields",
@@ -39,6 +40,30 @@ func TestDynamoDBConversion(t *testing.T) {
 	jsonClassNilFields, err := json.Marshal(classFromDynamo)
 	assert.NoError(t, err)
 	assert.True(t, strings.Contains(string(jsonClassNilFields), `"fields":[]`))
+}
+
+func TestDynamoDBDocumentConversion(t *testing.T) {
+	doc := &Document{
+		Id:    "TestDoc",
+		Title: "Test Doc",
+		Url:   "/test/doc",
+		Values: map[string]interface{}{
+			"date": "2022-07-28",
+		},
+	}
+
+	dynamoDoc := dynamoDocument{}
+	dynamoDoc.FromDocument(doc)
+
+	jsonDynamoDoc, err := json.Marshal(dynamoDoc)
+	assert.NoError(t, err)
+	assert.True(t, strings.Contains(string(jsonDynamoDoc), `"date":"2022-07-28"`))
+
+	fromDynamo := dynamoDoc.ToDocument()
+	jsonDoc, err := json.Marshal(fromDynamo)
+	assert.NoError(t, err)
+	assert.True(t, strings.Contains(string(jsonDoc), `"date":"2022-07-28"`))
+	log.Printf("%s", string(jsonDoc))
 }
 
 func TestDynamoDBRepository(t *testing.T) {
