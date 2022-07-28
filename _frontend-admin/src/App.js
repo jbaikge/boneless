@@ -4,6 +4,7 @@ import simpleRestProvider from 'ra-data-simple-rest';
 import { ClassCreate, ClassEdit, ClassList } from './classes';
 // import dataProvider from './dataProvider';
 import { darkTheme } from './theme';
+import { DocumentCreate, DocumentEdit, DocumentList } from './documents';
 
 const fetchResources = () =>
   fetch(window._env_.API_URL + '/classes?_start=0&_end=50')
@@ -12,7 +13,9 @@ const fetchResources = () =>
       options={{ label: c.name }}
       name={"classes/" + c.id + "/documents"}
       key={c.id}
-      list={ClassList}
+      create={DocumentCreate}
+      edit={DocumentEdit}
+      list={DocumentList}
     />));
 
 const App = () => (
