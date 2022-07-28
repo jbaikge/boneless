@@ -48,13 +48,11 @@ func (s ClassService) ById(ctx context.Context, id string) (Class, error) {
 }
 
 func (s ClassService) Create(ctx context.Context, class *Class) (err error) {
-	// TODO validate internal fields
-
 	if class.Id != "" {
 		return fmt.Errorf("class already has an ID")
 	}
 
-	// TODO check for existing class with same slug
+	// TODO validate internal fields
 
 	now := time.Now()
 	class.Id = xid.NewWithTime(now).String()
@@ -72,8 +70,6 @@ func (s ClassService) Update(ctx context.Context, class *Class) (err error) {
 	if class.Id == "" {
 		return fmt.Errorf("class has no ID")
 	}
-
-	// TODO check for slug overwrite
 
 	class.Updated = time.Now()
 
