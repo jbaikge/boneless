@@ -21,7 +21,7 @@ type dynamoDocument struct {
 	Updated    time.Time
 }
 
-func (dyn dynamoDocument) FromDocument(d *Document) {
+func (dyn *dynamoDocument) FromDocument(d *Document) {
 	dyn.DocumentId = d.Id
 	dyn.ClassId = d.ClassId
 	dyn.ParentId = d.ParentId
@@ -68,5 +68,21 @@ func (repo DynamoDBRepository) CreateDocument(ctx context.Context, doc *Document
 		}
 	}
 
+	return
+}
+
+func (repo DynamoDBRepository) DeleteDocument(ctx context.Context, id string) (err error) {
+	return
+}
+
+func (repo DynamoDBRepository) GetDocumentById(ctx context.Context, id string) (doc Document, err error) {
+	return
+}
+
+func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter DocumentFilter) (docs []Document, r Range, err error) {
+	return
+}
+
+func (repo DynamoDBRepository) UpdateDocument(ctx context.Context, doc *Document) (err error) {
 	return
 }
