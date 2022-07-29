@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"strings"
 	"testing"
 	"time"
@@ -57,13 +56,12 @@ func TestDynamoDBDocumentConversion(t *testing.T) {
 
 	jsonDynamoDoc, err := json.Marshal(dynamoDoc)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(string(jsonDynamoDoc), `"date":"2022-07-28"`))
+	assert.True(t, strings.Contains(string(jsonDynamoDoc), `"ParentId":"#NULL#"`))
 
 	fromDynamo := dynamoDoc.ToDocument()
 	jsonDoc, err := json.Marshal(fromDynamo)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(string(jsonDoc), `"date":"2022-07-28"`))
-	log.Printf("%s", string(jsonDoc))
+	assert.True(t, strings.Contains(string(jsonDoc), `"parent_id":""`))
 }
 
 func TestDynamoDBRepositoryClass(t *testing.T) {
