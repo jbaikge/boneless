@@ -14,6 +14,7 @@ type Document struct {
 	ParentId string                 `json:"parent_id"`
 	Title    string                 `json:"title"`
 	Url      string                 `json:"url"`
+	Version  int                    `json:"version"`
 	Created  time.Time              `json:"created"`
 	Updated  time.Time              `json:"updated"`
 	Values   map[string]interface{} `json:"values"`
