@@ -30,6 +30,10 @@ func (dyn *dynamoDocument) FromDocument(d *Document) {
 	dyn.Version = d.Version
 	dyn.Created = d.Created
 	dyn.Updated = d.Updated
+
+	if dyn.ParentId == "" {
+		dyn.ParentId = xid.NilID().String()
+	}
 }
 
 func (dyn dynamoDocument) ToDocument() (d Document) {
@@ -41,6 +45,10 @@ func (dyn dynamoDocument) ToDocument() (d Document) {
 	d.Version = dyn.Version
 	d.Created = dyn.Created
 	d.Updated = dyn.Updated
+
+	if id, err := xid.FromString(d.ParentId); err != nil || id == xid.NilID() {
+		d.ParentId = ""
+	}
 	return
 }
 

@@ -355,4 +355,13 @@ func TestDynamoDBRepositoryDocument(t *testing.T) {
 		}
 		assert.NoError(t, repo.CreateDocument(context.Background(), &doc))
 	})
+
+	t.Run("CreateDocumentNilParent", func(t *testing.T) {
+		doc := Document{
+			Id:      xid.New().String(),
+			ClassId: xid.New().String(),
+			Title:   "CreateDocument Nil Parent Test",
+		}
+		assert.NoError(t, repo.CreateDocument(context.Background(), &doc))
+	})
 }
