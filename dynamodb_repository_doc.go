@@ -1,6 +1,13 @@
 package gocms
 
-import "time"
+import (
+	"context"
+	"time"
+
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/rs/xid"
+)
 
 type dynamoDocument struct {
 	DocumentId string
@@ -34,5 +41,32 @@ func (dyn dynamoDocument) ToDocument() (d Document) {
 	d.Version = dyn.Version
 	d.Created = dyn.Created
 	d.Updated = dyn.Updated
+	return
+}
+
+// Initial document inserts 2 records: one with version zero and one with
+// version one. Both will have the same VersionId
+func (repo DynamoDBRepository) CreateDocument(ctx context.Context, doc *Document) (err error) {
+	dbDoc := new(dynamoDocument)
+	dbDoc.FromDocument(doc)
+
+	dbDoc.VersionId = xid.New().String()
+	for _, version := range []int{0, 1} {
+		dbDoc.Version = version
+		item, err := attributevalue.MarshalMap(dbDoc)
+		if err != nil {
+			return err
+		}
+
+		params := &dynamodb.PutItemInput{
+			TableName: &repo.tables.Document,
+			Item:      item,
+		}
+
+		if _, err = repo.client.PutItem(ctx, params); err != nil {
+			return err
+		}
+	}
+
 	return
 }
