@@ -9,15 +9,16 @@ import (
 )
 
 type Document struct {
-	Id       string                 `json:"id"`
-	ClassId  string                 `json:"class_id"`
-	ParentId string                 `json:"parent_id"`
-	Title    string                 `json:"title"`
-	Url      string                 `json:"url"`
-	Version  int                    `json:"version"`
-	Created  time.Time              `json:"created"`
-	Updated  time.Time              `json:"updated"`
-	Values   map[string]interface{} `json:"values"`
+	Id         string                 `json:"id"`
+	ClassId    string                 `json:"class_id"`
+	ParentId   string                 `json:"parent_id"`
+	TemplateId string                 `json:"template_id"`
+	Title      string                 `json:"title"`
+	Url        string                 `json:"url"`
+	Version    int                    `json:"version"`
+	Created    time.Time              `json:"created"`
+	Updated    time.Time              `json:"updated"`
+	Values     map[string]interface{} `json:"values"`
 }
 
 type DocumentFilter struct {
