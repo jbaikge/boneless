@@ -16,7 +16,7 @@ import (
 
 var (
 	dynamoConfig aws.Config
-	dynamoTables gocms.DynamoDBTables
+	resources gocms.DynamoDBResources
 )
 
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse, err error) {
@@ -26,7 +26,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		return
 	}
 
-	repo := gocms.NewDynamoDBRepository(dynamoConfig, dynamoTables)
+	repo := gocms.NewDynamoDBRepository(dynamoConfig, resources)
 	service := gocms.NewClassService(repo)
 
 	class, err := service.ById(context.Background(), classId)
@@ -55,7 +55,7 @@ func main() {
 		log.Fatalf("Failed to load default config: %v", err)
 	}
 
-	dynamoTables.FromEnv()
+	resources.FromEnv()
 
 	lambda.Start(HandleRequest)
 }
