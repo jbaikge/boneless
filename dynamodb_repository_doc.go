@@ -81,6 +81,33 @@ func (repo DynamoDBRepository) CreateDocument(ctx context.Context, doc *Document
 }
 
 func (repo DynamoDBRepository) DeleteDocument(ctx context.Context, id string) (err error) {
+	version, err := repo.getDocumentVersion(ctx, id)
+	if err != nil {
+		return
+	}
+
+	keyId, err := attributevalue.Marshal(id)
+	if err != nil {
+		return
+	}
+
+	for i := 0; i <= version; i++ {
+		keyVersion, err := attributevalue.Marshal(i)
+		if err != nil {
+			return err
+		}
+
+		params := &dynamodb.DeleteItemInput{
+			TableName: &repo.resources.Tables.Document,
+			Key: map[string]types.AttributeValue{
+				"DocumentId": keyId,
+				"Version":    keyVersion,
+			},
+		}
+		if _, err := repo.client.DeleteItem(ctx, params); err != nil {
+			return err
+		}
+	}
 	return
 }
 
@@ -102,18 +129,17 @@ func (repo DynamoDBRepository) GetDocumentById(ctx context.Context, id string) (
 
 	response, err := repo.client.GetItem(ctx, params)
 	if err != nil {
-		return
+		return doc, fmt.Errorf("bad response from GetItem: %w", err)
 	}
 
 	// Check for no-item-found condition
 	if len(response.Item) == 0 {
-		err = ErrNotFound
-		return
+		return doc, ErrNotFound
 	}
 
 	dbDoc := new(dynamoDocument)
 	if err = attributevalue.UnmarshalMap(response.Item, dbDoc); err != nil {
-		return
+		return doc, fmt.Errorf("unmarshal error: %w", err)
 	}
 	doc = dbDoc.ToDocument()
 
@@ -128,14 +154,14 @@ func (repo DynamoDBRepository) UpdateDocument(ctx context.Context, doc *Document
 	dbDoc := new(dynamoDocument)
 	dbDoc.FromDocument(doc)
 
-	nextVersion, err := repo.nextVersion(ctx, doc.Id)
+	version, err := repo.getDocumentVersion(ctx, doc.Id)
 	if err != nil {
 		return fmt.Errorf("could not determine next version: %w", err)
 	}
 
 	dbDoc.VersionId = xid.New().String()
 
-	for _, version := range []int{0, nextVersion} {
+	for _, version := range []int{0, version + 1} {
 		dbDoc.Version = version
 
 		item, err := attributevalue.MarshalMap(dbDoc)
@@ -156,7 +182,7 @@ func (repo DynamoDBRepository) UpdateDocument(ctx context.Context, doc *Document
 	return
 }
 
-func (repo DynamoDBRepository) nextVersion(ctx context.Context, id string) (next int, err error) {
+func (repo DynamoDBRepository) getDocumentVersion(ctx context.Context, id string) (next int, err error) {
 	params := &dynamodb.QueryInput{
 		TableName:              &repo.resources.Tables.Document,
 		Limit:                  aws.Int32(1),
@@ -183,6 +209,6 @@ func (repo DynamoDBRepository) nextVersion(ctx context.Context, id string) (next
 	attributevalue.UnmarshalMap(result.Items[0], &row)
 
 	// Bump up one since we want the next version
-	next = row.Version + 1
+	next = row.Version
 	return
 }

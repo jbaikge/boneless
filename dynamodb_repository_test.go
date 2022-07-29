@@ -393,4 +393,20 @@ func TestDynamoDBRepositoryDocument(t *testing.T) {
 		assert.NoError(t, err)
 		assert.DeepEqual(t, doc, check)
 	})
+
+	t.Run("DeleteDocument", func(t *testing.T) {
+		doc := Document{
+			Id:         "doc_5",
+			ClassId:    "class_1",
+			TemplateId: "template_1",
+			ParentId:   "doc_1",
+		}
+		assert.NoError(t, repo.CreateDocument(context.Background(), &doc))
+		assert.NoError(t, repo.DeleteDocument(context.Background(), doc.Id))
+
+		// Make sure the document no longer exists
+		_, err := repo.GetDocumentById(context.Background(), doc.Id)
+		assert.Error(t, err)
+		assert.Equal(t, ErrNotFound, err)
+	})
 }
