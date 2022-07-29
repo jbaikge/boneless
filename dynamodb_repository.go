@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
+const emptyParentId = "#NULL#"
+
 var (
 	ErrBadRange = errors.New("invalid range")
 	ErrNotFound = errors.New("item not found")
@@ -38,6 +40,7 @@ type DynamoDBRepository struct {
 	resources DynamoDBResources
 }
 
+// Ref: https://dynobase.dev/dynamodb-golang-query-examples/
 func NewDynamoDBRepository(config aws.Config, resources DynamoDBResources) Repository {
 	return &DynamoDBRepository{
 		client:    dynamodb.NewFromConfig(config),
