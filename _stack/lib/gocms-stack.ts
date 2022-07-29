@@ -14,7 +14,7 @@ export class GocmsStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    // DynamoDB table
+    // DynamoDB tables
     const classTable = new dynamodb.Table(this, 'Classes', {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       // Not used when billingMode is PAY_PER_REQUEST
@@ -23,8 +23,47 @@ export class GocmsStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
       partitionKey: {
         name: 'ClassId',
-        type: dynamodb.AttributeType.STRING
+        type: dynamodb.AttributeType.STRING,
       },
+    });
+
+    const docTable = new dynamodb.Table(this, 'Documents', {
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: RemovalPolicy.DESTROY,
+      partitionKey: {
+        name: 'DocumentId',
+        type: dynamodb.AttributeType.STRING,
+      },
+      sortKey: {
+        name: 'Version',
+        type: dynamodb.AttributeType.NUMBER,
+      },
+    });
+
+    docTable.addGlobalSecondaryIndex({
+      indexName: 'GSI-Class',
+      partitionKey: {
+        name: 'ClassId',
+        type: dynamodb.AttributeType.STRING,
+      },
+      sortKey: {
+        name: 'Version',
+        type: dynamodb.AttributeType.NUMBER,
+      },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    docTable.addGlobalSecondaryIndex({
+      indexName: 'GSI-Parent',
+      partitionKey: {
+        name: 'ParentId',
+        type: dynamodb.AttributeType.STRING,
+      },
+      sortKey: {
+        name: 'Version',
+        type: dynamodb.AttributeType.NUMBER,
+      },
+      projectionType: dynamodb.ProjectionType.ALL,
     });
 
     // Path back to repo root
