@@ -165,6 +165,7 @@ func (repo DynamoDBRepository) nextVersion(ctx context.Context, id string) (next
 		ExpressionAttributeValues: map[string]types.AttributeValue{
 			":id": &types.AttributeValueMemberS{Value: id},
 		},
+		ProjectionExpression: aws.String("Version"),
 	}
 
 	result, err := repo.client.Query(ctx, params)
