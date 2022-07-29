@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/rs/xid"
 	"github.com/zeebo/assert"
 )
 
@@ -342,6 +343,16 @@ func TestDynamoDBRepositoryDocument(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	// repo := NewDynamoDBRepository(cfg, resources)
+	repo := NewDynamoDBRepository(cfg, resources)
 
+	t.Run("CreateDocument", func(t *testing.T) {
+		doc := Document{
+			Id:         xid.New().String(),
+			ClassId:    xid.New().String(),
+			TemplateId: xid.New().String(),
+			ParentId:   xid.New().String(),
+			Title:      "CreateDocument Test",
+		}
+		assert.NoError(t, repo.CreateDocument(context.Background(), &doc))
+	})
 }
