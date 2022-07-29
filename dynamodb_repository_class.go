@@ -10,8 +10,6 @@ import (
 	"github.com/jbaikge/gocms/internal/slicer"
 )
 
-const classIdPrefix = "class#"
-
 type dynamoClass struct {
 	ClassId     string
 	Slug        string
@@ -24,7 +22,7 @@ type dynamoClass struct {
 }
 
 func (d *dynamoClass) FromClass(c *Class) {
-	d.ClassId = classIdPrefix + c.Id
+	d.ClassId = c.Id
 	d.Name = c.Name
 	d.TableLabels = c.TableLabels
 	d.TableFields = c.TableFields
@@ -35,7 +33,7 @@ func (d *dynamoClass) FromClass(c *Class) {
 }
 
 func (d *dynamoClass) ToClass() (c Class) {
-	c.Id = d.ClassId[len(classIdPrefix):]
+	c.Id = d.ClassId
 	c.Name = d.Name
 	c.TableLabels = d.TableLabels
 	c.TableFields = d.TableFields
@@ -65,8 +63,7 @@ func (repo DynamoDBRepository) CreateClass(ctx context.Context, class *Class) (e
 }
 
 func (repo DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err error) {
-	prefixedId := classIdPrefix + id
-	keyId, err := attributevalue.Marshal(prefixedId)
+	keyId, err := attributevalue.Marshal(id)
 	if err != nil {
 		return
 	}
@@ -83,8 +80,7 @@ func (repo DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err 
 }
 
 func (repo DynamoDBRepository) GetClassById(ctx context.Context, id string) (class Class, err error) {
-	prefixedId := classIdPrefix + id
-	keyId, err := attributevalue.Marshal(prefixedId)
+	keyId, err := attributevalue.Marshal(id)
 	if err != nil {
 		return
 	}
