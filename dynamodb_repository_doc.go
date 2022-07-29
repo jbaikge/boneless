@@ -2,10 +2,13 @@ package gocms
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/rs/xid"
 )
 
@@ -32,23 +35,21 @@ func (dyn *dynamoDocument) FromDocument(d *Document) {
 	dyn.Updated = d.Updated
 
 	if dyn.ParentId == "" {
-		dyn.ParentId = xid.NilID().String()
+		dyn.ParentId = emptyParentId
 	}
 }
 
 func (dyn dynamoDocument) ToDocument() (d Document) {
 	d.Id = dyn.DocumentId
 	d.ClassId = dyn.ClassId
-	d.ParentId = dyn.ParentId
+	if dyn.ParentId != emptyParentId {
+		d.ParentId = dyn.ParentId
+	}
 	d.TemplateId = dyn.TemplateId
 	d.Title = dyn.Title
 	d.Version = dyn.Version
 	d.Created = dyn.Created
 	d.Updated = dyn.Updated
-
-	if id, err := xid.FromString(d.ParentId); err != nil || id == xid.NilID() {
-		d.ParentId = ""
-	}
 	return
 }
 
@@ -84,6 +85,38 @@ func (repo DynamoDBRepository) DeleteDocument(ctx context.Context, id string) (e
 }
 
 func (repo DynamoDBRepository) GetDocumentById(ctx context.Context, id string) (doc Document, err error) {
+	keyId, err := attributevalue.Marshal(id)
+	if err != nil {
+		return
+	}
+
+	version, _ := attributevalue.Marshal(0)
+
+	params := &dynamodb.GetItemInput{
+		TableName: &repo.resources.Tables.Document,
+		Key: map[string]types.AttributeValue{
+			"DocumentId": keyId,
+			"Version":    version,
+		},
+	}
+
+	response, err := repo.client.GetItem(ctx, params)
+	if err != nil {
+		return
+	}
+
+	// Check for no-item-found condition
+	if len(response.Item) == 0 {
+		err = ErrNotFound
+		return
+	}
+
+	dbDoc := new(dynamoDocument)
+	if err = attributevalue.UnmarshalMap(response.Item, dbDoc); err != nil {
+		return
+	}
+	doc = dbDoc.ToDocument()
+
 	return
 }
 
@@ -92,5 +125,63 @@ func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter Docum
 }
 
 func (repo DynamoDBRepository) UpdateDocument(ctx context.Context, doc *Document) (err error) {
+	dbDoc := new(dynamoDocument)
+	dbDoc.FromDocument(doc)
+
+	nextVersion, err := repo.nextVersion(ctx, doc.Id)
+	if err != nil {
+		return fmt.Errorf("could not determine next version: %w", err)
+	}
+
+	dbDoc.VersionId = xid.New().String()
+
+	for _, version := range []int{0, nextVersion} {
+		dbDoc.Version = version
+
+		item, err := attributevalue.MarshalMap(dbDoc)
+		if err != nil {
+			return fmt.Errorf("could not marshal doc: %w", err)
+		}
+
+		params := &dynamodb.PutItemInput{
+			TableName: &repo.resources.Tables.Document,
+			Item:      item,
+		}
+
+		if _, err = repo.client.PutItem(ctx, params); err != nil {
+			return fmt.Errorf("could not put doc with version %d: %w", version, err)
+		}
+	}
+
+	return
+}
+
+func (repo DynamoDBRepository) nextVersion(ctx context.Context, id string) (next int, err error) {
+	params := &dynamodb.QueryInput{
+		TableName:              &repo.resources.Tables.Document,
+		Limit:                  aws.Int32(1),
+		ScanIndexForward:       aws.Bool(false),
+		KeyConditionExpression: aws.String("DocumentId = :id"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":id": &types.AttributeValueMemberS{Value: id},
+		},
+	}
+
+	result, err := repo.client.Query(ctx, params)
+	if err != nil {
+		return
+	}
+
+	// Oh, this would be bad
+	if len(result.Items) == 0 {
+		err = fmt.Errorf("no documents found for id: %s", id)
+		return
+	}
+
+	var row struct{ Version int }
+	attributevalue.UnmarshalMap(result.Items[0], &row)
+
+	// Bump up one since we want the next version
+	next = row.Version + 1
 	return
 }

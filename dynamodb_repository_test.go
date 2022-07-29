@@ -14,7 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/rs/xid"
 	"github.com/zeebo/assert"
 )
 
@@ -347,10 +346,10 @@ func TestDynamoDBRepositoryDocument(t *testing.T) {
 
 	t.Run("CreateDocument", func(t *testing.T) {
 		doc := Document{
-			Id:         xid.New().String(),
-			ClassId:    xid.New().String(),
-			TemplateId: xid.New().String(),
-			ParentId:   xid.New().String(),
+			Id:         "doc_1",
+			ClassId:    "class_1",
+			TemplateId: "template_1",
+			ParentId:   "doc_0",
 			Title:      "CreateDocument Test",
 		}
 		assert.NoError(t, repo.CreateDocument(context.Background(), &doc))
@@ -358,10 +357,40 @@ func TestDynamoDBRepositoryDocument(t *testing.T) {
 
 	t.Run("CreateDocumentNilParent", func(t *testing.T) {
 		doc := Document{
-			Id:      xid.New().String(),
-			ClassId: xid.New().String(),
+			Id:      "doc_2",
+			ClassId: "class_1",
 			Title:   "CreateDocument Nil Parent Test",
 		}
 		assert.NoError(t, repo.CreateDocument(context.Background(), &doc))
+	})
+
+	t.Run("GetDocumentById", func(t *testing.T) {
+		doc := Document{
+			Id:         "doc_3",
+			ClassId:    "class_2",
+			TemplateId: "template_2",
+			ParentId:   "doc_1",
+		}
+		assert.NoError(t, repo.CreateDocument(context.Background(), &doc))
+		check, err := repo.GetDocumentById(context.Background(), doc.Id)
+		assert.NoError(t, err)
+		assert.DeepEqual(t, doc, check)
+	})
+
+	t.Run("UpdateDocument", func(t *testing.T) {
+		doc := Document{
+			Id:         "doc_4",
+			ClassId:    "class_2",
+			TemplateId: "template_2",
+			ParentId:   "doc_1",
+		}
+		assert.NoError(t, repo.CreateDocument(context.Background(), &doc))
+
+		doc.TemplateId = "template_3"
+		assert.NoError(t, repo.UpdateDocument(context.Background(), &doc))
+
+		check, err := repo.GetDocumentById(context.Background(), doc.Id)
+		assert.NoError(t, err)
+		assert.DeepEqual(t, doc, check)
 	})
 }
