@@ -20,21 +20,27 @@ type DynamoDBTables struct {
 	Template string
 }
 
-func (tables *DynamoDBTables) FromEnv() {
-	tables.Class = os.Getenv("DYNAMODB_CLASS_TABLE")
-	tables.Document = os.Getenv("DYNAMODB_DOCUMENT_TABLE")
-	tables.Path = os.Getenv("DYNAMODB_PATH_TABLE")
-	tables.Template = os.Getenv("DYNAMODB_TEMPLATE_TABLE")
+type DynamoDBResources struct {
+	S3Bucket string
+	Tables   DynamoDBTables
+}
+
+func (res *DynamoDBResources) FromEnv() {
+	res.S3Bucket = os.Getenv("DYNAMODB_S3_BUCKET")
+	res.Tables.Class = os.Getenv("DYNAMODB_CLASS_TABLE")
+	res.Tables.Document = os.Getenv("DYNAMODB_DOCUMENT_TABLE")
+	res.Tables.Path = os.Getenv("DYNAMODB_PATH_TABLE")
+	res.Tables.Template = os.Getenv("DYNAMODB_TEMPLATE_TABLE")
 }
 
 type DynamoDBRepository struct {
-	client *dynamodb.Client
-	tables DynamoDBTables
+	client    *dynamodb.Client
+	resources DynamoDBResources
 }
 
-func NewDynamoDBRepository(config aws.Config, tables DynamoDBTables) Repository {
+func NewDynamoDBRepository(config aws.Config, resources DynamoDBResources) Repository {
 	return &DynamoDBRepository{
-		client: dynamodb.NewFromConfig(config),
-		tables: tables,
+		client:    dynamodb.NewFromConfig(config),
+		resources: resources,
 	}
 }

@@ -59,7 +59,7 @@ func (repo DynamoDBRepository) CreateDocument(ctx context.Context, doc *Document
 		}
 
 		params := &dynamodb.PutItemInput{
-			TableName: &repo.tables.Document,
+			TableName: &repo.resources.Tables.Document,
 			Item:      item,
 		}
 

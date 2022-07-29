@@ -56,7 +56,7 @@ func (repo DynamoDBRepository) CreateClass(ctx context.Context, class *Class) (e
 	}
 
 	params := &dynamodb.PutItemInput{
-		TableName: &repo.tables.Class,
+		TableName: &repo.resources.Tables.Class,
 		Item:      item,
 	}
 
@@ -72,7 +72,7 @@ func (repo DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err 
 	}
 
 	params := &dynamodb.DeleteItemInput{
-		TableName: &repo.tables.Class,
+		TableName: &repo.resources.Tables.Class,
 		Key: map[string]types.AttributeValue{
 			"ClassId": keyId,
 		},
@@ -90,7 +90,7 @@ func (repo DynamoDBRepository) GetClassById(ctx context.Context, id string) (cla
 	}
 
 	params := &dynamodb.GetItemInput{
-		TableName: &repo.tables.Class,
+		TableName: &repo.resources.Tables.Class,
 		Key: map[string]types.AttributeValue{
 			"ClassId": keyId,
 		},
@@ -128,7 +128,7 @@ func (repo DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFil
 	// }
 
 	params := &dynamodb.ScanInput{
-		TableName: &repo.tables.Class,
+		TableName: &repo.resources.Tables.Class,
 		// ExpressionAttributeNames:  expr.Names(),
 		// ExpressionAttributeValues: expr.Values(),
 		// FilterExpression:          expr.Filter(),
@@ -185,7 +185,7 @@ func (repo DynamoDBRepository) UpdateClass(ctx context.Context, class *Class) (e
 	}
 
 	params := &dynamodb.PutItemInput{
-		TableName: &repo.tables.Class,
+		TableName: &repo.resources.Tables.Class,
 		Item:      item,
 	}
 

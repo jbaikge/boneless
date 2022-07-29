@@ -67,8 +67,10 @@ func TestDynamoDBDocumentConversion(t *testing.T) {
 }
 
 func TestDynamoDBRepositoryClass(t *testing.T) {
-	tables := DynamoDBTables{
-		Class: t.Name() + time.Now().Format("-20060102-150405"),
+	resources := DynamoDBResources{
+		Tables: DynamoDBTables{
+			Class: t.Name() + time.Now().Format("-20060102-150405"),
+		},
 	}
 
 	endpointResolverFunc := func(service string, region string, options ...interface{}) (endpoint aws.Endpoint, err error) {
@@ -92,7 +94,7 @@ func TestDynamoDBRepositoryClass(t *testing.T) {
 	// can match what is described in the deployment stack.
 	client := dynamodb.NewFromConfig(cfg)
 	_, err = client.CreateTable(context.Background(), &dynamodb.CreateTableInput{
-		TableName: &tables.Class,
+		TableName: &resources.Tables.Class,
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
 				AttributeName: aws.String("ClassId"),
@@ -109,7 +111,7 @@ func TestDynamoDBRepositoryClass(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	repo := NewDynamoDBRepository(cfg, tables)
+	repo := NewDynamoDBRepository(cfg, resources)
 
 	// Use of UnixMicro trims off the m variable in the Time struct to make
 	// reflect.DeepEqual function properly
@@ -246,8 +248,10 @@ func TestDynamoDBRepositoryClass(t *testing.T) {
 }
 
 func TestDynamoDBRepositoryDocument(t *testing.T) {
-	tables := DynamoDBTables{
-		Document: t.Name() + time.Now().Format("-20060102-150405"),
+	resources := DynamoDBResources{
+		Tables: DynamoDBTables{
+			Document: t.Name() + time.Now().Format("-20060102-150405"),
+		},
 	}
 
 	endpointResolverFunc := func(service string, region string, options ...interface{}) (endpoint aws.Endpoint, err error) {
@@ -271,7 +275,7 @@ func TestDynamoDBRepositoryDocument(t *testing.T) {
 	// can match what is described in the deployment stack.
 	client := dynamodb.NewFromConfig(cfg)
 	_, err = client.CreateTable(context.Background(), &dynamodb.CreateTableInput{
-		TableName: &tables.Document,
+		TableName: &resources.Tables.Document,
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
 				AttributeName: aws.String("DocumentId"),
@@ -338,6 +342,6 @@ func TestDynamoDBRepositoryDocument(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	// repo := NewDynamoDBRepository(cfg, tables)
+	// repo := NewDynamoDBRepository(cfg, resources)
 
 }
