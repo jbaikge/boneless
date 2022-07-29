@@ -66,9 +66,9 @@ func TestDynamoDBDocumentConversion(t *testing.T) {
 	log.Printf("%s", string(jsonDoc))
 }
 
-func TestDynamoDBRepository(t *testing.T) {
+func TestDynamoDBRepositoryClass(t *testing.T) {
 	tables := DynamoDBTables{
-		Class: t.Name() + time.Now().Format("-20060102-150405") + "-Class",
+		Class: t.Name() + time.Now().Format("-20060102-150405"),
 	}
 
 	endpointResolverFunc := func(service string, region string, options ...interface{}) (endpoint aws.Endpoint, err error) {
@@ -243,4 +243,101 @@ func TestDynamoDBRepository(t *testing.T) {
 		_, err := repo.GetClassById(context.Background(), class1.Id)
 		assert.Error(t, err)
 	})
+}
+
+func TestDynamoDBRepositoryDocument(t *testing.T) {
+	tables := DynamoDBTables{
+		Document: t.Name() + time.Now().Format("-20060102-150405"),
+	}
+
+	endpointResolverFunc := func(service string, region string, options ...interface{}) (endpoint aws.Endpoint, err error) {
+		endpoint = aws.Endpoint{
+			PartitionID:   "aws",
+			URL:           "http://localhost:8000",
+			SigningRegion: regionFlag,
+		}
+		return
+	}
+
+	endpointResolver := aws.EndpointResolverWithOptionsFunc(endpointResolverFunc)
+
+	cfg, err := config.LoadDefaultConfig(
+		context.Background(),
+		config.WithEndpointResolverWithOptions(endpointResolver),
+	)
+	assert.NoError(t, err)
+
+	// TODO Move this block elsewhere, maybe into the makefile or somewhere it
+	// can match what is described in the deployment stack.
+	client := dynamodb.NewFromConfig(cfg)
+	_, err = client.CreateTable(context.Background(), &dynamodb.CreateTableInput{
+		TableName: &tables.Document,
+		AttributeDefinitions: []types.AttributeDefinition{
+			{
+				AttributeName: aws.String("DocumentId"),
+				AttributeType: types.ScalarAttributeTypeS,
+			},
+			{
+				AttributeName: aws.String("ClassId"),
+				AttributeType: types.ScalarAttributeTypeS,
+			},
+			{
+				AttributeName: aws.String("ParentId"),
+				AttributeType: types.ScalarAttributeTypeS,
+			},
+			{
+				AttributeName: aws.String("Version"),
+				AttributeType: types.ScalarAttributeTypeN,
+			},
+		},
+		KeySchema: []types.KeySchemaElement{
+			{
+				AttributeName: aws.String("DocumentId"),
+				KeyType:       types.KeyTypeHash,
+			},
+			{
+				AttributeName: aws.String("Version"),
+				KeyType:       types.KeyTypeRange,
+			},
+		},
+		GlobalSecondaryIndexes: []types.GlobalSecondaryIndex{
+			{
+				IndexName: aws.String("GSI-Class"),
+				KeySchema: []types.KeySchemaElement{
+					{
+						AttributeName: aws.String("ClassId"),
+						KeyType:       types.KeyTypeHash,
+					},
+					{
+						AttributeName: aws.String("Version"),
+						KeyType:       types.KeyTypeRange,
+					},
+				},
+				Projection: &types.Projection{
+					ProjectionType: types.ProjectionTypeAll,
+				},
+			},
+			{
+				IndexName: aws.String("GSI-Parent"),
+				KeySchema: []types.KeySchemaElement{
+					{
+						AttributeName: aws.String("ParentId"),
+						KeyType:       types.KeyTypeHash,
+					},
+					{
+						AttributeName: aws.String("Version"),
+						KeyType:       types.KeyTypeRange,
+					},
+				},
+				Projection: &types.Projection{
+					ProjectionType: types.ProjectionTypeAll,
+				},
+			},
+		},
+		BillingMode: types.BillingModePayPerRequest,
+	})
+	assert.NoError(t, err)
+
+	// repo := NewDynamoDBRepository(cfg, tables)
+
 }
