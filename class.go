@@ -18,6 +18,16 @@ type Class struct {
 	Fields      []Field   `json:"fields"`
 }
 
+func (c Class) SortFields() (fields []string) {
+	fields = make([]string, 0, len(c.Fields))
+	for _, field := range c.Fields {
+		if field.Sort {
+			fields = append(fields, field.Name)
+		}
+	}
+	return
+}
+
 type ClassFilter struct {
 	Range Range
 }
