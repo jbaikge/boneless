@@ -66,6 +66,27 @@ export class GocmsStack extends Stack {
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
+    const sortTable = new dynamodb.Table(this, 'Sort', {
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: RemovalPolicy.DESTROY,
+      partitionKey: {
+        name: 'ClassField',
+        type: dynamodb.AttributeType.STRING,
+      },
+      sortKey: {
+        name: 'Value',
+        type: dynamodb.AttributeType.STRING,
+      },
+    });
+
+    sortTable.addGlobalSecondaryIndex({
+      indexName: 'GSI-Documents',
+      partitionKey: {
+        name: 'DocumentId',
+        type: dynamodb.AttributeType.STRING,
+      },
+    });
+
     // Path back to repo root
     const rootDir = join(__dirname, '..', '..');
 
