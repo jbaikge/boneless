@@ -87,6 +87,17 @@ export class GocmsStack extends Stack {
       },
     });
 
+    // Environment variables
+    const environment = {
+      'BUCKET_DOCUMENT': '',
+      'BUCKET_STATIC': '',
+      'DYNAMODB_CLASS_TABLE': classTable.tableName,
+      'DYNAMODB_DOCUMENT_TABLE': docTable.tableName,
+      'DYNAMODB_PATH_TABLE': '',
+      'DYNAMODB_SORT_TABLE': sortTable.tableName,
+      'DYNAMODB_TEMPLATE_TABLE': '',
+    }
+
     // Path back to repo root
     const rootDir = join(__dirname, '..', '..');
 
@@ -95,45 +106,37 @@ export class GocmsStack extends Stack {
 
     // Create class lambda function
     const createClassLambda = new lambda.Function(this, 'CreateClassHandler', {
-      environment: {
-        'DYNAMODB_CLASS_TABLE': classTable.tableName,
-      },
-      runtime: lambda.Runtime.GO_1_X,
-      code:    lambda.Code.fromAsset(join(assetDir, 'create-class')),
-      handler: 'handler'
+      environment: environment,
+      runtime:     lambda.Runtime.GO_1_X,
+      code:        lambda.Code.fromAsset(join(assetDir, 'create-class')),
+      handler:     'handler'
     });
     classTable.grantWriteData(createClassLambda);
 
     // Get class lambda function
     const getClassByIdLambda = new lambda.Function(this, 'GetClassByIdHandler', {
-      environment: {
-        'DYNAMODB_CLASS_TABLE': classTable.tableName,
-      },
-      runtime: lambda.Runtime.GO_1_X,
-      code:    lambda.Code.fromAsset(join(assetDir, 'get-class-by-id')),
-      handler: 'handler'
+      environment: environment,
+      runtime:     lambda.Runtime.GO_1_X,
+      code:        lambda.Code.fromAsset(join(assetDir, 'get-class-by-id')),
+      handler:     'handler'
     });
     classTable.grantReadData(getClassByIdLambda);
 
     // List class lambda function
     const listClassesLambda = new lambda.Function(this, 'ListClassesHandler', {
-      environment: {
-        'DYNAMODB_CLASS_TABLE': classTable.tableName,
-      },
-      runtime: lambda.Runtime.GO_1_X,
-      code:    lambda.Code.fromAsset(join(assetDir, 'list-classes')),
-      handler: 'handler'
+      environment: environment,
+      runtime:     lambda.Runtime.GO_1_X,
+      code:        lambda.Code.fromAsset(join(assetDir, 'list-classes')),
+      handler:     'handler'
     });
     classTable.grantReadData(listClassesLambda);
 
     // Update class lambda function
     const updateClassLambda = new lambda.Function(this, 'UpdateClassHandler', {
-      environment: {
-        'DYNAMODB_CLASS_TABLE': classTable.tableName,
-      },
-      runtime: lambda.Runtime.GO_1_X,
-      code:    lambda.Code.fromAsset(join(assetDir, 'update-class')),
-      handler: 'handler'
+      environment: environment,
+      runtime:     lambda.Runtime.GO_1_X,
+      code:        lambda.Code.fromAsset(join(assetDir, 'update-class')),
+      handler:     'handler'
     });
     classTable.grantWriteData(updateClassLambda);
 
