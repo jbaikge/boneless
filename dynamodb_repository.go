@@ -15,23 +15,31 @@ var (
 	ErrNotFound = errors.New("item not found")
 )
 
+type DynamoDBBuckets struct {
+	Document string
+	Static   string
+}
+
 type DynamoDBTables struct {
 	Class    string
 	Document string
 	Path     string
+	Sort     string
 	Template string
 }
 
 type DynamoDBResources struct {
-	S3Bucket string
-	Tables   DynamoDBTables
+	Buckets DynamoDBBuckets
+	Tables  DynamoDBTables
 }
 
 func (res *DynamoDBResources) FromEnv() {
-	res.S3Bucket = os.Getenv("DYNAMODB_S3_BUCKET")
+	res.Buckets.Document = os.Getenv("BUCKET_DOCUMENT")
+	res.Buckets.Static = os.Getenv("BUCKET_STATIC")
 	res.Tables.Class = os.Getenv("DYNAMODB_CLASS_TABLE")
 	res.Tables.Document = os.Getenv("DYNAMODB_DOCUMENT_TABLE")
 	res.Tables.Path = os.Getenv("DYNAMODB_PATH_TABLE")
+	res.Tables.Sort = os.Getenv("DYNAMODB_SORT_TABLE")
 	res.Tables.Template = os.Getenv("DYNAMODB_TEMPLATE_TABLE")
 }
 
