@@ -16,10 +16,139 @@ import (
 	"github.com/zeebo/assert"
 )
 
-var regionFlag string
+var (
+	regionFlag string
+	resources  DynamoDBResources
+)
 
 func init() {
 	flag.StringVar(&regionFlag, "region", "local", "DynamoDB region: local for dy compatibility; localhost for nosql workbench compatibility")
+
+	tablePrefix := time.Now().Format("20060102-150405")
+	resources = DynamoDBResources{
+		Tables: DynamoDBTables{
+			Class:    tablePrefix + "-Class",
+			Document: tablePrefix + "-Document",
+			Sort:     tablePrefix + "-Sort",
+			Path:     tablePrefix + "-Path",
+			Template: tablePrefix + "-Template",
+		},
+	}
+}
+
+func configureAndSetup() (cfg aws.Config, err error) {
+	endpointResolverFunc := func(service string, region string, options ...interface{}) (endpoint aws.Endpoint, err error) {
+		endpoint = aws.Endpoint{
+			PartitionID:   "aws",
+			URL:           "http://localhost:8000",
+			SigningRegion: regionFlag,
+		}
+		return
+	}
+	endpointResolver := aws.EndpointResolverWithOptionsFunc(endpointResolverFunc)
+
+	cfg, err = config.LoadDefaultConfig(
+		context.Background(),
+		config.WithEndpointResolverWithOptions(endpointResolver),
+	)
+	if err != nil {
+		return
+	}
+
+	tables := []*dynamodb.CreateTableInput{
+		{
+			TableName: &resources.Tables.Class,
+			AttributeDefinitions: []types.AttributeDefinition{
+				{
+					AttributeName: aws.String("ClassId"),
+					AttributeType: types.ScalarAttributeTypeS,
+				},
+			},
+			KeySchema: []types.KeySchemaElement{
+				{
+					AttributeName: aws.String("ClassId"),
+					KeyType:       types.KeyTypeHash,
+				},
+			},
+			BillingMode: types.BillingModePayPerRequest,
+		},
+		{
+			TableName: &resources.Tables.Document,
+			AttributeDefinitions: []types.AttributeDefinition{
+				{
+					AttributeName: aws.String("DocumentId"),
+					AttributeType: types.ScalarAttributeTypeS,
+				},
+				{
+					AttributeName: aws.String("ClassId"),
+					AttributeType: types.ScalarAttributeTypeS,
+				},
+				{
+					AttributeName: aws.String("ParentId"),
+					AttributeType: types.ScalarAttributeTypeS,
+				},
+				{
+					AttributeName: aws.String("Version"),
+					AttributeType: types.ScalarAttributeTypeN,
+				},
+			},
+			KeySchema: []types.KeySchemaElement{
+				{
+					AttributeName: aws.String("DocumentId"),
+					KeyType:       types.KeyTypeHash,
+				},
+				{
+					AttributeName: aws.String("Version"),
+					KeyType:       types.KeyTypeRange,
+				},
+			},
+			GlobalSecondaryIndexes: []types.GlobalSecondaryIndex{
+				{
+					IndexName: aws.String("GSI-Class"),
+					KeySchema: []types.KeySchemaElement{
+						{
+							AttributeName: aws.String("ClassId"),
+							KeyType:       types.KeyTypeHash,
+						},
+						{
+							AttributeName: aws.String("Version"),
+							KeyType:       types.KeyTypeRange,
+						},
+					},
+					Projection: &types.Projection{
+						ProjectionType: types.ProjectionTypeAll,
+					},
+				},
+				{
+					IndexName: aws.String("GSI-Parent"),
+					KeySchema: []types.KeySchemaElement{
+						{
+							AttributeName: aws.String("ParentId"),
+							KeyType:       types.KeyTypeHash,
+						},
+						{
+							AttributeName: aws.String("Version"),
+							KeyType:       types.KeyTypeRange,
+						},
+					},
+					Projection: &types.Projection{
+						ProjectionType: types.ProjectionTypeAll,
+					},
+				},
+			},
+			BillingMode: types.BillingModePayPerRequest,
+		},
+	}
+
+	client := dynamodb.NewFromConfig(cfg)
+
+	for _, table := range tables {
+		if _, err = client.CreateTable(context.Background(), table); err != nil {
+			return
+		}
+	}
+
+	return
 }
 
 func TestDynamoDBClassConversion(t *testing.T) {
