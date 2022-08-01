@@ -69,8 +69,9 @@ func testDynamoConfig(tableName string) (cfg aws.Config, err error) {
 
 func TestDynamoFromClass(t *testing.T) {
 	class := Class{
-		Id:   "from_class",
-		Name: t.Name(),
+		Id:     "from_class",
+		Name:   t.Name(),
+		Fields: []Field{{Name: "field_1"}},
 	}
 
 	dc := new(dynamoClass)
@@ -79,19 +80,22 @@ func TestDynamoFromClass(t *testing.T) {
 	assert.Equal(t, dynamoClassPrefix+class.Id, dc.PK)
 	assert.Equal(t, "class_v0", dc.SK)
 	assert.Equal(t, t.Name(), dc.Name)
+	assert.DeepEqual(t, class.Fields, dc.Fields)
 }
 
 func TestDynamoToClass(t *testing.T) {
 	id := "to_class"
 	dc := dynamoClass{
-		PK:   dynamoClassPrefix + id,
-		SK:   "class_v0",
-		Name: t.Name(),
+		PK:     dynamoClassPrefix + id,
+		SK:     "class_v0",
+		Name:   t.Name(),
+		Fields: []Field{{Name: "field_1"}},
 	}
 	class := dc.ToClass()
 
 	assert.Equal(t, id, class.Id)
 	assert.Equal(t, t.Name(), class.Name)
+	assert.DeepEqual(t, dc.Fields, class.Fields)
 }
 
 func TestDynamoDBRepository(t *testing.T) {
@@ -133,13 +137,28 @@ func TestDynamoDBRepository(t *testing.T) {
 	t.Run("UpdateClass", func(t *testing.T) {
 		class := Class{
 			Id:          "update_class",
-			Name:        "Initial Name",
+			Name:        t.Name(),
 			TableLabels: "Field 1; Field 2",
 			TableFields: "field_1; field_2",
 			Created:     time.Now(),
 			Updated:     time.Now(),
-			Fields:      make([]Field, 0),
+			Fields:      []Field{{Name: "field_2"}, {Name: "field_1"}},
 		}
 		assert.NoError(t, repo.CreateClass(ctx, &class))
+
+		class.Name = t.Name() + "-Updated"
+		class.TableLabels += "; Field 3"
+		class.TableFields += "; field_3"
+		class.Updated = time.UnixMicro(time.Now().UnixMicro())
+		class.Fields = append(class.Fields, Field{Name: "field_3"})
+		assert.NoError(t, repo.UpdateClass(ctx, &class))
+
+		check, err := repo.GetClassById(ctx, class.Id)
+		assert.NoError(t, err)
+		assert.Equal(t, class.Name, check.Name)
+		assert.Equal(t, class.TableFields, check.TableFields)
+		assert.Equal(t, class.TableLabels, check.TableLabels)
+		assert.Equal(t, class.Updated, check.Updated)
+		assert.DeepEqual(t, class.Fields, check.Fields)
 	})
 }

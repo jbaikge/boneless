@@ -41,7 +41,7 @@ func (dyn *dynamoClass) FromClass(c *Class) {
 	dyn.TableLabels = c.TableLabels
 	dyn.Created = c.Created
 	dyn.Updated = c.Updated
-	dyn.Fields = make([]Field, 0, len(c.Fields))
+	dyn.Fields = make([]Field, len(c.Fields))
 	copy(dyn.Fields, c.Fields)
 }
 
@@ -52,7 +52,7 @@ func (dyn dynamoClass) ToClass() (c Class) {
 	c.TableLabels = dyn.TableLabels
 	c.Created = dyn.Created
 	c.Updated = dyn.Updated
-	c.Fields = make([]Field, 0, len(dyn.Fields))
+	c.Fields = make([]Field, len(dyn.Fields))
 	copy(c.Fields, dyn.Fields)
 	return
 }
@@ -150,37 +150,36 @@ func (repo DynamoDBRepository) UpdateClass(ctx context.Context, class *Class) (e
 		return
 	}
 
-	// TODO re-approach this when rested.
+	rawValues := map[string]interface{}{
+		"Name":        class.Name,
+		"TableFields": class.TableFields,
+		"TableLabels": class.TableLabels,
+		"Fields":      class.Fields,
+		"Updated":     class.Updated,
+	}
+
+	sets := make([]string, 0, len(rawValues))
 	values := make(map[string]types.AttributeValue)
-	if values["Name"], err = attributevalue.Marshal(class.Name); err != nil {
-		return
+	names := make(map[string]string)
+	for key, value := range rawValues {
+		index := len(sets)
+		placeholder := ":" + key
+		if values[placeholder], err = attributevalue.Marshal(value); err != nil {
+			return fmt.Errorf("failed to marshal %s: %w", key, err)
+		}
+		sets = append(sets, fmt.Sprintf("#param_%d = %s", index, placeholder))
+		names[fmt.Sprintf("#param_%d", index)] = key
 	}
-	if values["TableFields"], err = attributevalue.Marshal(class.TableFields); err != nil {
-		return
-	}
-	if values["TableLabels"], err = attributevalue.Marshal(class.TableLabels); err != nil {
-		return
-	}
-	if values["Fields"], err = attributevalue.Marshal(class.Fields); err != nil {
-		return
-	}
-	if values["Updated"], err = attributevalue.Marshal(class.Updated); err != nil {
-		return
-	}
+	updateExpression := "SET " + strings.Join(sets, ", ")
 
-	setExpressions := make([]string, 0, len(values))
-	for key := range values {
-		setExpressions = append(setExpressions, fmt.Sprintf("%s = :%s", key, key))
-	}
-
-	expr := "SET " + strings.Join(setExpressions, ", ")
 	params := &dynamodb.UpdateItemInput{
 		TableName: &repo.resources.Table,
 		Key: map[string]types.AttributeValue{
 			"PK": pkId,
 			"SK": skId,
 		},
-		UpdateExpression:          &expr,
+		UpdateExpression:          &updateExpression,
+		ExpressionAttributeNames:  names,
 		ExpressionAttributeValues: values,
 	}
 
