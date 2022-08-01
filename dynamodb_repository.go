@@ -420,6 +420,14 @@ func (repo DynamoDBRepository) UpdateDocument(ctx context.Context, doc *Document
 	return
 }
 
+func (repo DynamoDBRepository) getPathDocuments(ctx context.Context, doc *Document) (err error) {
+	return
+}
+
+func (repo DynamoDBRepository) getSortDocuments(ctx context.Context, doc *Document) (err error) {
+	return
+}
+
 // Abstracted API calls to handle generic operations
 
 func (repo DynamoDBRepository) deleteItem(ctx context.Context, pk string, sk string) (err error) {
