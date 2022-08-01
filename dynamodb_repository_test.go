@@ -19,7 +19,7 @@ func testDynamoConfig(tableName string) (cfg aws.Config, err error) {
 	endpointResolverFunc := func(service string, region string, options ...interface{}) (endpoint aws.Endpoint, err error) {
 		endpoint = aws.Endpoint{
 			PartitionID:   "aws",
-			URL:           "http://localhost:8000",
+			URL:           "http://localhost:4566", // 4566 for LocalStack; 8000 for amazon/dynamodb-local
 			SigningRegion: "local",
 		}
 		return
