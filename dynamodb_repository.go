@@ -99,6 +99,25 @@ func (repo DynamoDBRepository) CreateClass(ctx context.Context, class *Class) (e
 }
 
 func (repo DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err error) {
+	pkId, err := attributevalue.Marshal(dynamoClassPrefix + id)
+	if err != nil {
+		return
+	}
+
+	skId, err := attributevalue.Marshal("class_v0")
+	if err != nil {
+		return
+	}
+
+	params := &dynamodb.DeleteItemInput{
+		TableName: &repo.resources.Table,
+		Key: map[string]types.AttributeValue{
+			"PK": pkId,
+			"SK": skId,
+		},
+	}
+	_, err = repo.client.DeleteItem(ctx, params)
+
 	return
 }
 

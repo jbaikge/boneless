@@ -161,4 +161,15 @@ func TestDynamoDBRepository(t *testing.T) {
 		assert.Equal(t, class.Updated, check.Updated)
 		assert.DeepEqual(t, class.Fields, check.Fields)
 	})
+
+	t.Run("DeleteClass", func(t *testing.T) {
+		class := Class{
+			Id:   "delete_class",
+			Name: t.Name(),
+		}
+		assert.NoError(t, repo.CreateClass(ctx, &class))
+		assert.NoError(t, repo.DeleteClass(ctx, class.Id))
+		_, err := repo.GetClassById(ctx, class.Id)
+		assert.Equal(t, ErrNotExist, err)
+	})
 }
