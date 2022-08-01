@@ -23,7 +23,7 @@ const (
 	dynamoDocSortF        = dynamoDocPrefix + "v%04d"
 	dynamoPathPrefix      = "path#"
 	dynamoPathSortKey     = "path"
-	dynamoSortPartitionF  = "%s#%s"
+	dynamoSortPartitionF  = "sort#%s#%s"
 	dynamoSortSortF       = "%s#%s"
 	dynamoSortValueLength = 64
 )
@@ -261,19 +261,20 @@ func (dyn *dynamoSort) FromDocument(doc *Document, key string) (ok bool) {
 	dyn.TemplateId = doc.TemplateId
 	dyn.Version = doc.Version
 	dyn.Name = doc.Name
+	dyn.Path = doc.Path
 	dyn.Created = doc.Created
 	dyn.Updated = doc.Updated
 	return true
 }
 
 func (dyn dynamoSort) ToDocument() (doc Document) {
-	doc.Path = dyn.PK[len(dynamoPathPrefix):]
 	doc.Id = dyn.DocumentId
 	doc.ClassId = dyn.ClassId
 	doc.ParentId = dyn.ParentId
 	doc.TemplateId = dyn.TemplateId
 	doc.Version = dyn.Version
 	doc.Name = dyn.Name
+	doc.Path = dyn.Path
 	doc.Created = dyn.Created
 	doc.Updated = dyn.Updated
 	return
