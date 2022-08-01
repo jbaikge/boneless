@@ -2,6 +2,7 @@ package gocms
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -64,6 +65,31 @@ func testDynamoConfig(tableName string) (cfg aws.Config, err error) {
 		return
 	}
 
+	return
+}
+
+func testDynamoEmptyTable(cfg aws.Config, table string) (err error) {
+	client := dynamodb.NewFromConfig(cfg)
+	params := &dynamodb.ScanInput{
+		TableName: &table,
+	}
+	response, err := client.Scan(context.Background(), params)
+	if err != nil {
+		return
+	}
+
+	for _, item := range response.Items {
+		delete := &dynamodb.DeleteItemInput{
+			TableName: &table,
+			Key: map[string]types.AttributeValue{
+				"PK": item["PK"],
+				"SK": item["SK"],
+			},
+		}
+		if _, err = client.DeleteItem(context.Background(), delete); err != nil {
+			return
+		}
+	}
 	return
 }
 
@@ -171,5 +197,31 @@ func TestDynamoDBRepository(t *testing.T) {
 		assert.NoError(t, repo.DeleteClass(ctx, class.Id))
 		_, err := repo.GetClassById(ctx, class.Id)
 		assert.Equal(t, ErrNotExist, err)
+	})
+
+	t.Run("ClassList", func(t *testing.T) {
+		assert.NoError(t, testDynamoEmptyTable(cfg, resources.Table))
+		for i := 0; i < 10; i++ {
+			class := Class{
+				Id:   fmt.Sprintf("class_list_%d", i),
+				Name: fmt.Sprintf("Class List (%d)", i+1),
+			}
+			assert.NoError(t, repo.CreateClass(ctx, &class))
+		}
+		filter := ClassFilter{
+			Range: Range{
+				Start: 0,
+				End:   9,
+			},
+		}
+
+		t.Run("All", func(t *testing.T) {
+			classes, r, err := repo.GetClassList(ctx, filter)
+			assert.NoError(t, err)
+			assert.Equal(t, 0, r.Start)
+			assert.Equal(t, 9, r.End)
+			assert.Equal(t, 10, r.Size)
+			assert.Equal(t, 10, len(classes))
+		})
 	})
 }
