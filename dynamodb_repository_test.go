@@ -367,9 +367,9 @@ func TestDynamoDBRepository(t *testing.T) {
 		}
 		assert.NoError(t, repo.CreateClass(ctx, &class))
 
-		t.Run("NoPath", func(t *testing.T) {
+		t.Run("NoPathNoPath", func(t *testing.T) {
 			doc := Document{
-				Id:      "update_document_no_path",
+				Id:      "no_path_no_path",
 				ClassId: class.Id,
 				Name:    t.Name(),
 				Path:    "",
@@ -377,6 +377,20 @@ func TestDynamoDBRepository(t *testing.T) {
 			assert.NoError(t, repo.CreateDocument(ctx, &doc))
 
 			doc.Name += "-Updated"
+			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
+		})
+
+		t.Run("NoPathYesPath", func(t *testing.T) {
+			doc := Document{
+				Id:      "no_path_yes_path",
+				ClassId: class.Id,
+				Name:    t.Name(),
+				Path:    "",
+			}
+			assert.NoError(t, repo.CreateDocument(ctx, &doc))
+
+			doc.Name += "-Updated"
+			doc.Path = "/my/new/path"
 			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
 		})
 	})
