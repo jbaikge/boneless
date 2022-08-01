@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/zeebo/assert"
@@ -390,7 +391,71 @@ func TestDynamoDBRepository(t *testing.T) {
 			assert.NoError(t, repo.CreateDocument(ctx, &doc))
 
 			doc.Name += "-Updated"
-			doc.Path = "/my/new/path"
+			doc.Path = "/no/path/yes/path"
+			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
+		})
+
+		t.Run("YesPathNoPath", func(t *testing.T) {
+			doc := Document{
+				Id:      "yes_path_no_path",
+				ClassId: class.Id,
+				Name:    t.Name(),
+				Path:    "/yes/path/no/path",
+			}
+			assert.NoError(t, repo.CreateDocument(ctx, &doc))
+
+			doc.Name += "-Updated"
+			doc.Path = ""
+			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
+		})
+
+		t.Run("YesPathYesPath", func(t *testing.T) {
+			doc := Document{
+				Id:      "yes_path_yes_path",
+				ClassId: class.Id,
+				Name:    t.Name(),
+				Path:    "/yes/path/yes/path",
+			}
+			assert.NoError(t, repo.CreateDocument(ctx, &doc))
+
+			doc.Name += "-Updated"
+			doc.Path = "/yes/path/yes/path/updated"
+			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
+		})
+
+		t.Run("ForceTableScan", func(t *testing.T) {
+			doc := Document{
+				Id:      "force_table_scan",
+				ClassId: class.Id,
+				Name:    t.Name(),
+				Path:    "/force/scan/original",
+			}
+			assert.NoError(t, repo.CreateDocument(ctx, &doc))
+
+			// Manually override the path
+			pk, _ := attributevalue.Marshal(dynamoDocPrefix + doc.Id)
+			sk, _ := attributevalue.Marshal(fmt.Sprintf(dynamoDocSortF, 0))
+			path, _ := attributevalue.Marshal("/force/scan/override")
+			client := dynamodb.NewFromConfig(cfg)
+			_, err := client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
+				TableName: &resources.Table,
+				Key: map[string]types.AttributeValue{
+					"PK": pk,
+					"SK": sk,
+				},
+				UpdateExpression: aws.String("SET #path = :path"),
+				ExpressionAttributeNames: map[string]string{
+					"#path": "Path",
+				},
+				ExpressionAttributeValues: map[string]types.AttributeValue{
+					":path": path,
+				},
+			})
+			assert.NoError(t, err)
+
+			// Force table scan during update
+			doc.Name += "-Updated"
+			doc.Path = "/force/scan/updated"
 			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
 		})
 	})
