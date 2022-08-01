@@ -54,7 +54,7 @@ func testDynamoConfig(tableName string) (cfg aws.Config, err error) {
 			},
 			{
 				AttributeName: aws.String("SK"),
-				KeyType:       types.KeyTypeHash,
+				KeyType:       types.KeyTypeRange,
 			},
 		},
 	}
@@ -74,7 +74,7 @@ func TestDynamoFromClass(t *testing.T) {
 	}
 
 	dc := new(dynamoClass)
-	dc.FromClass(class)
+	dc.FromClass(&class)
 
 	assert.Equal(t, dynamoClassPrefix+class.Id, dc.PK)
 	assert.Equal(t, "class_v0", dc.SK)

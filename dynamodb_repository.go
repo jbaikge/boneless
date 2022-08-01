@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
@@ -24,7 +25,7 @@ type dynamoClass struct {
 	Fields      []Field
 }
 
-func (dyn *dynamoClass) FromClass(c Class) {
+func (dyn *dynamoClass) FromClass(c *Class) {
 	dyn.PK = dynamoClassPrefix + c.Id
 	dyn.SK = "class_v0"
 	dyn.Name = c.Name
@@ -73,6 +74,19 @@ func NewDynamoDBRepository(config aws.Config, resources DynamoDBResources) Repos
 
 // Class Methods
 func (repo DynamoDBRepository) CreateClass(ctx context.Context, class *Class) (err error) {
+	dc := new(dynamoClass)
+	dc.FromClass(class)
+	item, err := attributevalue.MarshalMap(dc)
+	if err != nil {
+		return
+	}
+
+	params := &dynamodb.PutItemInput{
+		Item:      item,
+		TableName: &repo.resources.Table,
+	}
+	_, err = repo.client.PutItem(ctx, params)
+
 	return
 }
 
