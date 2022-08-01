@@ -2,16 +2,22 @@ package gocms
 
 import (
 	"context"
+	"errors"
 	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
 const (
 	dynamoClassPrefix = "class#"
+)
+
+var (
+	ErrNotExist = errors.New("item does not exist")
 )
 
 type dynamoClass struct {
@@ -95,6 +101,35 @@ func (repo DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err 
 }
 
 func (repo DynamoDBRepository) GetClassById(ctx context.Context, id string) (class Class, err error) {
+	pkId, err := attributevalue.Marshal(dynamoClassPrefix + id)
+	if err != nil {
+		return
+	}
+
+	skId, err := attributevalue.Marshal("class_v0")
+	if err != nil {
+		return
+	}
+
+	params := &dynamodb.GetItemInput{
+		TableName: &repo.resources.Table,
+		Key: map[string]types.AttributeValue{
+			"PK": pkId,
+			"SK": skId,
+		},
+	}
+	response, err := repo.client.GetItem(ctx, params)
+
+	if len(response.Item) == 0 {
+		return class, ErrNotExist
+	}
+
+	dc := new(dynamoClass)
+	if err = attributevalue.UnmarshalMap(response.Item, dc); err != nil {
+		return
+	}
+	class = dc.ToClass()
+
 	return
 }
 
