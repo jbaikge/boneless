@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"sort"
 	"strings"
@@ -20,6 +21,8 @@ const (
 	dynamoClassSortF  = dynamoClassPrefix + "v%04d"
 	dynamoDocPrefix   = "doc#"
 	dynamoDocSortF    = dynamoDocPrefix + "v%04d"
+	dynamoPathPrefix  = "path#"
+	dynamoPathSortKey = "path"
 )
 
 var (
@@ -155,6 +158,47 @@ func (dyn dynamoDocument) UpdateValues() map[string]interface{} {
 	}
 }
 
+// Path Type
+
+type dynamoPath struct {
+	PK         string
+	SK         string
+	DocumentId string
+	ClassId    string
+	ParentId   string
+	TemplateId string
+	Version    int
+	Name       string
+	Created    time.Time
+	Updated    time.Time
+}
+
+func (dyn *dynamoPath) FromDocument(doc *Document) {
+	dyn.PK = dynamoPathPrefix + doc.Path
+	dyn.SK = dynamoPathSortKey
+	dyn.DocumentId = doc.Id
+	dyn.ClassId = doc.ClassId
+	dyn.ParentId = doc.ParentId
+	dyn.TemplateId = doc.TemplateId
+	dyn.Version = doc.Version
+	dyn.Name = doc.Name
+	dyn.Created = doc.Created
+	dyn.Updated = doc.Updated
+}
+
+func (dyn dynamoPath) ToDocument() (doc Document) {
+	doc.Path = dyn.PK[len(dynamoPathPrefix):]
+	doc.Id = dyn.DocumentId
+	doc.ClassId = dyn.ClassId
+	doc.ParentId = dyn.ParentId
+	doc.TemplateId = dyn.TemplateId
+	doc.Version = dyn.Version
+	doc.Name = dyn.Name
+	doc.Created = dyn.Created
+	doc.Updated = dyn.Updated
+	return
+}
+
 // Repository
 
 type DynamoDBResources struct {
@@ -274,6 +318,16 @@ func (repo DynamoDBRepository) CreateDocument(ctx context.Context, doc *Document
 			return
 		}
 	}
+
+	// Possible to have documents with no path as they are child documents
+	if doc.Path != "" {
+		dbPath := new(dynamoPath)
+		dbPath.FromDocument(doc)
+		if err = repo.putItem(ctx, dbPath); err != nil {
+			return
+		}
+	}
+
 	return
 }
 
@@ -352,6 +406,7 @@ func (repo DynamoDBRepository) putItem(ctx context.Context, item interface{}) (e
 	if err != nil {
 		return
 	}
+	log.Printf("%v", item)
 
 	params := &dynamodb.PutItemInput{
 		Item:      inputItem,

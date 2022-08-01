@@ -274,4 +274,13 @@ func TestDynamoDBRepository(t *testing.T) {
 		}
 		assert.NoError(t, repo.CreateDocument(ctx, &doc))
 	})
+
+	t.Run("CreateDocumentWithPath", func(t *testing.T) {
+		doc := Document{
+			Id:   "document_with_path",
+			Name: t.Name(),
+			Path: "/doc/with/path",
+		}
+		assert.NoError(t, repo.CreateDocument(ctx, &doc))
+	})
 }
