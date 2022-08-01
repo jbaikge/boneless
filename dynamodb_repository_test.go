@@ -269,8 +269,8 @@ func TestDynamoDBRepository(t *testing.T) {
 
 	t.Run("CreateDocument", func(t *testing.T) {
 		doc := Document{
-			Id:    "document_create",
-			Title: t.Name(),
+			Id:   "document_create",
+			Name: t.Name(),
 		}
 		assert.NoError(t, repo.CreateDocument(ctx, &doc))
 	})

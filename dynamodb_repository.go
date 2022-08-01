@@ -103,8 +103,8 @@ type dynamoDocument struct {
 	ParentId   string
 	TemplateId string
 	Version    int
-	Title      string
-	Url        string
+	Name       string
+	Path       string
 	Created    time.Time
 	Updated    time.Time
 }
@@ -116,8 +116,8 @@ func (dyn *dynamoDocument) FromDocument(doc *Document) {
 	dyn.ParentId = doc.ParentId
 	dyn.TemplateId = doc.TemplateId
 	dyn.Version = doc.Version
-	dyn.Title = doc.Title
-	dyn.Url = doc.Url
+	dyn.Name = doc.Name
+	dyn.Path = doc.Path
 	dyn.Created = doc.Created
 	dyn.Updated = doc.Updated
 }
@@ -128,8 +128,8 @@ func (dyn dynamoDocument) ToDocument() (doc Document) {
 	doc.ParentId = dyn.ParentId
 	doc.TemplateId = dyn.TemplateId
 	doc.Version = dyn.Version
-	doc.Title = dyn.Title
-	doc.Url = dyn.Url
+	doc.Name = dyn.Name
+	doc.Path = dyn.Path
 	doc.Created = dyn.Created
 	doc.Updated = dyn.Updated
 	return
@@ -149,8 +149,8 @@ func (dyn dynamoDocument) UpdateValues() map[string]interface{} {
 		"ParentId":   dyn.ParentId,
 		"TemplateId": dyn.TemplateId,
 		"Version":    dyn.Version,
-		"Title":      dyn.Title,
-		"Url":        dyn.Url,
+		"Name":       dyn.Name,
+		"Path":       dyn.Path,
 		"Updated":    dyn.Updated,
 	}
 }
