@@ -25,7 +25,7 @@ frontend:
 synth: $(ASSETS) $(ADMIN)
 	$(MAKE) -C _stack synth
 
-synth-local: #$(ASSETS) $(ADMIN)
+synth-local: $(ASSETS) $(ADMIN)
 	$(MAKE) -C _stack $@
 
 assets/%/handler: ./lambda/%/*.go *.go
