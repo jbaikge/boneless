@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"sort"
 	"strings"
@@ -17,12 +16,15 @@ import (
 )
 
 const (
-	dynamoClassPrefix = "class#"
-	dynamoClassSortF  = dynamoClassPrefix + "v%04d"
-	dynamoDocPrefix   = "doc#"
-	dynamoDocSortF    = dynamoDocPrefix + "v%04d"
-	dynamoPathPrefix  = "path#"
-	dynamoPathSortKey = "path"
+	dynamoClassPrefix     = "class#"
+	dynamoClassSortF      = dynamoClassPrefix + "v%04d"
+	dynamoDocPrefix       = "doc#"
+	dynamoDocSortF        = dynamoDocPrefix + "v%04d"
+	dynamoPathPrefix      = "path#"
+	dynamoPathSortKey     = "path"
+	dynamoSortPartitionF  = "%s#%s"
+	dynamoSortSortF       = "%s#%s"
+	dynamoSortValueLength = 64
 )
 
 var (
@@ -199,6 +201,57 @@ func (dyn dynamoPath) ToDocument() (doc Document) {
 	return
 }
 
+// Sort Type
+
+type dynamoSort struct {
+	PK         string
+	SK         string
+	DocumentId string
+	ClassId    string
+	ParentId   string
+	TemplateId string
+	Version    int
+	Name       string
+	Path       string
+	Created    time.Time
+	Updated    time.Time
+}
+
+func (dyn *dynamoSort) FromDocument(doc *Document, key string) (ok bool) {
+	value, ok := doc.Values[key]
+	if !ok {
+		return
+	}
+	dyn.PK = fmt.Sprintf(dynamoSortPartitionF, doc.ClassId, key)
+	dyn.SK = fmt.Sprintf(dynamoSortSortF, dyn.Truncate(value), doc.Id)
+	dyn.DocumentId = doc.Id
+	dyn.ClassId = doc.ClassId
+	dyn.ParentId = doc.ParentId
+	dyn.TemplateId = doc.TemplateId
+	dyn.Version = doc.Version
+	dyn.Name = doc.Name
+	dyn.Created = doc.Created
+	dyn.Updated = doc.Updated
+	return true
+}
+
+func (dyn dynamoSort) ToDocument() (doc Document) {
+	doc.Path = dyn.PK[len(dynamoPathPrefix):]
+	doc.Id = dyn.DocumentId
+	doc.ClassId = dyn.ClassId
+	doc.ParentId = dyn.ParentId
+	doc.TemplateId = dyn.TemplateId
+	doc.Version = dyn.Version
+	doc.Name = dyn.Name
+	doc.Created = dyn.Created
+	doc.Updated = dyn.Updated
+	return
+}
+
+func (dyn dynamoSort) Truncate(v interface{}) string {
+	return fmt.Sprintf("%.*s", dynamoSortValueLength, fmt.Sprintf("%v", v))
+}
+
 // Repository
 
 type DynamoDBResources struct {
@@ -328,6 +381,21 @@ func (repo DynamoDBRepository) CreateDocument(ctx context.Context, doc *Document
 		}
 	}
 
+	// Add sort records
+	class, err := repo.GetClassById(ctx, doc.ClassId)
+	if err != nil {
+		return fmt.Errorf("could not retrieve class (%s): %w", doc.ClassId, err)
+	}
+	for _, key := range class.SortFields() {
+		dbSort := new(dynamoSort)
+		if ok := dbSort.FromDocument(doc, key); !ok {
+			continue
+		}
+		if err = repo.putItem(ctx, dbSort); err != nil {
+			return
+		}
+	}
+
 	return
 }
 
@@ -406,7 +474,6 @@ func (repo DynamoDBRepository) putItem(ctx context.Context, item interface{}) (e
 	if err != nil {
 		return
 	}
-	log.Printf("%v", item)
 
 	params := &dynamodb.PutItemInput{
 		Item:      inputItem,

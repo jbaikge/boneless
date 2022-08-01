@@ -268,18 +268,68 @@ func TestDynamoDBRepository(t *testing.T) {
 	})
 
 	t.Run("CreateDocument", func(t *testing.T) {
+		class := Class{
+			Id:   "create_document_class",
+			Name: "Create Document Class",
+		}
+		assert.NoError(t, repo.CreateClass(ctx, &class))
+
 		doc := Document{
-			Id:   "document_create",
-			Name: t.Name(),
+			Id:      "create_document",
+			ClassId: class.Id,
+			Name:    t.Name(),
 		}
 		assert.NoError(t, repo.CreateDocument(ctx, &doc))
 	})
 
 	t.Run("CreateDocumentWithPath", func(t *testing.T) {
+		class := Class{
+			Id:   "create_document_path_class",
+			Name: "Create Document with Path Class",
+		}
+		assert.NoError(t, repo.CreateClass(ctx, &class))
+
 		doc := Document{
-			Id:   "document_with_path",
-			Name: t.Name(),
-			Path: "/doc/with/path",
+			Id:      "document_with_path",
+			ClassId: class.Id,
+			Name:    t.Name(),
+			Path:    "/doc/with/path",
+		}
+		assert.NoError(t, repo.CreateDocument(ctx, &doc))
+	})
+
+	t.Run("CreateDocumentWithSort", func(t *testing.T) {
+		assert.NoError(t, testDynamoEmptyTable(cfg, resources.Table))
+
+		class := Class{
+			Id:   "sort_class",
+			Name: "Sort Class",
+			Fields: []Field{
+				{
+					Name: "existing_field",
+					Sort: true,
+				},
+				{
+					Name: "nonexistant_field",
+					Sort: true,
+				},
+				{
+					Name: "ignore_field",
+					Sort: false,
+				},
+			},
+		}
+		assert.NoError(t, repo.CreateClass(ctx, &class))
+
+		doc := Document{
+			Id:      "sort_doc",
+			ClassId: class.Id,
+			Name:    t.Name(),
+			Values: map[string]interface{}{
+				"existing_field": "My Value",
+				"ignore_field":   "Ignore Me",
+				"extra_field":    "Extra Field",
+			},
 		}
 		assert.NoError(t, repo.CreateDocument(ctx, &doc))
 	})
