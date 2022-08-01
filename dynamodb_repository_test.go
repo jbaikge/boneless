@@ -266,4 +266,12 @@ func TestDynamoDBRepository(t *testing.T) {
 			assert.Equal(t, 4, len(classes))
 		})
 	})
+
+	t.Run("CreateDocument", func(t *testing.T) {
+		doc := Document{
+			Id:    "document_create",
+			Title: t.Name(),
+		}
+		assert.NoError(t, repo.CreateDocument(ctx, &doc))
+	})
 }

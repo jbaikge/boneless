@@ -264,6 +264,16 @@ func (repo DynamoDBRepository) UpdateClass(ctx context.Context, class *Class) (e
 // Document creation inserts two records: one with version zero and one with
 // version one
 func (repo DynamoDBRepository) CreateDocument(ctx context.Context, doc *Document) (err error) {
+	dbDoc := new(dynamoDocument)
+	dbDoc.FromDocument(doc)
+
+	dbDoc.Version = 1
+	for _, version := range []int{0, 1} {
+		dbDoc.SK = fmt.Sprintf(dynamoDocSortF, version)
+		if err = repo.putItem(ctx, dbDoc); err != nil {
+			return
+		}
+	}
 	return
 }
 
