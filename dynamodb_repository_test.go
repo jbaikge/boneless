@@ -129,4 +129,17 @@ func TestDynamoDBRepository(t *testing.T) {
 		_, err := repo.GetClassById(ctx, "get_fail")
 		assert.Equal(t, ErrNotExist, err)
 	})
+
+	t.Run("UpdateClass", func(t *testing.T) {
+		class := Class{
+			Id:          "update_class",
+			Name:        "Initial Name",
+			TableLabels: "Field 1; Field 2",
+			TableFields: "field_1; field_2",
+			Created:     time.Now(),
+			Updated:     time.Now(),
+			Fields:      make([]Field, 0),
+		}
+		assert.NoError(t, repo.CreateClass(ctx, &class))
+	})
 }

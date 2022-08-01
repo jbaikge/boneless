@@ -3,7 +3,9 @@ package gocms
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -138,6 +140,52 @@ func (repo DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFil
 }
 
 func (repo DynamoDBRepository) UpdateClass(ctx context.Context, class *Class) (err error) {
+	pkId, err := attributevalue.Marshal(dynamoClassPrefix + class.Id)
+	if err != nil {
+		return
+	}
+
+	skId, err := attributevalue.Marshal("class_v0")
+	if err != nil {
+		return
+	}
+
+	// TODO re-approach this when rested.
+	values := make(map[string]types.AttributeValue)
+	if values["Name"], err = attributevalue.Marshal(class.Name); err != nil {
+		return
+	}
+	if values["TableFields"], err = attributevalue.Marshal(class.TableFields); err != nil {
+		return
+	}
+	if values["TableLabels"], err = attributevalue.Marshal(class.TableLabels); err != nil {
+		return
+	}
+	if values["Fields"], err = attributevalue.Marshal(class.Fields); err != nil {
+		return
+	}
+	if values["Updated"], err = attributevalue.Marshal(class.Updated); err != nil {
+		return
+	}
+
+	setExpressions := make([]string, 0, len(values))
+	for key := range values {
+		setExpressions = append(setExpressions, fmt.Sprintf("%s = :%s", key, key))
+	}
+
+	expr := "SET " + strings.Join(setExpressions, ", ")
+	params := &dynamodb.UpdateItemInput{
+		TableName: &repo.resources.Table,
+		Key: map[string]types.AttributeValue{
+			"PK": pkId,
+			"SK": skId,
+		},
+		UpdateExpression:          &expr,
+		ExpressionAttributeValues: values,
+	}
+
+	_, err = repo.client.UpdateItem(ctx, params)
+
 	return
 }
 
