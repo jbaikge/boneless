@@ -183,9 +183,9 @@ func NewDynamoDBRepository(config aws.Config, resources DynamoDBResources) Repos
 // Class Methods
 
 func (repo DynamoDBRepository) CreateClass(ctx context.Context, class *Class) (err error) {
-	dc := new(dynamoClass)
-	dc.FromClass(class)
-	return repo.putItem(ctx, dc)
+	dbClass := new(dynamoClass)
+	dbClass.FromClass(class)
+	return repo.putItem(ctx, dbClass)
 }
 
 func (repo DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err error) {
@@ -193,11 +193,11 @@ func (repo DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err 
 }
 
 func (repo DynamoDBRepository) GetClassById(ctx context.Context, id string) (class Class, err error) {
-	dc := new(dynamoClass)
-	if err = repo.getItem(ctx, dynamoClassPrefix+id, fmt.Sprintf(dynamoClassSortF, 0), dc); err != nil {
+	dbClass := new(dynamoClass)
+	if err = repo.getItem(ctx, dynamoClassPrefix+id, fmt.Sprintf(dynamoClassSortF, 0), dbClass); err != nil {
 		return
 	}
-	return dc.ToClass(), nil
+	return dbClass.ToClass(), nil
 }
 
 func (repo DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFilter) (list []Class, r Range, err error) {
@@ -222,11 +222,11 @@ func (repo DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFil
 		}
 
 		// TODO goroutine
-		dcs := make([]*dynamoClass, 0, len(response.Items))
-		if err = attributevalue.UnmarshalListOfMaps(response.Items, &dcs); err != nil {
+		dbClasses := make([]*dynamoClass, 0, len(response.Items))
+		if err = attributevalue.UnmarshalListOfMaps(response.Items, &dbClasses); err != nil {
 			return list, r, err
 		}
-		tmp = append(tmp, dcs...)
+		tmp = append(tmp, dbClasses...)
 	}
 
 	sort.Sort(dynamoClassByName(tmp))
@@ -254,9 +254,9 @@ func (repo DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFil
 }
 
 func (repo DynamoDBRepository) UpdateClass(ctx context.Context, class *Class) (err error) {
-	dc := new(dynamoClass)
-	dc.FromClass(class)
-	return repo.updateItem(ctx, dc)
+	dbClass := new(dynamoClass)
+	dbClass.FromClass(class)
+	return repo.updateItem(ctx, dbClass)
 }
 
 // Document Methods
