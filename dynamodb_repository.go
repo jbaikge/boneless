@@ -444,32 +444,12 @@ func (repo DynamoDBRepository) UpdateDocument(ctx context.Context, doc *Document
 		return
 	}
 
-	// Adjust path if it changed
-	pathDoc, err := repo.getPathDocument(ctx, &oldDoc)
-	if err != nil && err != ErrNotExist {
-		// Something unexpected happened
-		return fmt.Errorf("unexpected error during getPathDocument: %w", err)
+	if err = repo.updatePathDocument(ctx, &oldDoc, doc); err != nil {
+		return
 	}
-	switch {
-	case err == ErrNotExist && doc.Path == "":
-		// NOOP - still has no path
-		err = nil
-	case err == ErrNotExist && doc.Path != "":
-		dbPath := new(dynamoPath)
-		dbPath.FromDocument(doc)
-		err = repo.putItem(ctx, dbPath)
-	case doc.Path == "":
-		err = repo.deleteItem(ctx, pathDoc.PK, pathDoc.SK)
-	default:
-		if err = repo.deleteItem(ctx, pathDoc.PK, pathDoc.SK); err != nil {
-			return
-		}
-		dbPath := new(dynamoPath)
-		dbPath.FromDocument(doc)
-		err = repo.putItem(ctx, dbPath)
-	}
-	if err != nil {
-		return fmt.Errorf("error during path update: %w", err)
+
+	if err = repo.updateSortDocuments(ctx, doc); err != nil {
+		return
 	}
 
 	return
@@ -520,7 +500,86 @@ func (repo DynamoDBRepository) getPathDocument(ctx context.Context, oldDoc *Docu
 	return pathDoc, nil
 }
 
-func (repo DynamoDBRepository) getSortDocuments(ctx context.Context, oldDoc *Document) (sortDocs []*dynamoSort, err error) {
+func (repo DynamoDBRepository) updatePathDocument(ctx context.Context, oldDoc *Document, doc *Document) (err error) {
+	pathDoc, err := repo.getPathDocument(ctx, oldDoc)
+	if err != nil && err != ErrNotExist {
+		// Something unexpected happened
+		return fmt.Errorf("unexpected error during getPathDocument: %w", err)
+	}
+	// Clear ErrNotExist error
+	err = nil
+
+	// Remove old path
+	if pathDoc != nil && pathDoc.PK != "" {
+		if err = repo.deleteItem(ctx, pathDoc.PK, pathDoc.SK); err != nil {
+			return
+		}
+	}
+
+	// Add new path
+	if doc.Path != "" {
+		dbPath := new(dynamoPath)
+		dbPath.FromDocument(doc)
+		if err = repo.putItem(ctx, dbPath); err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+func (repo DynamoDBRepository) updateSortDocuments(ctx context.Context, doc *Document) (err error) {
+	class, err := repo.GetClassById(ctx, doc.ClassId)
+	if err != nil {
+		return
+	}
+	for _, key := range class.SortFields() {
+		pk, err := attributevalue.Marshal(fmt.Sprintf(dynamoSortPartitionF, class.Id, key))
+		if err != nil {
+			return err
+		}
+		query := &dynamodb.QueryInput{
+			TableName:              &repo.resources.Table,
+			KeyConditionExpression: aws.String("PK = :pk"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":pk": pk,
+			},
+			ProjectionExpression: aws.String("PK,SK"),
+		}
+		paginator := dynamodb.NewQueryPaginator(repo.client, query)
+		for paginator.HasMorePages() {
+			response, err := paginator.NextPage(ctx)
+			if err != nil {
+				return err
+			}
+			for _, item := range response.Items {
+				var sk string
+				if err = attributevalue.Unmarshal(item["SK"], &sk); err != nil {
+					return fmt.Errorf("error unmarshalling sortkey: %w", err)
+				}
+				if !strings.HasSuffix(sk, "#"+doc.Id) {
+					continue
+				}
+				delete := &dynamodb.DeleteItemInput{
+					TableName: &repo.resources.Table,
+					Key: map[string]types.AttributeValue{
+						"PK": item["PK"],
+						"SK": item["SK"],
+					},
+				}
+				if _, err = repo.client.DeleteItem(ctx, delete); err != nil {
+					return err
+				}
+			}
+		}
+
+		// Add sort record
+		dbSort := new(dynamoSort)
+		dbSort.FromDocument(doc, key)
+		if err = repo.putItem(ctx, dbSort); err != nil {
+			return err
+		}
+	}
 	return
 }
 
