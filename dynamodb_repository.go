@@ -18,6 +18,8 @@ import (
 const (
 	dynamoClassPrefix = "class#"
 	dynamoClassSortF  = dynamoClassPrefix + "v%04d"
+	dynamoDocPrefix   = "doc#"
+	dynamoDocSortF    = dynamoDocPrefix + "v%04d"
 )
 
 var (
@@ -30,6 +32,8 @@ type dynamoItem interface {
 	SortKey() string
 	UpdateValues() map[string]interface{}
 }
+
+// Class Types
 
 type dynamoClass struct {
 	PK          string
@@ -90,6 +94,69 @@ func (arr dynamoClassByName) Len() int           { return len(arr) }
 func (arr dynamoClassByName) Swap(i, j int)      { arr[i], arr[j] = arr[j], arr[i] }
 func (arr dynamoClassByName) Less(i, j int) bool { return arr[i].Name < arr[j].Name }
 
+// Document Types
+
+type dynamoDocument struct {
+	PK         string
+	SK         string
+	ClassId    string
+	ParentId   string
+	TemplateId string
+	Version    int
+	Title      string
+	Url        string
+	Created    time.Time
+	Updated    time.Time
+}
+
+func (dyn *dynamoDocument) FromDocument(doc *Document) {
+	dyn.PK = dynamoDocPrefix + doc.Id
+	dyn.SK = fmt.Sprintf(dynamoDocSortF, doc.Version)
+	dyn.ClassId = doc.ClassId
+	dyn.ParentId = doc.ParentId
+	dyn.TemplateId = doc.TemplateId
+	dyn.Version = doc.Version
+	dyn.Title = doc.Title
+	dyn.Url = doc.Url
+	dyn.Created = doc.Created
+	dyn.Updated = doc.Updated
+}
+
+func (dyn dynamoDocument) ToDocument() (doc Document) {
+	doc.Id = dyn.PK[len(dynamoDocPrefix):]
+	doc.ClassId = dyn.ClassId
+	doc.ParentId = dyn.ParentId
+	doc.TemplateId = dyn.TemplateId
+	doc.Version = dyn.Version
+	doc.Title = dyn.Title
+	doc.Url = dyn.Url
+	doc.Created = dyn.Created
+	doc.Updated = dyn.Updated
+	return
+}
+
+func (dyn dynamoDocument) PartitionKey() string {
+	return dyn.PK
+}
+
+func (dyn dynamoDocument) SortKey() string {
+	return dyn.SK
+}
+
+func (dyn dynamoDocument) UpdateValues() map[string]interface{} {
+	return map[string]interface{}{
+		"ClassId":    dyn.ClassId,
+		"ParentId":   dyn.ParentId,
+		"TemplateId": dyn.TemplateId,
+		"Version":    dyn.Version,
+		"Title":      dyn.Title,
+		"Url":        dyn.Url,
+		"Updated":    dyn.Updated,
+	}
+}
+
+// Repository
+
 type DynamoDBResources struct {
 	Bucket string
 	Table  string
@@ -114,6 +181,7 @@ func NewDynamoDBRepository(config aws.Config, resources DynamoDBResources) Repos
 }
 
 // Class Methods
+
 func (repo DynamoDBRepository) CreateClass(ctx context.Context, class *Class) (err error) {
 	dc := new(dynamoClass)
 	dc.FromClass(class)
@@ -192,6 +260,9 @@ func (repo DynamoDBRepository) UpdateClass(ctx context.Context, class *Class) (e
 }
 
 // Document Methods
+
+// Document creation inserts two records: one with version zero and one with
+// version one
 func (repo DynamoDBRepository) CreateDocument(ctx context.Context, doc *Document) (err error) {
 	return
 }
@@ -213,6 +284,7 @@ func (repo DynamoDBRepository) UpdateDocument(ctx context.Context, doc *Document
 }
 
 // Abstracted API calls to handle generic operations
+
 func (repo DynamoDBRepository) deleteItem(ctx context.Context, pk string, sk string) (err error) {
 	pkId, err := attributevalue.Marshal(pk)
 	if err != nil {
