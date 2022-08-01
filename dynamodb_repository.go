@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -20,6 +21,7 @@ const (
 )
 
 var (
+	ErrBadRange = errors.New("invalid range")
 	ErrNotExist = errors.New("item does not exist")
 )
 
@@ -82,6 +84,12 @@ func (dyn dynamoClass) UpdateValues() map[string]interface{} {
 	}
 }
 
+type dynamoClassByName []*dynamoClass
+
+func (arr dynamoClassByName) Len() int           { return len(arr) }
+func (arr dynamoClassByName) Swap(i, j int)      { arr[i], arr[j] = arr[j], arr[i] }
+func (arr dynamoClassByName) Less(i, j int) bool { return arr[i].Name < arr[j].Name }
+
 type DynamoDBResources struct {
 	Bucket string
 	Table  string
@@ -125,6 +133,55 @@ func (repo DynamoDBRepository) GetClassById(ctx context.Context, id string) (cla
 }
 
 func (repo DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFilter) (list []Class, r Range, err error) {
+	tmp := make([]*dynamoClass, 0, 128)
+
+	skId, err := attributevalue.Marshal(fmt.Sprintf(dynamoClassSortF, 0))
+	if err != nil {
+		return
+	}
+	params := &dynamodb.ScanInput{
+		TableName:        &repo.resources.Table,
+		FilterExpression: aws.String("SK = :sk"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":sk": skId,
+		},
+	}
+	paginator := dynamodb.NewScanPaginator(repo.client, params)
+	for paginator.HasMorePages() {
+		response, err := paginator.NextPage(ctx)
+		if err != nil {
+			return list, r, err
+		}
+
+		// TODO goroutine
+		dcs := make([]*dynamoClass, 0, len(response.Items))
+		if err = attributevalue.UnmarshalListOfMaps(response.Items, &dcs); err != nil {
+			return list, r, err
+		}
+		tmp = append(tmp, dcs...)
+	}
+
+	sort.Sort(dynamoClassByName(tmp))
+
+	r.Size = len(tmp)
+	list = make([]Class, 0, filter.Range.End-filter.Range.Start+1)
+	for i := filter.Range.Start; i < len(tmp) && i <= filter.Range.End; i++ {
+		list = append(list, tmp[i].ToClass())
+	}
+
+	// If start = 0  and list is empty, then there just aren't any records
+	if filter.Range.Start > 0 && len(list) == 0 {
+		return list, r, ErrBadRange
+	}
+
+	// Kind of a weird situation here where equal start and end actually signify
+	// one item, but size can be zero.
+	r.Start = filter.Range.Start
+	r.End = r.Start
+	if len(list) > 0 {
+		r.End += len(list) - 1
+	}
+
 	return
 }
 

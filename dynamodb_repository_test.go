@@ -201,27 +201,69 @@ func TestDynamoDBRepository(t *testing.T) {
 
 	t.Run("ClassList", func(t *testing.T) {
 		assert.NoError(t, testDynamoEmptyTable(cfg, resources.Table))
+
+		t.Run("Empty", func(t *testing.T) {
+			filter := ClassFilter{Range: Range{End: 9}}
+			classes, r, err := repo.GetClassList(ctx, filter)
+			assert.NoError(t, err)
+			assert.DeepEqual(t, Range{}, r)
+			assert.Equal(t, 0, len(classes))
+		})
+
 		for i := 0; i < 10; i++ {
 			class := Class{
-				Id:   fmt.Sprintf("class_list_%d", i),
-				Name: fmt.Sprintf("Class List (%d)", i+1),
+				Id:   fmt.Sprintf("class_list_%02d", i),
+				Name: fmt.Sprintf("Class List (%02d)", i+1),
 			}
 			assert.NoError(t, repo.CreateClass(ctx, &class))
 		}
-		filter := ClassFilter{
-			Range: Range{
-				Start: 0,
-				End:   9,
-			},
-		}
 
 		t.Run("All", func(t *testing.T) {
+			filter := ClassFilter{Range: Range{End: 9}}
 			classes, r, err := repo.GetClassList(ctx, filter)
 			assert.NoError(t, err)
-			assert.Equal(t, 0, r.Start)
-			assert.Equal(t, 9, r.End)
-			assert.Equal(t, 10, r.Size)
+			assert.DeepEqual(t, Range{End: 9, Size: 10}, r)
 			assert.Equal(t, 10, len(classes))
+		})
+
+		t.Run("LargeWindow", func(t *testing.T) {
+			filter := ClassFilter{Range: Range{End: 99}}
+			classes, r, err := repo.GetClassList(ctx, filter)
+			assert.NoError(t, err)
+			assert.DeepEqual(t, Range{End: 9, Size: 10}, r)
+			assert.Equal(t, 10, len(classes))
+		})
+
+		t.Run("InvalidRange", func(t *testing.T) {
+			filter := ClassFilter{Range: Range{Start: 90, End: 99}}
+			classes, r, err := repo.GetClassList(ctx, filter)
+			assert.Equal(t, ErrBadRange, err)
+			assert.DeepEqual(t, Range{Size: 10}, r)
+			assert.Equal(t, 0, len(classes))
+		})
+
+		t.Run("Beginning", func(t *testing.T) {
+			filter := ClassFilter{Range: Range{Start: 0, End: 4}}
+			classes, r, err := repo.GetClassList(ctx, filter)
+			assert.NoError(t, err)
+			assert.DeepEqual(t, Range{End: 4, Size: 10}, r)
+			assert.Equal(t, 5, len(classes))
+		})
+
+		t.Run("End", func(t *testing.T) {
+			filter := ClassFilter{Range: Range{Start: 5, End: 9}}
+			classes, r, err := repo.GetClassList(ctx, filter)
+			assert.NoError(t, err)
+			assert.DeepEqual(t, Range{Start: 5, End: 9, Size: 10}, r)
+			assert.Equal(t, 5, len(classes))
+		})
+
+		t.Run("Middle", func(t *testing.T) {
+			filter := ClassFilter{Range: Range{Start: 3, End: 6}}
+			classes, r, err := repo.GetClassList(ctx, filter)
+			assert.NoError(t, err)
+			assert.DeepEqual(t, Range{Start: 3, End: 6, Size: 10}, r)
+			assert.Equal(t, 4, len(classes))
 		})
 	})
 }
