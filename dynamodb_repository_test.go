@@ -359,4 +359,25 @@ func TestDynamoDBRepository(t *testing.T) {
 		_, err := repo.GetDocumentById(ctx, "bad_doc_id")
 		assert.Equal(t, ErrNotExist, err)
 	})
+
+	t.Run("UpdateDocument", func(t *testing.T) {
+		class := Class{
+			Id:   "update_document_class",
+			Name: "Update Document Class",
+		}
+		assert.NoError(t, repo.CreateClass(ctx, &class))
+
+		t.Run("NoPath", func(t *testing.T) {
+			doc := Document{
+				Id:      "update_document_no_path",
+				ClassId: class.Id,
+				Name:    t.Name(),
+				Path:    "",
+			}
+			assert.NoError(t, repo.CreateDocument(ctx, &doc))
+
+			doc.Name += "-Updated"
+			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
+		})
+	})
 }

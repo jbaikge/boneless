@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"sort"
 	"strings"
@@ -115,8 +116,8 @@ type dynamoDocument struct {
 }
 
 func (dyn *dynamoDocument) FromDocument(doc *Document) {
+	dyn.SetSK(doc.Version)
 	dyn.PK = dynamoDocPrefix + doc.Id
-	dyn.SK = fmt.Sprintf(dynamoDocSortF, doc.Version)
 	dyn.ClassId = doc.ClassId
 	dyn.ParentId = doc.ParentId
 	dyn.TemplateId = doc.TemplateId
@@ -138,6 +139,10 @@ func (dyn dynamoDocument) ToDocument() (doc Document) {
 	doc.Created = dyn.Created
 	doc.Updated = dyn.Updated
 	return
+}
+
+func (dyn *dynamoDocument) SetSK(version int) {
+	dyn.SK = fmt.Sprintf(dynamoDocSortF, version)
 }
 
 func (dyn dynamoDocument) PartitionKey() string {
@@ -173,6 +178,7 @@ type dynamoPath struct {
 	Name       string
 	Created    time.Time
 	Updated    time.Time
+	oldPK      string
 }
 
 func (dyn *dynamoPath) FromDocument(doc *Document) {
@@ -199,6 +205,31 @@ func (dyn dynamoPath) ToDocument() (doc Document) {
 	doc.Created = dyn.Created
 	doc.Updated = dyn.Updated
 	return
+}
+
+func (dyn *dynamoPath) PrepareUpdate(doc *Document) {
+	dyn.oldPK = dyn.PK
+	dyn.FromDocument(doc)
+}
+
+func (dyn dynamoPath) PartitionKey() string {
+	return dyn.oldPK
+}
+
+func (dyn dynamoPath) SortKey() string {
+	return dyn.SK
+}
+
+func (dyn dynamoPath) UpdateValues() map[string]interface{} {
+	return map[string]interface{}{
+		"PK":         dyn.PK,
+		"ClassId":    dyn.ClassId,
+		"ParentId":   dyn.ParentId,
+		"TemplateId": dyn.TemplateId,
+		"Version":    dyn.Version,
+		"Name":       dyn.Name,
+		"Updated":    dyn.Updated,
+	}
 }
 
 // Sort Type
@@ -416,15 +447,100 @@ func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter Docum
 	return
 }
 
+// Updates are pretty expensive as all the various copies need to be updated as well
 func (repo DynamoDBRepository) UpdateDocument(ctx context.Context, doc *Document) (err error) {
+	// Fetch the current document in the database
+	oldDoc, err := repo.GetDocumentById(ctx, doc.Id)
+	if err != nil {
+		return
+	}
+
+	// Update the version value to the next one
+	doc.Version = oldDoc.Version + 1
+
+	// Push in new document version
+	dbDoc := new(dynamoDocument)
+	dbDoc.FromDocument(doc)
+	if err = repo.putItem(ctx, dbDoc); err != nil {
+		return
+	}
+	// Update version zero
+	dbDoc.SetSK(0)
+	if err = repo.updateItem(ctx, dbDoc); err != nil {
+		return
+	}
+
+	// Adjust path if it changed
+	pathDoc, err := repo.getPathDocument(ctx, &oldDoc)
+	if err != nil && err != ErrNotExist {
+		// Something unexpected happened
+		return
+	}
+	switch {
+	case err == ErrNotExist && doc.Path == "":
+		// NOOP - still has no path
+		err = nil
+	case err == ErrNotExist && doc.Path != "":
+		dbPath := new(dynamoPath)
+		dbPath.FromDocument(doc)
+		err = repo.putItem(ctx, dbPath)
+	case doc.Path == "":
+		err = repo.deleteItem(ctx, pathDoc.PK, pathDoc.SK)
+	default:
+		pathDoc.PrepareUpdate(doc)
+		err = repo.updateItem(ctx, pathDoc)
+	}
+	if err != nil {
+		return fmt.Errorf("error during path update: %w", err)
+	}
+
 	return
 }
 
-func (repo DynamoDBRepository) getPathDocuments(ctx context.Context, doc *Document) (err error) {
+func (repo DynamoDBRepository) getPathDocument(ctx context.Context, oldDoc *Document) (pathDoc *dynamoPath, err error) {
+	if oldDoc.Path == "" {
+		return nil, ErrNotExist
+	}
+
+	err = repo.getItem(ctx, dynamoPathPrefix+oldDoc.Path, dynamoPathSortKey, pathDoc)
+	if err == ErrNotExist {
+		// Uh-oh need to do a table scan because somehow the path updated on
+		// the document without the path partition key getting updated
+		sk, err := attributevalue.Marshal(dynamoPathSortKey)
+		if err != nil {
+			return nil, err
+		}
+		id, err := attributevalue.Marshal(oldDoc.Id)
+		if err != nil {
+			return nil, err
+		}
+		params := &dynamodb.ScanInput{
+			TableName:        &repo.resources.Table,
+			FilterExpression: aws.String("SK = :sk AND DocumentId = :id"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":sk": sk,
+				":id": id,
+			},
+		}
+		pagination := dynamodb.NewScanPaginator(repo.client, params)
+		for pagination.HasMorePages() {
+			response, err := pagination.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if len(response.Items) == 0 {
+				continue
+			}
+			log.Printf("Found the missing item!")
+			if err = attributevalue.UnmarshalMap(response.Items[0], pathDoc); err != nil {
+				return nil, err
+			}
+		}
+	}
 	return
 }
 
-func (repo DynamoDBRepository) getSortDocuments(ctx context.Context, doc *Document) (err error) {
+func (repo DynamoDBRepository) getSortDocuments(ctx context.Context, oldDoc *Document) (sortDocs []*dynamoSort, err error) {
 	return
 }
 
