@@ -403,8 +403,13 @@ func (repo DynamoDBRepository) DeleteDocument(ctx context.Context, id string) (e
 	return
 }
 
+// Always fetches the latest version (v0) of the document with requested id
 func (repo DynamoDBRepository) GetDocumentById(ctx context.Context, id string) (doc Document, err error) {
-	return
+	dbDoc := new(dynamoDocument)
+	if err = repo.getItem(ctx, dynamoDocPrefix+id, fmt.Sprintf(dynamoDocSortF, 0), dbDoc); err != nil {
+		return
+	}
+	return dbDoc.ToDocument(), nil
 }
 
 func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter DocumentFilter) (list []Document, r Range, err error) {

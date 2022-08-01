@@ -333,4 +333,30 @@ func TestDynamoDBRepository(t *testing.T) {
 		}
 		assert.NoError(t, repo.CreateDocument(ctx, &doc))
 	})
+
+	t.Run("GetDocumentByIdSuccess", func(t *testing.T) {
+		class := Class{
+			Id:   "get_document_success_class",
+			Name: "Get Document Success Class",
+		}
+		assert.NoError(t, repo.CreateClass(ctx, &class))
+
+		doc := Document{
+			Id:      "get_document_by_id_success",
+			ClassId: class.Id,
+			Name:    t.Name(),
+		}
+		assert.NoError(t, repo.CreateDocument(ctx, &doc))
+
+		check, err := repo.GetDocumentById(ctx, doc.Id)
+		assert.NoError(t, err)
+		assert.Equal(t, doc.Id, check.Id)
+		assert.Equal(t, doc.ClassId, check.ClassId)
+		assert.Equal(t, doc.Name, check.Name)
+	})
+
+	t.Run("GetDocumentByIdSuccess", func(t *testing.T) {
+		_, err := repo.GetDocumentById(ctx, "bad_doc_id")
+		assert.Equal(t, ErrNotExist, err)
+	})
 }
