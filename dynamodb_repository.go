@@ -16,11 +16,18 @@ import (
 
 const (
 	dynamoClassPrefix = "class#"
+	dynamoClassSortF  = dynamoClassPrefix + "v%04d"
 )
 
 var (
 	ErrNotExist = errors.New("item does not exist")
 )
+
+type dynamoItem interface {
+	PartitionKey() string
+	SortKey() string
+	UpdateValues() map[string]interface{}
+}
 
 type dynamoClass struct {
 	PK          string
@@ -35,7 +42,7 @@ type dynamoClass struct {
 
 func (dyn *dynamoClass) FromClass(c *Class) {
 	dyn.PK = dynamoClassPrefix + c.Id
-	dyn.SK = "class_v0"
+	dyn.SK = fmt.Sprintf(dynamoClassSortF, 0)
 	dyn.Name = c.Name
 	dyn.TableFields = c.TableFields
 	dyn.TableLabels = c.TableLabels
@@ -55,6 +62,24 @@ func (dyn dynamoClass) ToClass() (c Class) {
 	c.Fields = make([]Field, len(dyn.Fields))
 	copy(c.Fields, dyn.Fields)
 	return
+}
+
+func (dyn dynamoClass) PartitionKey() string {
+	return dyn.PK
+}
+
+func (dyn dynamoClass) SortKey() string {
+	return dyn.SK
+}
+
+func (dyn dynamoClass) UpdateValues() map[string]interface{} {
+	return map[string]interface{}{
+		"Name":        dyn.Name,
+		"TableFields": dyn.TableFields,
+		"TableLabels": dyn.TableLabels,
+		"Fields":      dyn.Fields,
+		"Updated":     dyn.Updated,
+	}
 }
 
 type DynamoDBResources struct {
@@ -84,27 +109,60 @@ func NewDynamoDBRepository(config aws.Config, resources DynamoDBResources) Repos
 func (repo DynamoDBRepository) CreateClass(ctx context.Context, class *Class) (err error) {
 	dc := new(dynamoClass)
 	dc.FromClass(class)
-	item, err := attributevalue.MarshalMap(dc)
-	if err != nil {
-		return
-	}
-
-	params := &dynamodb.PutItemInput{
-		Item:      item,
-		TableName: &repo.resources.Table,
-	}
-	_, err = repo.client.PutItem(ctx, params)
-
-	return
+	return repo.putItem(ctx, dc)
 }
 
 func (repo DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err error) {
-	pkId, err := attributevalue.Marshal(dynamoClassPrefix + id)
+	return repo.deleteItem(ctx, dynamoClassPrefix+id, fmt.Sprintf(dynamoClassSortF, 0))
+}
+
+func (repo DynamoDBRepository) GetClassById(ctx context.Context, id string) (class Class, err error) {
+	dc := new(dynamoClass)
+	if err = repo.getItem(ctx, dynamoClassPrefix+id, fmt.Sprintf(dynamoClassSortF, 0), dc); err != nil {
+		return
+	}
+	return dc.ToClass(), nil
+}
+
+func (repo DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFilter) (list []Class, r Range, err error) {
+	return
+}
+
+func (repo DynamoDBRepository) UpdateClass(ctx context.Context, class *Class) (err error) {
+	dc := new(dynamoClass)
+	dc.FromClass(class)
+	return repo.updateItem(ctx, dc)
+}
+
+// Document Methods
+func (repo DynamoDBRepository) CreateDocument(ctx context.Context, doc *Document) (err error) {
+	return
+}
+
+func (repo DynamoDBRepository) DeleteDocument(ctx context.Context, id string) (err error) {
+	return
+}
+
+func (repo DynamoDBRepository) GetDocumentById(ctx context.Context, id string) (doc Document, err error) {
+	return
+}
+
+func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter DocumentFilter) (list []Document, r Range, err error) {
+	return
+}
+
+func (repo DynamoDBRepository) UpdateDocument(ctx context.Context, doc *Document) (err error) {
+	return
+}
+
+// Abstracted API calls to handle generic operations
+func (repo DynamoDBRepository) deleteItem(ctx context.Context, pk string, sk string) (err error) {
+	pkId, err := attributevalue.Marshal(pk)
 	if err != nil {
 		return
 	}
 
-	skId, err := attributevalue.Marshal("class_v0")
+	skId, err := attributevalue.Marshal(sk)
 	if err != nil {
 		return
 	}
@@ -121,13 +179,13 @@ func (repo DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err 
 	return
 }
 
-func (repo DynamoDBRepository) GetClassById(ctx context.Context, id string) (class Class, err error) {
-	pkId, err := attributevalue.Marshal(dynamoClassPrefix + id)
+func (repo DynamoDBRepository) getItem(ctx context.Context, pk string, sk string, dst interface{}) (err error) {
+	pkId, err := attributevalue.Marshal(pk)
 	if err != nil {
 		return
 	}
 
-	skId, err := attributevalue.Marshal("class_v0")
+	skId, err := attributevalue.Marshal(sk)
 	if err != nil {
 		return
 	}
@@ -142,41 +200,41 @@ func (repo DynamoDBRepository) GetClassById(ctx context.Context, id string) (cla
 	response, err := repo.client.GetItem(ctx, params)
 
 	if len(response.Item) == 0 {
-		return class, ErrNotExist
+		return ErrNotExist
 	}
 
-	dc := new(dynamoClass)
-	if err = attributevalue.UnmarshalMap(response.Item, dc); err != nil {
-		return
-	}
-	class = dc.ToClass()
+	err = attributevalue.UnmarshalMap(response.Item, dst)
 
 	return
 }
 
-func (repo DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFilter) (list []Class, r Range, err error) {
+func (repo DynamoDBRepository) putItem(ctx context.Context, item interface{}) (err error) {
+	inputItem, err := attributevalue.MarshalMap(item)
+	if err != nil {
+		return
+	}
+
+	params := &dynamodb.PutItemInput{
+		Item:      inputItem,
+		TableName: &repo.resources.Table,
+	}
+	_, err = repo.client.PutItem(ctx, params)
+
 	return
 }
 
-func (repo DynamoDBRepository) UpdateClass(ctx context.Context, class *Class) (err error) {
-	pkId, err := attributevalue.Marshal(dynamoClassPrefix + class.Id)
+func (repo DynamoDBRepository) updateItem(ctx context.Context, item dynamoItem) (err error) {
+	pkId, err := attributevalue.Marshal(item.PartitionKey())
 	if err != nil {
 		return
 	}
 
-	skId, err := attributevalue.Marshal("class_v0")
+	skId, err := attributevalue.Marshal(item.SortKey())
 	if err != nil {
 		return
 	}
 
-	rawValues := map[string]interface{}{
-		"Name":        class.Name,
-		"TableFields": class.TableFields,
-		"TableLabels": class.TableLabels,
-		"Fields":      class.Fields,
-		"Updated":     class.Updated,
-	}
-
+	rawValues := item.UpdateValues()
 	sets := make([]string, 0, len(rawValues))
 	values := make(map[string]types.AttributeValue)
 	names := make(map[string]string)
@@ -204,26 +262,5 @@ func (repo DynamoDBRepository) UpdateClass(ctx context.Context, class *Class) (e
 
 	_, err = repo.client.UpdateItem(ctx, params)
 
-	return
-}
-
-// Document Methods
-func (repo DynamoDBRepository) CreateDocument(ctx context.Context, doc *Document) (err error) {
-	return
-}
-
-func (repo DynamoDBRepository) DeleteDocument(ctx context.Context, id string) (err error) {
-	return
-}
-
-func (repo DynamoDBRepository) GetDocumentById(ctx context.Context, id string) (doc Document, err error) {
-	return
-}
-
-func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter DocumentFilter) (list []Document, r Range, err error) {
-	return
-}
-
-func (repo DynamoDBRepository) UpdateDocument(ctx context.Context, doc *Document) (err error) {
 	return
 }

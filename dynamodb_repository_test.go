@@ -78,7 +78,7 @@ func TestDynamoFromClass(t *testing.T) {
 	dc.FromClass(&class)
 
 	assert.Equal(t, dynamoClassPrefix+class.Id, dc.PK)
-	assert.Equal(t, "class_v0", dc.SK)
+	assert.Equal(t, "class#v0000", dc.SK)
 	assert.Equal(t, t.Name(), dc.Name)
 	assert.DeepEqual(t, class.Fields, dc.Fields)
 }
