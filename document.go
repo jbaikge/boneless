@@ -22,8 +22,11 @@ type Document struct {
 }
 
 type DocumentFilter struct {
-	ClassId string
-	Range   Range
+	ClassId  string
+	ParentId string
+	Field    string
+	Sort     string // ASC, DESC
+	Range    Range
 }
 
 type DocumentRepository interface {
