@@ -318,6 +318,10 @@ func TestDynamoDBRepository(t *testing.T) {
 					Name: "ignore_field",
 					Sort: false,
 				},
+				{
+					Name: "time_field",
+					Sort: true,
+				},
 			},
 		}
 		assert.NoError(t, repo.CreateClass(ctx, &class))
@@ -330,6 +334,7 @@ func TestDynamoDBRepository(t *testing.T) {
 				"existing_field": "My Value",
 				"ignore_field":   "Ignore Me",
 				"extra_field":    "Extra Field",
+				"time_field":     time.Now(),
 			},
 		}
 		assert.NoError(t, repo.CreateDocument(ctx, &doc))

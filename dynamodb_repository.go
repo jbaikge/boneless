@@ -254,6 +254,9 @@ func (dyn dynamoSort) ToDocument() (doc Document) {
 }
 
 func (dyn dynamoSort) Truncate(v interface{}) string {
+	if t, ok := v.(time.Time); ok {
+		v = t.UTC().Format(time.RFC3339)
+	}
 	return fmt.Sprintf("%.*s", dynamoSortValueLength, fmt.Sprintf("%v", v))
 }
 
