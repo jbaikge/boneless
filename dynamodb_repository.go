@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"sort"
 	"strings"
@@ -101,6 +102,38 @@ func (arr dynamoClassByName) Less(i, j int) bool { return arr[i].Name < arr[j].N
 
 // Document Types
 
+type dynamoDocumentInterface interface {
+	ToDocument() Document
+	GetName() string
+	GetCreated() time.Time
+	GetUpdated() time.Time
+}
+
+// Sort by name
+type dynamoDocumentByName []dynamoDocumentInterface
+
+func (arr dynamoDocumentByName) Len() int           { return len(arr) }
+func (arr dynamoDocumentByName) Swap(i, j int)      { arr[i], arr[j] = arr[j], arr[i] }
+func (arr dynamoDocumentByName) Less(i, j int) bool { return arr[i].GetName() < arr[j].GetName() }
+
+// Sort by created time
+type dynamoDocumentByCreated []dynamoDocumentInterface
+
+func (arr dynamoDocumentByCreated) Len() int      { return len(arr) }
+func (arr dynamoDocumentByCreated) Swap(i, j int) { arr[i], arr[j] = arr[j], arr[i] }
+func (arr dynamoDocumentByCreated) Less(i, j int) bool {
+	return arr[i].GetCreated().Before(arr[j].GetCreated())
+}
+
+// Sort by updated time
+type dynamoDocumentByUpdated []dynamoDocumentInterface
+
+func (arr dynamoDocumentByUpdated) Len() int      { return len(arr) }
+func (arr dynamoDocumentByUpdated) Swap(i, j int) { arr[i], arr[j] = arr[j], arr[i] }
+func (arr dynamoDocumentByUpdated) Less(i, j int) bool {
+	return arr[i].GetUpdated().Before(arr[j].GetUpdated())
+}
+
 type dynamoDocument struct {
 	PK         string
 	SK         string
@@ -163,6 +196,10 @@ func (dyn dynamoDocument) UpdateValues() map[string]interface{} {
 		"Updated":    dyn.Updated,
 	}
 }
+
+func (dyn dynamoDocument) GetName() string       { return dyn.Name }
+func (dyn dynamoDocument) GetCreated() time.Time { return dyn.Created }
+func (dyn dynamoDocument) GetUpdated() time.Time { return dyn.Updated }
 
 // Path Type
 
@@ -259,6 +296,10 @@ func (dyn dynamoSort) Truncate(v interface{}) string {
 	}
 	return fmt.Sprintf("%.*s", dynamoSortValueLength, fmt.Sprintf("%v", v))
 }
+
+func (dyn dynamoSort) GetName() string       { return dyn.Name }
+func (dyn dynamoSort) GetCreated() time.Time { return dyn.Created }
+func (dyn dynamoSort) GetUpdated() time.Time { return dyn.Updated }
 
 // Repository
 
@@ -490,6 +531,109 @@ func (repo DynamoDBRepository) GetDocumentByPath(ctx context.Context, path strin
 }
 
 func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter DocumentFilter) (list []Document, r Range, err error) {
+	sortAsc := filter.Sort == "ASC" || filter.Sort == ""
+	scanForward := aws.Bool(sortAsc)
+
+	tmp := make([]dynamoDocumentInterface, 0, 128)
+
+	// Handle a class-field search, ordered by field values
+	switch {
+	case filter.ClassId != "" && filter.Field != "":
+		pk, err := attributevalue.Marshal(fmt.Sprintf(dynamoSortPartitionF, filter.ClassId, filter.Field))
+		if err != nil {
+			return list, r, err
+		}
+		params := &dynamodb.QueryInput{
+			TableName:              &repo.resources.Table,
+			ScanIndexForward:       scanForward,
+			Limit:                  aws.Int32(int32(filter.Range.End + 1)),
+			KeyConditionExpression: aws.String("PK = :pk"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":pk": pk,
+			},
+		}
+		paginator := dynamodb.NewQueryPaginator(repo.client, params)
+		for paginator.HasMorePages() {
+			response, err := paginator.NextPage(ctx)
+			if err != nil {
+				return list, r, err
+			}
+			dbSorts := make([]dynamoSort, 0, len(response.Items))
+			if err = attributevalue.UnmarshalListOfMaps(response.Items, &dbSorts); err != nil {
+				return list, r, err
+			}
+			// Cannot use append(tmp, dbSorts...)
+			for i := range dbSorts {
+				tmp = append(tmp, dbSorts[i])
+			}
+		}
+	default:
+		sk, err := attributevalue.Marshal(fmt.Sprintf(dynamoDocSortF, 0))
+		if err != nil {
+			return list, r, err
+		}
+		params := &dynamodb.ScanInput{
+			TableName:        &repo.resources.Table,
+			FilterExpression: aws.String("SK = :sk"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":sk": sk,
+			},
+		}
+		paginator := dynamodb.NewScanPaginator(repo.client, params)
+		for paginator.HasMorePages() {
+			response, err := paginator.NextPage(ctx)
+			if err != nil {
+				return list, r, err
+			}
+			dbDocs := make([]dynamoDocument, 0, len(response.Items))
+			if err = attributevalue.UnmarshalListOfMaps(response.Items, &dbDocs); err != nil {
+				return list, r, err
+			}
+			// Cannot use append(tmp, dbDocs...)
+			for i := range dbDocs {
+				tmp = append(tmp, dbDocs[i])
+			}
+		}
+	}
+
+	// Sort results in memory if the field is a certain option
+	var sorter sort.Interface
+	switch filter.Field {
+	case "Name", "":
+		sorter = dynamoDocumentByName(tmp)
+	case "Created":
+		sorter = dynamoDocumentByCreated(tmp)
+	case "Updated":
+		sorter = dynamoDocumentByUpdated(tmp)
+	}
+	if sorter != nil {
+		log.Println("I am sorting!")
+		if !sortAsc {
+			sorter = sort.Reverse(sorter)
+		}
+		sort.Sort(sorter)
+	}
+
+	// Pull out range segment
+	r.Size = len(tmp)
+	list = make([]Document, 0, filter.Range.End-filter.Range.Start+1)
+	for i := filter.Range.Start; i < len(tmp) && i <= filter.Range.End; i++ {
+		list = append(list, tmp[i].ToDocument())
+	}
+
+	// If start = 0  and list is empty, then there just aren't any records
+	if filter.Range.Start > 0 && len(list) == 0 {
+		return list, r, ErrBadRange
+	}
+
+	// Kind of a weird situation here where equal start and end actually signify
+	// one item, but size can be zero.
+	r.Start = filter.Range.Start
+	r.End = r.Start
+	if len(list) > 0 {
+		r.End += len(list) - 1
+	}
+
 	return
 }
 
