@@ -30,6 +30,7 @@ type DocumentRepository interface {
 	CreateDocument(context.Context, *Document) error
 	DeleteDocument(context.Context, string) error
 	GetDocumentById(context.Context, string) (Document, error)
+	GetDocumentByPath(context.Context, string) (Document, error)
 	GetDocumentList(context.Context, DocumentFilter) ([]Document, Range, error)
 	UpdateDocument(context.Context, *Document) error
 }

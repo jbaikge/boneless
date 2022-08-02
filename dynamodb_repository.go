@@ -417,6 +417,14 @@ func (repo DynamoDBRepository) GetDocumentById(ctx context.Context, id string) (
 	return dbDoc.ToDocument(), nil
 }
 
+func (repo DynamoDBRepository) GetDocumentByPath(ctx context.Context, path string) (doc Document, err error) {
+	dbPath := new(dynamoPath)
+	if err = repo.getItem(ctx, dynamoPathPrefix+path, dynamoPathSortKey, dbPath); err != nil {
+		return
+	}
+	return dbPath.ToDocument(), nil
+}
+
 func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter DocumentFilter) (list []Document, r Range, err error) {
 	return
 }
