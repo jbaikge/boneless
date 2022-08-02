@@ -366,6 +366,10 @@ func (repo DynamoDBRepository) UpdateClass(ctx context.Context, class *Class) (e
 // Document creation inserts two records: one with version zero and one with
 // version one
 func (repo DynamoDBRepository) CreateDocument(ctx context.Context, doc *Document) (err error) {
+	if doc.ClassId == "" {
+		return fmt.Errorf("classId is required")
+	}
+
 	dbDoc := new(dynamoDocument)
 	dbDoc.FromDocument(doc)
 
@@ -405,6 +409,63 @@ func (repo DynamoDBRepository) CreateDocument(ctx context.Context, doc *Document
 }
 
 func (repo DynamoDBRepository) DeleteDocument(ctx context.Context, id string) (err error) {
+	dbDoc := new(dynamoDocument)
+	docId := dynamoDocPrefix + id
+	if err = repo.getItem(ctx, docId, fmt.Sprintf(dynamoDocSortF, 0), dbDoc); err != nil {
+		return
+	}
+
+	// Delete all versions of the document
+	for i := 0; i <= dbDoc.Version; i++ {
+		if err = repo.deleteItem(ctx, docId, fmt.Sprintf(dynamoDocSortF, i)); err != nil {
+			return
+		}
+	}
+
+	// Delete path item
+	if err = repo.deleteItem(ctx, dynamoPathPrefix+dbDoc.Path, dynamoPathSortKey); err != nil {
+		return
+	}
+
+	// Delete sort items
+	type PK_SK struct {
+		PK string
+		SK string
+	}
+
+	prefix, err := attributevalue.Marshal("sort#")
+	if err != nil {
+		return
+	}
+	docIdValue, err := attributevalue.Marshal(id)
+	if err != nil {
+		return
+	}
+	params := &dynamodb.ScanInput{
+		TableName:            &repo.resources.Table,
+		ProjectionExpression: aws.String("PK,SK"),
+		FilterExpression:     aws.String("begins_with(PK, :prefix) AND DocumentId = :id"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":prefix": prefix,
+			":id":     docIdValue,
+		},
+	}
+	paginator := dynamodb.NewScanPaginator(repo.client, params)
+	for paginator.HasMorePages() {
+		response, err := paginator.NextPage(ctx)
+		if err != nil {
+			return err
+		}
+		for _, item := range response.Items {
+			var pk_sk PK_SK
+			if err = attributevalue.UnmarshalMap(item, &pk_sk); err != nil {
+				return err
+			}
+			if err = repo.deleteItem(ctx, pk_sk.PK, pk_sk.SK); err != nil {
+				return err
+			}
+		}
+	}
 	return
 }
 

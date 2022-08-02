@@ -482,4 +482,32 @@ func TestDynamoDBRepository(t *testing.T) {
 			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
 		})
 	})
+
+	t.Run("DeleteDocument", func(t *testing.T) {
+		class := Class{
+			Id:   "delete_document_class",
+			Name: "Delete Document Class",
+			Fields: []Field{
+				{Name: "field_1", Sort: true},
+				{Name: "field_2", Sort: true},
+				{Name: "field_3", Sort: true},
+			},
+		}
+		assert.NoError(t, repo.CreateClass(ctx, &class))
+
+		doc := Document{
+			Id:      "delete_me",
+			Name:    "Delete Me",
+			ClassId: class.Id,
+			Path:    "/delete/me",
+			Values: map[string]interface{}{
+				"field_1": "My first value",
+				"field_2": "My second value",
+				"field_3": []int{1, 2, 3},
+			},
+		}
+		assert.NoError(t, repo.CreateDocument(ctx, &doc))
+
+		assert.NoError(t, repo.DeleteDocument(ctx, doc.Id))
+	})
 }
