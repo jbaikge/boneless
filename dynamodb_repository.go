@@ -463,72 +463,63 @@ func (repo DynamoDBRepository) UpdateDocument(ctx context.Context, doc *Document
 	return
 }
 
-func (repo DynamoDBRepository) getPathDocument(ctx context.Context, oldDoc *Document) (pathDoc *dynamoPath, err error) {
-	if oldDoc.Path == "" {
-		return nil, ErrNotExist
-	}
+func (repo DynamoDBRepository) updatePathDocument(ctx context.Context, oldDoc *Document, doc *Document) (err error) {
+	oldPath := new(dynamoPath)
 
-	pathDoc = new(dynamoPath)
-	err = repo.getItem(ctx, dynamoPathPrefix+oldDoc.Path, dynamoPathSortKey, pathDoc)
-	if err != ErrNotExist {
-		return
+	// Attempt to find old path using the old document's information
+	if oldDoc.Path != "" {
+		err = repo.getItem(ctx, dynamoPathPrefix+oldDoc.Path, dynamoPathSortKey, oldPath)
+		if err != nil && err != ErrNotExist {
+			return
+		}
 	}
 
 	// Uh-oh need to do a table scan because somehow the path updated on
 	// the document without the path partition key getting updated
-	sk, err := attributevalue.Marshal(dynamoPathSortKey)
-	if err != nil {
-		return nil, err
-	}
-	id, err := attributevalue.Marshal(oldDoc.Id)
-	if err != nil {
-		return nil, err
-	}
-	params := &dynamodb.ScanInput{
-		TableName:        &repo.resources.Table,
-		FilterExpression: aws.String("SK = :sk AND DocumentId = :id"),
-		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":sk": sk,
-			":id": id,
-		},
-	}
-	pagination := dynamodb.NewScanPaginator(repo.client, params)
-	for pagination.HasMorePages() {
-		response, err := pagination.NextPage(ctx)
+	if oldPath.PK == "" {
+		sk, err := attributevalue.Marshal(dynamoPathSortKey)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		if len(response.Items) == 0 {
-			continue
+		id, err := attributevalue.Marshal(oldDoc.Id)
+		if err != nil {
+			return err
 		}
-		if err = attributevalue.UnmarshalMap(response.Items[0], pathDoc); err != nil {
-			return nil, err
+		params := &dynamodb.ScanInput{
+			TableName:        &repo.resources.Table,
+			FilterExpression: aws.String("SK = :sk AND DocumentId = :id"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":sk": sk,
+				":id": id,
+			},
+		}
+		pagination := dynamodb.NewScanPaginator(repo.client, params)
+		for pagination.HasMorePages() {
+			response, err := pagination.NextPage(ctx)
+			if err != nil {
+				return err
+			}
+			if len(response.Items) == 0 {
+				continue
+			}
+			if err = attributevalue.UnmarshalMap(response.Items[0], oldPath); err != nil {
+				return err
+			}
 		}
 	}
-	return pathDoc, nil
-}
-
-func (repo DynamoDBRepository) updatePathDocument(ctx context.Context, oldDoc *Document, doc *Document) (err error) {
-	pathDoc, err := repo.getPathDocument(ctx, oldDoc)
-	if err != nil && err != ErrNotExist {
-		// Something unexpected happened
-		return fmt.Errorf("unexpected error during getPathDocument: %w", err)
-	}
-	// Clear ErrNotExist error
-	err = nil
 
 	// Remove old path
-	if pathDoc != nil && pathDoc.PK != "" {
-		if err = repo.deleteItem(ctx, pathDoc.PK, pathDoc.SK); err != nil {
+	if oldPath.PK != "" {
+		if err = repo.deleteItem(ctx, oldPath.PK, oldPath.SK); err != nil {
 			return
 		}
 	}
 
 	// Add new path
 	if doc.Path != "" {
-		dbPath := new(dynamoPath)
-		dbPath.FromDocument(doc)
-		if err = repo.putItem(ctx, dbPath); err != nil {
+		newPath := new(dynamoPath)
+		newPath.FromDocument(doc)
+		if err = repo.putItem(ctx, newPath); err != nil {
 			return
 		}
 	}
