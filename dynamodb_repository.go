@@ -553,6 +553,14 @@ func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter Docum
 				":pk": pk,
 			},
 		}
+		if filter.ParentId != "" {
+			parentId, err := attributevalue.Marshal(filter.ParentId)
+			if err != nil {
+				return list, r, err
+			}
+			params.FilterExpression = aws.String("ParentId = :parent_id")
+			params.ExpressionAttributeValues[":parent_id"] = parentId
+		}
 		paginator := dynamodb.NewQueryPaginator(repo.client, params)
 		for paginator.HasMorePages() {
 			response, err := paginator.NextPage(ctx)
