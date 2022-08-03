@@ -534,4 +534,43 @@ func TestDynamoDBRepositoryDocumentList(t *testing.T) {
 	for _, document := range testDocuments() {
 		assert.NoError(t, repo.CreateDocument(ctx, &document))
 	}
+
+	t.Run("ListPagesByTitle", func(t *testing.T) {
+		filter := DocumentFilter{
+			ClassId: "page",
+			Field:   "title",
+			Range:   Range{End: 9},
+		}
+		docs, r, err := repo.GetDocumentList(ctx, filter)
+		assert.NoError(t, err)
+		assert.DeepEqual(t, Range{End: 1, Size: 2}, r)
+		assert.Equal(t, 2, len(docs))
+		assert.Equal(t, "page-2", docs[0].Id)
+		assert.Equal(t, "page-1", docs[1].Id)
+	})
+
+	t.Run("ListSessionsByStart", func(t *testing.T) {
+		filter := DocumentFilter{
+			ClassId: "session",
+			Field:   "start",
+			Range:   Range{End: 9},
+		}
+		docs, r, err := repo.GetDocumentList(ctx, filter)
+		assert.NoError(t, err)
+		assert.DeepEqual(t, Range{End: 4, Size: 5}, r)
+		assert.Equal(t, 5, len(docs))
+	})
+
+	t.Run("ListSessionsByEvent", func(t *testing.T) {
+		filter := DocumentFilter{
+			ClassId:  "session",
+			ParentId: "event-1",
+			Field:    "start",
+			Range:    Range{End: 9},
+		}
+		docs, r, err := repo.GetDocumentList(ctx, filter)
+		assert.NoError(t, err)
+		assert.DeepEqual(t, Range{End: 2, Size: 3}, r)
+		assert.Equal(t, 3, len(docs))
+	})
 }
