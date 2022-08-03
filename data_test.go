@@ -70,11 +70,14 @@ func testClasses() []Class {
 }
 
 func testDocuments() []Document {
+	loc, _ := time.LoadLocation("America/New_York")
 	return []Document{
 		{
 			Id:      "page-1",
 			ClassId: "page",
 			Path:    "/",
+			Created: time.Date(2022, time.August, 8, 9, 5, 0, 0, loc),
+			Updated: time.Date(2022, time.August, 8, 9, 5, 0, 0, loc),
 			Values: map[string]interface{}{
 				"title":   "Homepage",
 				"content": "Homepage content goes here",
@@ -84,6 +87,8 @@ func testDocuments() []Document {
 			Id:      "page-2",
 			ClassId: "page",
 			Path:    "/events",
+			Created: time.Date(2022, time.August, 8, 9, 10, 0, 0, loc),
+			Updated: time.Date(2022, time.August, 8, 9, 10, 0, 0, loc),
 			Values: map[string]interface{}{
 				"title":   "Events",
 				"content": "Upcoming and past events",
@@ -93,6 +98,8 @@ func testDocuments() []Document {
 			Id:      "blog-1",
 			ClassId: "blog",
 			Path:    "/blogs/blog-1",
+			Created: time.Date(2022, time.August, 8, 9, 7, 0, 0, loc),
+			Updated: time.Date(2022, time.August, 8, 9, 7, 0, 0, loc),
 			Values: map[string]interface{}{
 				"title":     "Blog 1",
 				"published": time.Unix(1659530000, 0),
@@ -105,6 +112,8 @@ func testDocuments() []Document {
 			Id:      "blog-2",
 			ClassId: "blog",
 			Path:    "/blogs/blog-2",
+			Created: time.Date(2022, time.August, 8, 9, 16, 0, 0, loc),
+			Updated: time.Date(2022, time.August, 8, 9, 16, 0, 0, loc),
 			Values: map[string]interface{}{
 				"title":     "Blog 2",
 				"published": time.Unix(1659550000, 0),
@@ -117,6 +126,8 @@ func testDocuments() []Document {
 			Id:      "blog-3",
 			ClassId: "blog",
 			Path:    "/blogs/blog-1",
+			Created: time.Date(2022, time.August, 8, 9, 42, 0, 0, loc),
+			Updated: time.Date(2022, time.August, 8, 9, 42, 0, 0, loc),
 			Values: map[string]interface{}{
 				"title":     "Blog 3",
 				"published": time.Unix(1659570000, 0),
@@ -129,6 +140,8 @@ func testDocuments() []Document {
 			Id:      "news-1",
 			ClassId: "news",
 			Path:    "/news/news-1",
+			Created: time.Date(2022, time.August, 8, 9, 14, 0, 0, loc),
+			Updated: time.Date(2022, time.August, 8, 9, 14, 0, 0, loc),
 			Values: map[string]interface{}{
 				"title":     "News 1",
 				"published": time.Unix(1659540000, 0),
@@ -141,6 +154,8 @@ func testDocuments() []Document {
 			Id:      "news-2",
 			ClassId: "news",
 			Path:    "/news/news-2",
+			Created: time.Date(2022, time.August, 8, 9, 38, 0, 0, loc),
+			Updated: time.Date(2022, time.August, 8, 9, 38, 0, 0, loc),
 			Values: map[string]interface{}{
 				"title":     "News 2",
 				"published": time.Unix(1659560000, 0),
@@ -152,7 +167,9 @@ func testDocuments() []Document {
 		{
 			Id:      "news-3",
 			ClassId: "news",
-			Path:    "/news/news-1",
+			Path:    "/news/news-3",
+			Created: time.Date(2022, time.August, 8, 9, 52, 0, 0, loc),
+			Updated: time.Date(2022, time.August, 8, 9, 52, 0, 0, loc),
 			Values: map[string]interface{}{
 				"title":     "News 3",
 				"published": time.Unix(1659580000, 0),
@@ -165,6 +182,8 @@ func testDocuments() []Document {
 			Id:      "event-1",
 			ClassId: "event",
 			Path:    "/events/event-1",
+			Created: time.Date(2022, time.August, 8, 9, 1, 0, 0, loc),
+			Updated: time.Date(2022, time.August, 8, 9, 1, 0, 0, loc),
 			Values: map[string]interface{}{
 				"start":        time.Unix(1659600000, 0),
 				"end":          time.Unix(1659603600, 0),
@@ -176,6 +195,8 @@ func testDocuments() []Document {
 			Id:       "session-1",
 			ClassId:  "session",
 			ParentId: "event-1",
+			Created:  time.Date(2022, time.August, 8, 9, 4, 0, 0, loc),
+			Updated:  time.Date(2022, time.August, 8, 9, 4, 0, 0, loc),
 			Values: map[string]interface{}{
 				"title":    "First Session",
 				"start":    "09:30",
@@ -187,6 +208,8 @@ func testDocuments() []Document {
 			Id:       "session-2",
 			ClassId:  "session",
 			ParentId: "event-1",
+			Created:  time.Date(2022, time.August, 8, 9, 11, 0, 0, loc),
+			Updated:  time.Date(2022, time.August, 8, 9, 11, 0, 0, loc),
 			Values: map[string]interface{}{
 				"title":    "First Session",
 				"start":    "09:45",
@@ -198,6 +221,8 @@ func testDocuments() []Document {
 			Id:       "session-3",
 			ClassId:  "session",
 			ParentId: "event-1",
+			Created:  time.Date(2022, time.August, 8, 9, 26, 0, 0, loc),
+			Updated:  time.Date(2022, time.August, 8, 9, 26, 0, 0, loc),
 			Values: map[string]interface{}{
 				"title":    "First Session",
 				"start":    "10:00",
@@ -206,10 +231,11 @@ func testDocuments() []Document {
 			},
 		},
 		{
-			Id:       "speaker-1",
-			ClassId:  "speaker",
-			ParentId: "session-1",
-			Path:     "/speakers/speaker-1",
+			Id:      "speaker-1",
+			ClassId: "speaker",
+			Path:    "/speakers/speaker-1",
+			Created: time.Date(2022, time.August, 8, 9, 9, 0, 0, loc),
+			Updated: time.Date(2022, time.August, 8, 9, 9, 0, 0, loc),
 			Values: map[string]interface{}{
 				"name":       "Felicity Grantham",
 				"first_name": "Felicity",
@@ -218,10 +244,11 @@ func testDocuments() []Document {
 			},
 		},
 		{
-			Id:       "speaker-2",
-			ClassId:  "speaker",
-			ParentId: "session-2",
-			Path:     "/speakers/speaker-2",
+			Id:      "speaker-2",
+			ClassId: "speaker",
+			Path:    "/speakers/speaker-2",
+			Created: time.Date(2022, time.August, 8, 9, 36, 0, 0, loc),
+			Updated: time.Date(2022, time.August, 8, 9, 36, 0, 0, loc),
 			Values: map[string]interface{}{
 				"name":       "Sibby Begg",
 				"first_name": "Sibby",
@@ -230,10 +257,11 @@ func testDocuments() []Document {
 			},
 		},
 		{
-			Id:       "speaker-3",
-			ClassId:  "speaker",
-			ParentId: "session-2",
-			Path:     "/speakers/speaker-3",
+			Id:      "speaker-3",
+			ClassId: "speaker",
+			Path:    "/speakers/speaker-3",
+			Created: time.Date(2022, time.August, 8, 9, 46, 0, 0, loc),
+			Updated: time.Date(2022, time.August, 8, 9, 46, 0, 0, loc),
 			Values: map[string]interface{}{
 				"name":       "Gordon Pont",
 				"first_name": "Gordon",
@@ -242,10 +270,11 @@ func testDocuments() []Document {
 			},
 		},
 		{
-			Id:       "speaker-4",
-			ClassId:  "speaker",
-			ParentId: "session-1",
-			Path:     "/speakers/speaker-4",
+			Id:      "speaker-4",
+			ClassId: "speaker",
+			Path:    "/speakers/speaker-4",
+			Created: time.Date(2022, time.August, 8, 9, 48, 0, 0, loc),
+			Updated: time.Date(2022, time.August, 8, 9, 48, 0, 0, loc),
 			Values: map[string]interface{}{
 				"name":       "Alon Keohane",
 				"first_name": "Alon",
@@ -254,10 +283,11 @@ func testDocuments() []Document {
 			},
 		},
 		{
-			Id:       "speaker-5",
-			ClassId:  "speaker",
-			ParentId: "session-3",
-			Path:     "/speakers/speaker-5",
+			Id:      "speaker-5",
+			ClassId: "speaker",
+			Path:    "/speakers/speaker-5",
+			Created: time.Date(2022, time.August, 8, 9, 52, 0, 0, loc),
+			Updated: time.Date(2022, time.August, 8, 9, 52, 0, 0, loc),
 			Values: map[string]interface{}{
 				"name":       "Darlene Blackmore",
 				"first_name": "Darlene",
@@ -266,10 +296,11 @@ func testDocuments() []Document {
 			},
 		},
 		{
-			Id:       "speaker-6",
-			ClassId:  "speaker",
-			ParentId: "session-1",
-			Path:     "/speakers/speaker-6",
+			Id:      "speaker-6",
+			ClassId: "speaker",
+			Path:    "/speakers/speaker-6",
+			Created: time.Date(2022, time.August, 8, 9, 57, 0, 0, loc),
+			Updated: time.Date(2022, time.August, 8, 9, 57, 0, 0, loc),
 			Values: map[string]interface{}{
 				"name":       "Wylie Bussey",
 				"first_name": "Wylie",
