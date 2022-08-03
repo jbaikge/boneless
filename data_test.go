@@ -81,6 +81,15 @@ func testDocuments() []Document {
 			},
 		},
 		{
+			Id:      "page-2",
+			ClassId: "page",
+			Path:    "/events",
+			Values: map[string]interface{}{
+				"title":   "Events",
+				"content": "Upcoming and past events",
+			},
+		},
+		{
 			Id:      "blog-1",
 			ClassId: "blog",
 			Path:    "/blogs/blog-1",
