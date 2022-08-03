@@ -8,6 +8,7 @@ func testClasses() []Class {
 			Id:   "page",
 			Name: "Page",
 			Fields: []Field{
+				{Name: "title", Sort: true},
 				{Name: "content"},
 			},
 		},
@@ -15,6 +16,7 @@ func testClasses() []Class {
 			Id:   "blog",
 			Name: "Blog",
 			Fields: []Field{
+				{Name: "title", Sort: true},
 				{Name: "published", Sort: true},
 				{Name: "excerpt"},
 				{Name: "author"},
@@ -24,6 +26,7 @@ func testClasses() []Class {
 			Id:   "news",
 			Name: "News",
 			Fields: []Field{
+				{Name: "title", Sort: true},
 				{Name: "published", Sort: true},
 				{Name: "excerpt"},
 				{Name: "author"},
@@ -33,6 +36,7 @@ func testClasses() []Class {
 			Id:   "event",
 			Name: "Event",
 			Fields: []Field{
+				{Name: "title", Sort: true},
 				{Name: "start", Sort: true},
 				{Name: "end"},
 				{Name: "date_display"},
@@ -53,6 +57,7 @@ func testClasses() []Class {
 			Id:   "speaker",
 			Name: "Speaker",
 			Fields: []Field{
+				{Name: "name"},
 				{Name: "prefix"},
 				{Name: "first_name"},
 				{Name: "last_name"},
@@ -71,15 +76,16 @@ func testDocuments() []Document {
 			ClassId: "page",
 			Path:    "/",
 			Values: map[string]interface{}{
+				"title":   "Homepage",
 				"content": "Homepage content goes here",
 			},
 		},
 		{
 			Id:      "blog-1",
 			ClassId: "blog",
-			Name:    "Blog 1",
 			Path:    "/blogs/blog-1",
 			Values: map[string]interface{}{
+				"title":     "Blog 1",
 				"published": time.Unix(1659530000, 0),
 				"excerpt":   "Blog excerpt",
 				"content":   "Blog content",
@@ -89,9 +95,9 @@ func testDocuments() []Document {
 		{
 			Id:      "blog-2",
 			ClassId: "blog",
-			Name:    "Blog 2",
 			Path:    "/blogs/blog-2",
 			Values: map[string]interface{}{
+				"title":     "Blog 2",
 				"published": time.Unix(1659550000, 0),
 				"excerpt":   "Blog excerpt",
 				"content":   "Blog content",
@@ -101,9 +107,9 @@ func testDocuments() []Document {
 		{
 			Id:      "blog-3",
 			ClassId: "blog",
-			Name:    "Blog 3",
 			Path:    "/blogs/blog-1",
 			Values: map[string]interface{}{
+				"title":     "Blog 3",
 				"published": time.Unix(1659570000, 0),
 				"excerpt":   "Blog excerpt",
 				"content":   "Blog content",
@@ -113,9 +119,9 @@ func testDocuments() []Document {
 		{
 			Id:      "news-1",
 			ClassId: "news",
-			Name:    "News 1",
 			Path:    "/news/news-1",
 			Values: map[string]interface{}{
+				"title":     "News 1",
 				"published": time.Unix(1659540000, 0),
 				"excerpt":   "News excerpt",
 				"content":   "News content",
@@ -125,9 +131,9 @@ func testDocuments() []Document {
 		{
 			Id:      "news-2",
 			ClassId: "news",
-			Name:    "News 2",
 			Path:    "/news/news-2",
 			Values: map[string]interface{}{
+				"title":     "News 2",
 				"published": time.Unix(1659560000, 0),
 				"excerpt":   "News excerpt",
 				"content":   "News content",
@@ -137,9 +143,9 @@ func testDocuments() []Document {
 		{
 			Id:      "news-3",
 			ClassId: "news",
-			Name:    "News 3",
 			Path:    "/news/news-1",
 			Values: map[string]interface{}{
+				"title":     "News 3",
 				"published": time.Unix(1659580000, 0),
 				"excerpt":   "News excerpt",
 				"content":   "News content",
@@ -149,7 +155,7 @@ func testDocuments() []Document {
 		{
 			Id:      "event-1",
 			ClassId: "event",
-			Name:    "First Event",
+			Path:    "/events/event-1",
 			Values: map[string]interface{}{
 				"start":        time.Unix(1659600000, 0),
 				"end":          time.Unix(1659603600, 0),
@@ -161,7 +167,6 @@ func testDocuments() []Document {
 			Id:       "session-1",
 			ClassId:  "session",
 			ParentId: "event-1",
-			Name:     "Session 1",
 			Values: map[string]interface{}{
 				"title":    "First Session",
 				"start":    "09:30",
@@ -173,7 +178,6 @@ func testDocuments() []Document {
 			Id:       "session-2",
 			ClassId:  "session",
 			ParentId: "event-1",
-			Name:     "Session 2",
 			Values: map[string]interface{}{
 				"title":    "First Session",
 				"start":    "09:45",
@@ -185,7 +189,6 @@ func testDocuments() []Document {
 			Id:       "session-3",
 			ClassId:  "session",
 			ParentId: "event-1",
-			Name:     "Session 3",
 			Values: map[string]interface{}{
 				"title":    "First Session",
 				"start":    "10:00",
@@ -197,8 +200,9 @@ func testDocuments() []Document {
 			Id:       "speaker-1",
 			ClassId:  "speaker",
 			ParentId: "session-1",
-			Name:     "Felicity Grantham",
+			Path:     "/speakers/speaker-1",
 			Values: map[string]interface{}{
+				"name":       "Felicity Grantham",
 				"first_name": "Felicity",
 				"last_name":  "Grantham",
 				"sort_name":  "Grantham, Felicity",
@@ -208,8 +212,9 @@ func testDocuments() []Document {
 			Id:       "speaker-2",
 			ClassId:  "speaker",
 			ParentId: "session-2",
-			Name:     "Sibby Begg",
+			Path:     "/speakers/speaker-2",
 			Values: map[string]interface{}{
+				"name":       "Sibby Begg",
 				"first_name": "Sibby",
 				"last_name":  "Begg",
 				"sort_name":  "Begg, Sibby",
@@ -219,8 +224,9 @@ func testDocuments() []Document {
 			Id:       "speaker-3",
 			ClassId:  "speaker",
 			ParentId: "session-2",
-			Name:     "Gordon Pont",
+			Path:     "/speakers/speaker-3",
 			Values: map[string]interface{}{
+				"name":       "Gordon Pont",
 				"first_name": "Gordon",
 				"last_name":  "Pont",
 				"sort_name":  "Pont, Gordon",
@@ -230,8 +236,9 @@ func testDocuments() []Document {
 			Id:       "speaker-4",
 			ClassId:  "speaker",
 			ParentId: "session-1",
-			Name:     "Alon Keohane",
+			Path:     "/speakers/speaker-4",
 			Values: map[string]interface{}{
+				"name":       "Alon Keohane",
 				"first_name": "Alon",
 				"last_name":  "Keohane",
 				"sort_name":  "Keohane, Alon",
@@ -241,19 +248,21 @@ func testDocuments() []Document {
 			Id:       "speaker-5",
 			ClassId:  "speaker",
 			ParentId: "session-3",
-			Name:     "Darlene Blackmore",
+			Path:     "/speakers/speaker-5",
 			Values: map[string]interface{}{
+				"name":       "Darlene Blackmore",
 				"first_name": "Darlene",
 				"last_name":  "Blackmore",
 				"sort_name":  "Blackmore, Darlene",
 			},
 		},
 		{
-			Id:       "speaker-1",
+			Id:       "speaker-6",
 			ClassId:  "speaker",
 			ParentId: "session-1",
-			Name:     "Wylie Bussey",
+			Path:     "/speakers/speaker-6",
 			Values: map[string]interface{}{
+				"name":       "Wylie Bussey",
 				"first_name": "Wylie",
 				"last_name":  "Bussey",
 				"sort_name":  "Bussey, Wylie",
