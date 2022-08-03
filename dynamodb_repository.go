@@ -414,10 +414,11 @@ func (repo DynamoDBRepository) CreateDocument(ctx context.Context, doc *Document
 		return fmt.Errorf("classId is required")
 	}
 
+	doc.Version = 1
+
 	dbDoc := new(dynamoDocument)
 	dbDoc.FromDocument(doc)
 
-	dbDoc.Version = 1
 	for _, version := range []int{0, 1} {
 		dbDoc.SK = fmt.Sprintf(dynamoDocSortF, version)
 		if err = repo.putItem(ctx, dbDoc); err != nil {
