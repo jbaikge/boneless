@@ -516,3 +516,22 @@ func TestDynamoDBRepository(t *testing.T) {
 		assert.NoError(t, repo.DeleteDocument(ctx, doc.Id))
 	})
 }
+
+func TestDynamoDBRepositoryDocumentList(t *testing.T) {
+	resources := DynamoDBResources{
+		Table: dynamoTablePrefix + "List",
+	}
+	cfg, err := testDynamoConfig(resources.Table)
+	assert.NoError(t, err)
+
+	repo := NewDynamoDBRepository(cfg, resources)
+	ctx := context.Background()
+
+	for _, class := range testClasses() {
+		assert.NoError(t, repo.CreateClass(ctx, &class))
+	}
+
+	for _, document := range testDocuments() {
+		assert.NoError(t, repo.CreateDocument(ctx, &document))
+	}
+}
