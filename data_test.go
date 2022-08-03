@@ -211,10 +211,10 @@ func testDocuments() []Document {
 			Created:  time.Date(2022, time.August, 8, 9, 11, 0, 0, loc),
 			Updated:  time.Date(2022, time.August, 8, 9, 11, 0, 0, loc),
 			Values: map[string]interface{}{
-				"title":    "First Session",
+				"title":    "Second Session",
 				"start":    "09:45",
 				"end":      "10:00",
-				"location": "Hall B",
+				"location": "Hall A",
 			},
 		},
 		{
@@ -224,10 +224,36 @@ func testDocuments() []Document {
 			Created:  time.Date(2022, time.August, 8, 9, 26, 0, 0, loc),
 			Updated:  time.Date(2022, time.August, 8, 9, 26, 0, 0, loc),
 			Values: map[string]interface{}{
-				"title":    "First Session",
+				"title":    "Third Session",
 				"start":    "10:00",
 				"end":      "10:30",
 				"location": "Hall B",
+			},
+		},
+		{
+			Id:       "session-4",
+			ClassId:  "session",
+			ParentId: "event-2",
+			Created:  time.Date(2022, time.August, 8, 9, 27, 0, 0, loc),
+			Updated:  time.Date(2022, time.August, 8, 9, 27, 0, 0, loc),
+			Values: map[string]interface{}{
+				"title":    "First Session",
+				"start":    "12:00",
+				"end":      "12:30",
+				"location": "Concourse",
+			},
+		},
+		{
+			Id:       "session-5",
+			ClassId:  "session",
+			ParentId: "event-2",
+			Created:  time.Date(2022, time.August, 8, 9, 49, 0, 0, loc),
+			Updated:  time.Date(2022, time.August, 8, 9, 49, 0, 0, loc),
+			Values: map[string]interface{}{
+				"title":    "Second Session",
+				"start":    "12:30",
+				"end":      "13:00",
+				"location": "Concourse",
 			},
 		},
 		{
