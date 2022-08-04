@@ -573,4 +573,17 @@ func TestDynamoDBRepositoryDocumentList(t *testing.T) {
 		assert.DeepEqual(t, Range{End: 2, Size: 3}, r)
 		assert.Equal(t, 3, len(docs))
 	})
+
+	t.Run("EmptyFilter", func(t *testing.T) {
+		// Should list all documents, sorted by creation date
+		filter := DocumentFilter{
+			Range: Range{End: 99},
+		}
+		docs, r, err := repo.GetDocumentList(ctx, filter)
+		assert.NoError(t, err)
+		assert.DeepEqual(t, Range{End: 19, Size: 20}, r)
+		assert.Equal(t, 20, len(docs))
+		assert.Equal(t, "event-1", docs[0].Id)
+		assert.Equal(t, "speaker-6", docs[19].Id)
+	})
 }
