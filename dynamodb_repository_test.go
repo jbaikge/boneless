@@ -586,4 +586,19 @@ func TestDynamoDBRepositoryDocumentList(t *testing.T) {
 		assert.Equal(t, "event-1", docs[0].Id)
 		assert.Equal(t, "speaker-6", docs[19].Id)
 	})
+
+	t.Run("AllChildren", func(t *testing.T) {
+		// Should give all children of a parent document, regardless of class
+		// then sorted by creation date
+		filter := DocumentFilter{
+			ParentId: "event-1",
+			Range:    Range{End: 99},
+		}
+		docs, r, err := repo.GetDocumentList(ctx, filter)
+		assert.NoError(t, err)
+		assert.DeepEqual(t, Range{End: 2, Size: 3}, r)
+		assert.Equal(t, 3, len(docs))
+		assert.Equal(t, "session-1", docs[0].Id)
+		assert.Equal(t, "session-3", docs[2].Id)
+	})
 }
