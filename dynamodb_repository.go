@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"sort"
 	"strings"
@@ -608,7 +607,6 @@ func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter Docum
 		sorter = dynamoDocumentByUpdated(tmp)
 	}
 	if sorter != nil {
-		log.Println("I am sorting!")
 		if !sortAsc {
 			sorter = sort.Reverse(sorter)
 		}
