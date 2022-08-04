@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 const (
@@ -298,6 +299,7 @@ func (res *DynamoDBResources) FromEnv() {
 
 type DynamoDBRepository struct {
 	db        *dynamodb.Client
+	s3        *s3.Client
 	resources DynamoDBResources
 }
 
@@ -305,6 +307,7 @@ type DynamoDBRepository struct {
 func NewDynamoDBRepository(config aws.Config, resources DynamoDBResources) Repository {
 	return &DynamoDBRepository{
 		db:        dynamodb.NewFromConfig(config),
+		s3:        s3.NewFromConfig(config),
 		resources: resources,
 	}
 }
