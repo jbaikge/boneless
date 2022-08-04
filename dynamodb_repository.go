@@ -1,7 +1,9 @@
 package gocms
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -306,7 +308,7 @@ type DynamoDBRepository struct {
 func NewDynamoDBRepository(config aws.Config, resources DynamoDBResources) Repository {
 	return &DynamoDBRepository{
 		db:        dynamodb.NewFromConfig(config),
-		s3:        s3.NewFromConfig(config),
+		s3:        s3.NewFromConfig(config, func(o *s3.Options) { o.UsePathStyle = true }),
 		resources: resources,
 	}
 }
@@ -435,6 +437,10 @@ func (repo DynamoDBRepository) CreateDocument(ctx context.Context, doc *Document
 		}
 	}
 
+	if err = repo.putValues(ctx, doc); err != nil {
+		return
+	}
+
 	return
 }
 
@@ -505,7 +511,9 @@ func (repo DynamoDBRepository) GetDocumentById(ctx context.Context, id string) (
 	if err = repo.getItem(ctx, dynamoDocPrefix+id, fmt.Sprintf(dynamoDocSortF, 0), dbDoc); err != nil {
 		return
 	}
-	return dbDoc.ToDocument(), nil
+	doc = dbDoc.ToDocument()
+	err = repo.getValues(ctx, &doc)
+	return
 }
 
 func (repo DynamoDBRepository) GetDocumentByPath(ctx context.Context, path string) (doc Document, err error) {
@@ -513,7 +521,9 @@ func (repo DynamoDBRepository) GetDocumentByPath(ctx context.Context, path strin
 	if err = repo.getItem(ctx, dynamoPathPrefix+path, dynamoPathSortKey, dbPath); err != nil {
 		return
 	}
-	return dbPath.ToDocument(), nil
+	doc = dbPath.ToDocument()
+	err = repo.getValues(ctx, &doc)
+	return
 }
 
 func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter DocumentFilter) (list []Document, r Range, err error) {
@@ -617,7 +627,11 @@ func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter Docum
 	r.Size = len(tmp)
 	list = make([]Document, 0, filter.Range.End-filter.Range.Start+1)
 	for i := filter.Range.Start; i < len(tmp) && i <= filter.Range.End; i++ {
-		list = append(list, tmp[i].ToDocument())
+		doc := tmp[i].ToDocument()
+		if err = repo.getValues(ctx, &doc); err != nil {
+			return
+		}
+		list = append(list, doc)
 	}
 
 	// If start = 0  and list is empty, then there just aren't any records
@@ -664,6 +678,10 @@ func (repo DynamoDBRepository) UpdateDocument(ctx context.Context, doc *Document
 	}
 
 	if err = repo.updateSortDocuments(ctx, doc); err != nil {
+		return
+	}
+
+	if err = repo.putValues(ctx, doc); err != nil {
 		return
 	}
 
@@ -897,5 +915,42 @@ func (repo DynamoDBRepository) updateItem(ctx context.Context, item dynamoItem) 
 
 	_, err = repo.db.UpdateItem(ctx, params)
 
+	return
+}
+
+// S3 interaction
+
+func (repo DynamoDBRepository) s3Key(doc *Document) string {
+	return fmt.Sprintf("%s/%s/%s_v%04d.json", doc.ClassId, doc.Id, doc.Id, doc.Version)
+}
+
+func (repo DynamoDBRepository) getValues(ctx context.Context, doc *Document) (err error) {
+	params := &s3.GetObjectInput{
+		Bucket: &repo.resources.Bucket,
+		Key:    aws.String(repo.s3Key(doc)),
+	}
+	response, err := repo.s3.GetObject(ctx, params)
+	if err != nil {
+		return
+	}
+	if doc.Values == nil {
+		doc.Values = make(map[string]interface{})
+	}
+	return json.NewDecoder(response.Body).Decode(&doc.Values)
+}
+
+func (repo DynamoDBRepository) putValues(ctx context.Context, doc *Document) (err error) {
+	buffer := new(bytes.Buffer)
+	if err = json.NewEncoder(buffer).Encode(doc.Values); err != nil {
+		return
+	}
+
+	params := &s3.PutObjectInput{
+		Bucket:      &repo.resources.Bucket,
+		Key:         aws.String(repo.s3Key(doc)),
+		Body:        bytes.NewReader(buffer.Bytes()),
+		ContentType: aws.String("application/json"),
+	}
+	_, err = repo.s3.PutObject(ctx, params)
 	return
 }
