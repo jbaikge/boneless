@@ -13,7 +13,6 @@ type Document struct {
 	ClassId    string                 `json:"class_id"`
 	ParentId   string                 `json:"parent_id"`
 	TemplateId string                 `json:"template_id"`
-	Name       string                 `json:"name"`
 	Path       string                 `json:"path"`
 	Version    int                    `json:"version"`
 	Created    time.Time              `json:"created"`

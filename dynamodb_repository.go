@@ -104,17 +104,9 @@ func (arr dynamoClassByName) Less(i, j int) bool { return arr[i].Name < arr[j].N
 
 type dynamoDocumentInterface interface {
 	ToDocument() Document
-	GetName() string
 	GetCreated() time.Time
 	GetUpdated() time.Time
 }
-
-// Sort by name
-type dynamoDocumentByName []dynamoDocumentInterface
-
-func (arr dynamoDocumentByName) Len() int           { return len(arr) }
-func (arr dynamoDocumentByName) Swap(i, j int)      { arr[i], arr[j] = arr[j], arr[i] }
-func (arr dynamoDocumentByName) Less(i, j int) bool { return arr[i].GetName() < arr[j].GetName() }
 
 // Sort by created time
 type dynamoDocumentByCreated []dynamoDocumentInterface
@@ -141,7 +133,6 @@ type dynamoDocument struct {
 	ParentId   string
 	TemplateId string
 	Version    int
-	Name       string
 	Path       string
 	Created    time.Time
 	Updated    time.Time
@@ -154,7 +145,6 @@ func (dyn *dynamoDocument) FromDocument(doc *Document) {
 	dyn.ParentId = doc.ParentId
 	dyn.TemplateId = doc.TemplateId
 	dyn.Version = doc.Version
-	dyn.Name = doc.Name
 	dyn.Path = doc.Path
 	dyn.Created = doc.Created
 	dyn.Updated = doc.Updated
@@ -166,7 +156,6 @@ func (dyn dynamoDocument) ToDocument() (doc Document) {
 	doc.ParentId = dyn.ParentId
 	doc.TemplateId = dyn.TemplateId
 	doc.Version = dyn.Version
-	doc.Name = dyn.Name
 	doc.Path = dyn.Path
 	doc.Created = dyn.Created
 	doc.Updated = dyn.Updated
@@ -191,13 +180,11 @@ func (dyn dynamoDocument) UpdateValues() map[string]interface{} {
 		"ParentId":   dyn.ParentId,
 		"TemplateId": dyn.TemplateId,
 		"Version":    dyn.Version,
-		"Name":       dyn.Name,
 		"Path":       dyn.Path,
 		"Updated":    dyn.Updated,
 	}
 }
 
-func (dyn dynamoDocument) GetName() string       { return dyn.Name }
 func (dyn dynamoDocument) GetCreated() time.Time { return dyn.Created }
 func (dyn dynamoDocument) GetUpdated() time.Time { return dyn.Updated }
 
@@ -224,7 +211,6 @@ func (dyn *dynamoPath) FromDocument(doc *Document) {
 	dyn.ParentId = doc.ParentId
 	dyn.TemplateId = doc.TemplateId
 	dyn.Version = doc.Version
-	dyn.Name = doc.Name
 	dyn.Created = doc.Created
 	dyn.Updated = doc.Updated
 }
@@ -236,7 +222,6 @@ func (dyn dynamoPath) ToDocument() (doc Document) {
 	doc.ParentId = dyn.ParentId
 	doc.TemplateId = dyn.TemplateId
 	doc.Version = dyn.Version
-	doc.Name = dyn.Name
 	doc.Created = dyn.Created
 	doc.Updated = dyn.Updated
 	return
@@ -270,7 +255,6 @@ func (dyn *dynamoSort) FromDocument(doc *Document, key string) (ok bool) {
 	dyn.ParentId = doc.ParentId
 	dyn.TemplateId = doc.TemplateId
 	dyn.Version = doc.Version
-	dyn.Name = doc.Name
 	dyn.Path = doc.Path
 	dyn.Created = doc.Created
 	dyn.Updated = doc.Updated
@@ -283,7 +267,6 @@ func (dyn dynamoSort) ToDocument() (doc Document) {
 	doc.ParentId = dyn.ParentId
 	doc.TemplateId = dyn.TemplateId
 	doc.Version = dyn.Version
-	doc.Name = dyn.Name
 	doc.Path = dyn.Path
 	doc.Created = dyn.Created
 	doc.Updated = dyn.Updated

@@ -278,7 +278,6 @@ func TestDynamoDBRepository(t *testing.T) {
 		doc := Document{
 			Id:      "create_document",
 			ClassId: class.Id,
-			Name:    t.Name(),
 		}
 		assert.NoError(t, repo.CreateDocument(ctx, &doc))
 	})
@@ -293,7 +292,6 @@ func TestDynamoDBRepository(t *testing.T) {
 		doc := Document{
 			Id:      "document_with_path",
 			ClassId: class.Id,
-			Name:    t.Name(),
 			Path:    "/doc/with/path",
 		}
 		assert.NoError(t, repo.CreateDocument(ctx, &doc))
@@ -329,7 +327,6 @@ func TestDynamoDBRepository(t *testing.T) {
 		doc := Document{
 			Id:      "sort_doc",
 			ClassId: class.Id,
-			Name:    t.Name(),
 			Values: map[string]interface{}{
 				"existing_field": "My Value",
 				"ignore_field":   "Ignore Me",
@@ -350,7 +347,6 @@ func TestDynamoDBRepository(t *testing.T) {
 		doc := Document{
 			Id:      "get_document_by_id_success",
 			ClassId: class.Id,
-			Name:    t.Name(),
 		}
 		assert.NoError(t, repo.CreateDocument(ctx, &doc))
 
@@ -358,7 +354,6 @@ func TestDynamoDBRepository(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, doc.Id, check.Id)
 		assert.Equal(t, doc.ClassId, check.ClassId)
-		assert.Equal(t, doc.Name, check.Name)
 	})
 
 	t.Run("GetDocumentByIdFail", func(t *testing.T) {
@@ -375,7 +370,6 @@ func TestDynamoDBRepository(t *testing.T) {
 
 		doc := Document{
 			Id:      "document_by_path",
-			Name:    "Document By Path",
 			ClassId: class.Id,
 			Path:    "/document/by/path",
 		}
@@ -400,12 +394,10 @@ func TestDynamoDBRepository(t *testing.T) {
 			doc := Document{
 				Id:      "no_path_no_path",
 				ClassId: class.Id,
-				Name:    t.Name(),
 				Path:    "",
 			}
 			assert.NoError(t, repo.CreateDocument(ctx, &doc))
 
-			doc.Name += "-Updated"
 			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
 		})
 
@@ -413,12 +405,10 @@ func TestDynamoDBRepository(t *testing.T) {
 			doc := Document{
 				Id:      "no_path_yes_path",
 				ClassId: class.Id,
-				Name:    t.Name(),
 				Path:    "",
 			}
 			assert.NoError(t, repo.CreateDocument(ctx, &doc))
 
-			doc.Name += "-Updated"
 			doc.Path = "/no/path/yes/path"
 			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
 		})
@@ -427,12 +417,10 @@ func TestDynamoDBRepository(t *testing.T) {
 			doc := Document{
 				Id:      "yes_path_no_path",
 				ClassId: class.Id,
-				Name:    t.Name(),
 				Path:    "/yes/path/no/path",
 			}
 			assert.NoError(t, repo.CreateDocument(ctx, &doc))
 
-			doc.Name += "-Updated"
 			doc.Path = ""
 			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
 		})
@@ -441,12 +429,10 @@ func TestDynamoDBRepository(t *testing.T) {
 			doc := Document{
 				Id:      "yes_path_yes_path",
 				ClassId: class.Id,
-				Name:    t.Name(),
 				Path:    "/yes/path/yes/path",
 			}
 			assert.NoError(t, repo.CreateDocument(ctx, &doc))
 
-			doc.Name += "-Updated"
 			doc.Path = "/yes/path/yes/path/updated"
 			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
 		})
@@ -455,7 +441,6 @@ func TestDynamoDBRepository(t *testing.T) {
 			doc := Document{
 				Id:      "force_table_scan",
 				ClassId: class.Id,
-				Name:    t.Name(),
 				Path:    "/force/scan/original",
 			}
 			assert.NoError(t, repo.CreateDocument(ctx, &doc))
@@ -482,7 +467,6 @@ func TestDynamoDBRepository(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Force table scan during update
-			doc.Name += "-Updated"
 			doc.Path = "/force/scan/updated"
 			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
 		})
@@ -502,7 +486,6 @@ func TestDynamoDBRepository(t *testing.T) {
 
 		doc := Document{
 			Id:      "delete_me",
-			Name:    "Delete Me",
 			ClassId: class.Id,
 			Path:    "/delete/me",
 			Values: map[string]interface{}{
