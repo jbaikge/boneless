@@ -297,14 +297,14 @@ func (res *DynamoDBResources) FromEnv() {
 }
 
 type DynamoDBRepository struct {
-	client    *dynamodb.Client
+	db        *dynamodb.Client
 	resources DynamoDBResources
 }
 
 // Ref: https://dynobase.dev/dynamodb-golang-query-examples/
 func NewDynamoDBRepository(config aws.Config, resources DynamoDBResources) Repository {
 	return &DynamoDBRepository{
-		client:    dynamodb.NewFromConfig(config),
+		db:        dynamodb.NewFromConfig(config),
 		resources: resources,
 	}
 }
@@ -343,7 +343,7 @@ func (repo DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFil
 			":sk": skId,
 		},
 	}
-	paginator := dynamodb.NewScanPaginator(repo.client, params)
+	paginator := dynamodb.NewScanPaginator(repo.db, params)
 	for paginator.HasMorePages() {
 		response, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -478,7 +478,7 @@ func (repo DynamoDBRepository) DeleteDocument(ctx context.Context, id string) (e
 			":id":     docIdValue,
 		},
 	}
-	paginator := dynamodb.NewScanPaginator(repo.client, params)
+	paginator := dynamodb.NewScanPaginator(repo.db, params)
 	for paginator.HasMorePages() {
 		response, err := paginator.NextPage(ctx)
 		if err != nil {
@@ -544,7 +544,7 @@ func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter Docum
 			params.FilterExpression = aws.String("ParentId = :parent_id")
 			params.ExpressionAttributeValues[":parent_id"] = parentId
 		}
-		paginator := dynamodb.NewQueryPaginator(repo.client, params)
+		paginator := dynamodb.NewQueryPaginator(repo.db, params)
 		for paginator.HasMorePages() {
 			response, err := paginator.NextPage(ctx)
 			if err != nil {
@@ -579,7 +579,7 @@ func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter Docum
 			params.FilterExpression = aws.String("SK = :sk AND ParentId = :parent_id")
 			params.ExpressionAttributeValues[":parent_id"] = parentId
 		}
-		paginator := dynamodb.NewScanPaginator(repo.client, params)
+		paginator := dynamodb.NewScanPaginator(repo.db, params)
 		for paginator.HasMorePages() {
 			response, err := paginator.NextPage(ctx)
 			if err != nil {
@@ -699,7 +699,7 @@ func (repo DynamoDBRepository) updatePathDocument(ctx context.Context, oldDoc *D
 				":id": id,
 			},
 		}
-		pagination := dynamodb.NewScanPaginator(repo.client, params)
+		pagination := dynamodb.NewScanPaginator(repo.db, params)
 		for pagination.HasMorePages() {
 			response, err := pagination.NextPage(ctx)
 			if err != nil {
@@ -751,7 +751,7 @@ func (repo DynamoDBRepository) updateSortDocuments(ctx context.Context, doc *Doc
 			},
 			ProjectionExpression: aws.String("PK,SK"),
 		}
-		paginator := dynamodb.NewQueryPaginator(repo.client, query)
+		paginator := dynamodb.NewQueryPaginator(repo.db, query)
 		for paginator.HasMorePages() {
 			response, err := paginator.NextPage(ctx)
 			if err != nil {
@@ -772,7 +772,7 @@ func (repo DynamoDBRepository) updateSortDocuments(ctx context.Context, doc *Doc
 						"SK": item["SK"],
 					},
 				}
-				if _, err = repo.client.DeleteItem(ctx, delete); err != nil {
+				if _, err = repo.db.DeleteItem(ctx, delete); err != nil {
 					return err
 				}
 			}
@@ -808,7 +808,7 @@ func (repo DynamoDBRepository) deleteItem(ctx context.Context, pk string, sk str
 			"SK": skId,
 		},
 	}
-	_, err = repo.client.DeleteItem(ctx, params)
+	_, err = repo.db.DeleteItem(ctx, params)
 
 	return
 }
@@ -831,7 +831,7 @@ func (repo DynamoDBRepository) getItem(ctx context.Context, pk string, sk string
 			"SK": skId,
 		},
 	}
-	response, err := repo.client.GetItem(ctx, params)
+	response, err := repo.db.GetItem(ctx, params)
 
 	if len(response.Item) == 0 {
 		return ErrNotExist
@@ -852,7 +852,7 @@ func (repo DynamoDBRepository) putItem(ctx context.Context, item interface{}) (e
 		Item:      inputItem,
 		TableName: &repo.resources.Table,
 	}
-	_, err = repo.client.PutItem(ctx, params)
+	_, err = repo.db.PutItem(ctx, params)
 
 	return
 }
@@ -894,7 +894,7 @@ func (repo DynamoDBRepository) updateItem(ctx context.Context, item dynamoItem) 
 		ExpressionAttributeValues: values,
 	}
 
-	_, err = repo.client.UpdateItem(ctx, params)
+	_, err = repo.db.UpdateItem(ctx, params)
 
 	return
 }
