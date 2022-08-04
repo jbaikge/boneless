@@ -11,17 +11,18 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/zeebo/assert"
 )
 
-var dynamoTablePrefix = time.Now().Format("20060102-150405-")
+var dynamoPrefix = time.Now().Format("20060102-150405-")
 
-func testDynamoConfig(tableName string) (cfg aws.Config, err error) {
+func testDynamoConfig(resources DynamoDBResources) (cfg aws.Config, err error) {
 	endpointResolverFunc := func(service string, region string, options ...interface{}) (endpoint aws.Endpoint, err error) {
 		endpoint = aws.Endpoint{
 			PartitionID:   "aws",
 			URL:           "http://localhost:4566", // 4566 for LocalStack; 8000 for amazon/dynamodb-local
-			SigningRegion: "local",
+			SigningRegion: "us-east-1",             // Must be a legitimate region for LocalStack S3 to work
 		}
 		return
 	}
@@ -37,7 +38,7 @@ func testDynamoConfig(tableName string) (cfg aws.Config, err error) {
 
 	// Build table before returning
 	createTable := &dynamodb.CreateTableInput{
-		TableName:   &tableName,
+		TableName:   &resources.Table,
 		BillingMode: types.BillingModePayPerRequest,
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
@@ -61,8 +62,19 @@ func testDynamoConfig(tableName string) (cfg aws.Config, err error) {
 		},
 	}
 
-	client := dynamodb.NewFromConfig(cfg)
-	if _, err = client.CreateTable(context.Background(), createTable); err != nil {
+	db := dynamodb.NewFromConfig(cfg)
+	if _, err = db.CreateTable(context.Background(), createTable); err != nil {
+		return
+	}
+
+	// Create S3 bucket
+	createBucket := &s3.CreateBucketInput{
+		Bucket: &resources.Bucket,
+	}
+
+	// UsePathStyle is required to prevent host lookup exception
+	s3Client := s3.NewFromConfig(cfg, func(o *s3.Options) { o.UsePathStyle = true })
+	if _, err = s3Client.CreateBucket(context.Background(), createBucket); err != nil {
 		return
 	}
 
@@ -127,9 +139,10 @@ func TestDynamoToClass(t *testing.T) {
 
 func TestDynamoDBRepository(t *testing.T) {
 	resources := DynamoDBResources{
-		Table: dynamoTablePrefix + "Test",
+		Bucket: dynamoPrefix + "test",
+		Table:  dynamoPrefix + "Test",
 	}
-	cfg, err := testDynamoConfig(resources.Table)
+	cfg, err := testDynamoConfig(resources)
 	assert.NoError(t, err)
 
 	repo := NewDynamoDBRepository(cfg, resources)
@@ -502,9 +515,10 @@ func TestDynamoDBRepository(t *testing.T) {
 
 func TestDynamoDBRepositoryDocumentList(t *testing.T) {
 	resources := DynamoDBResources{
-		Table: dynamoTablePrefix + "List",
+		Bucket: dynamoPrefix + "list",
+		Table:  dynamoPrefix + "List",
 	}
-	cfg, err := testDynamoConfig(resources.Table)
+	cfg, err := testDynamoConfig(resources)
 	assert.NoError(t, err)
 
 	repo := NewDynamoDBRepository(cfg, resources)
