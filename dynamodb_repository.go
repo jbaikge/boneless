@@ -588,6 +588,14 @@ func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter Docum
 				":sk": sk,
 			},
 		}
+		if filter.ParentId != "" {
+			parentId, err := attributevalue.Marshal(filter.ParentId)
+			if err != nil {
+				return list, r, err
+			}
+			params.FilterExpression = aws.String("SK = :sk AND ParentId = :parent_id")
+			params.ExpressionAttributeValues[":parent_id"] = parentId
+		}
 		paginator := dynamodb.NewScanPaginator(repo.client, params)
 		for paginator.HasMorePages() {
 			response, err := paginator.NextPage(ctx)
@@ -608,9 +616,7 @@ func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter Docum
 	// Sort results in memory if the field is a certain option
 	var sorter sort.Interface
 	switch filter.Field {
-	case "Name", "":
-		sorter = dynamoDocumentByName(tmp)
-	case "Created":
+	case "Created", "":
 		sorter = dynamoDocumentByCreated(tmp)
 	case "Updated":
 		sorter = dynamoDocumentByUpdated(tmp)
