@@ -200,7 +200,6 @@ type dynamoPath struct {
 	ParentId   string
 	TemplateId string
 	Version    int
-	Name       string
 	Created    time.Time
 	Updated    time.Time
 }
@@ -239,7 +238,6 @@ type dynamoSort struct {
 	ParentId   string
 	TemplateId string
 	Version    int
-	Name       string
 	Path       string
 	Created    time.Time
 	Updated    time.Time
@@ -282,7 +280,6 @@ func (dyn dynamoSort) Truncate(v interface{}) string {
 	return fmt.Sprintf("%.*s", dynamoSortValueLength, fmt.Sprintf("%v", v))
 }
 
-func (dyn dynamoSort) GetName() string       { return dyn.Name }
 func (dyn dynamoSort) GetCreated() time.Time { return dyn.Created }
 func (dyn dynamoSort) GetUpdated() time.Time { return dyn.Updated }
 
