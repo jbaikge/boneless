@@ -25,7 +25,7 @@ func init() {
 	flag.BoolVar(&useLocalStack, "localstack", useLocalStack, "Force path style URLs for LocalStack compatibility")
 }
 
-func testGetRepository(resources DynamoDBResources) (repo *DynamoDBRepository, err error) {
+func testDynamoNewRepository(resources DynamoDBResources) (repo *DynamoDBRepository, err error) {
 	endpointResolverFunc := func(service string, region string, options ...interface{}) (endpoint aws.Endpoint, err error) {
 		endpoint = aws.Endpoint{
 			PartitionID:   "aws",
@@ -153,7 +153,7 @@ func TestDynamoDBRepository(t *testing.T) {
 		Bucket: dynamoPrefix + "test",
 		Table:  dynamoPrefix + "Test",
 	}
-	repo, err := testGetRepository(resources)
+	repo, err := testDynamoNewRepository(resources)
 	assert.NoError(t, err)
 
 	ctx := context.Background()
@@ -527,7 +527,7 @@ func TestDynamoDBRepositoryDocumentList(t *testing.T) {
 		Bucket: dynamoPrefix + "list",
 		Table:  dynamoPrefix + "List",
 	}
-	repo, err := testGetRepository(resources)
+	repo, err := testDynamoNewRepository(resources)
 	assert.NoError(t, err)
 
 	ctx := context.Background()
