@@ -2,6 +2,7 @@ package gocms
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"testing"
 	"time"
@@ -15,9 +16,16 @@ import (
 	"github.com/zeebo/assert"
 )
 
-var dynamoPrefix = time.Now().Format("20060102-150405-")
+var (
+	dynamoPrefix  = time.Now().Format("20060102-150405-")
+	useLocalStack = false
+)
 
-func testDynamoConfig(resources DynamoDBResources) (cfg aws.Config, err error) {
+func init() {
+	flag.BoolVar(&useLocalStack, "localstack", useLocalStack, "Force path style URLs for LocalStack compatibility")
+}
+
+func testGetRepository(resources DynamoDBResources) (repo *DynamoDBRepository, err error) {
 	endpointResolverFunc := func(service string, region string, options ...interface{}) (endpoint aws.Endpoint, err error) {
 		endpoint = aws.Endpoint{
 			PartitionID:   "aws",
@@ -28,7 +36,7 @@ func testDynamoConfig(resources DynamoDBResources) (cfg aws.Config, err error) {
 	}
 	endpointResolver := aws.EndpointResolverWithOptionsFunc(endpointResolverFunc)
 
-	cfg, err = config.LoadDefaultConfig(
+	cfg, err := config.LoadDefaultConfig(
 		context.Background(),
 		config.WithEndpointResolverWithOptions(endpointResolver),
 	)
@@ -73,20 +81,23 @@ func testDynamoConfig(resources DynamoDBResources) (cfg aws.Config, err error) {
 	}
 
 	// UsePathStyle is required to prevent host lookup exception
-	s3Client := s3.NewFromConfig(cfg, func(o *s3.Options) { o.UsePathStyle = true })
+	s3Client := s3.NewFromConfig(cfg, func(o *s3.Options) { o.UsePathStyle = useLocalStack })
 	if _, err = s3Client.CreateBucket(context.Background(), createBucket); err != nil {
 		return
 	}
 
-	return
+	return &DynamoDBRepository{
+		db:        db,
+		s3:        s3Client,
+		resources: resources,
+	}, nil
 }
 
-func testDynamoEmptyTable(cfg aws.Config, table string) (err error) {
-	client := dynamodb.NewFromConfig(cfg)
+func testDynamoEmptyTable(repo *DynamoDBRepository, table string) (err error) {
 	params := &dynamodb.ScanInput{
 		TableName: &table,
 	}
-	response, err := client.Scan(context.Background(), params)
+	response, err := repo.db.Scan(context.Background(), params)
 	if err != nil {
 		return
 	}
@@ -99,7 +110,7 @@ func testDynamoEmptyTable(cfg aws.Config, table string) (err error) {
 				"SK": item["SK"],
 			},
 		}
-		if _, err = client.DeleteItem(context.Background(), delete); err != nil {
+		if _, err = repo.db.DeleteItem(context.Background(), delete); err != nil {
 			return
 		}
 	}
@@ -142,10 +153,9 @@ func TestDynamoDBRepository(t *testing.T) {
 		Bucket: dynamoPrefix + "test",
 		Table:  dynamoPrefix + "Test",
 	}
-	cfg, err := testDynamoConfig(resources)
+	repo, err := testGetRepository(resources)
 	assert.NoError(t, err)
 
-	repo := NewDynamoDBRepository(cfg, resources)
 	ctx := context.Background()
 
 	t.Run("CreateClass", func(t *testing.T) {
@@ -214,7 +224,7 @@ func TestDynamoDBRepository(t *testing.T) {
 	})
 
 	t.Run("ClassList", func(t *testing.T) {
-		assert.NoError(t, testDynamoEmptyTable(cfg, resources.Table))
+		assert.NoError(t, testDynamoEmptyTable(repo, resources.Table))
 
 		t.Run("Empty", func(t *testing.T) {
 			filter := ClassFilter{Range: Range{End: 9}}
@@ -311,7 +321,7 @@ func TestDynamoDBRepository(t *testing.T) {
 	})
 
 	t.Run("CreateDocumentWithSort", func(t *testing.T) {
-		assert.NoError(t, testDynamoEmptyTable(cfg, resources.Table))
+		assert.NoError(t, testDynamoEmptyTable(repo, resources.Table))
 
 		class := Class{
 			Id:   "sort_class",
@@ -458,12 +468,11 @@ func TestDynamoDBRepository(t *testing.T) {
 			}
 			assert.NoError(t, repo.CreateDocument(ctx, &doc))
 
-			// Manually override the path
+			// Manually override the path - Not possible with the repo API
 			pk, _ := attributevalue.Marshal(dynamoDocPrefix + doc.Id)
 			sk, _ := attributevalue.Marshal(fmt.Sprintf(dynamoDocSortF, 0))
 			path, _ := attributevalue.Marshal("/force/scan/override")
-			client := dynamodb.NewFromConfig(cfg)
-			_, err := client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
+			_, err := repo.db.UpdateItem(ctx, &dynamodb.UpdateItemInput{
 				TableName: &resources.Table,
 				Key: map[string]types.AttributeValue{
 					"PK": pk,
@@ -518,10 +527,9 @@ func TestDynamoDBRepositoryDocumentList(t *testing.T) {
 		Bucket: dynamoPrefix + "list",
 		Table:  dynamoPrefix + "List",
 	}
-	cfg, err := testDynamoConfig(resources)
+	repo, err := testGetRepository(resources)
 	assert.NoError(t, err)
 
-	repo := NewDynamoDBRepository(cfg, resources)
 	ctx := context.Background()
 
 	for _, class := range testClasses() {
