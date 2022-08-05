@@ -308,7 +308,7 @@ type DynamoDBRepository struct {
 func NewDynamoDBRepository(config aws.Config, resources DynamoDBResources) Repository {
 	return &DynamoDBRepository{
 		db:        dynamodb.NewFromConfig(config),
-		s3:        s3.NewFromConfig(config, func(o *s3.Options) { o.UsePathStyle = true }),
+		s3:        s3.NewFromConfig(config),
 		resources: resources,
 	}
 }
