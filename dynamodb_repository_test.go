@@ -607,3 +607,71 @@ func TestDynamoDBRepositoryDocumentList(t *testing.T) {
 		assert.Equal(t, "session-3", docs[2].Id)
 	})
 }
+
+func TestDynamoDBRepositoryValues(t *testing.T) {
+	resources := DynamoDBResources{
+		Bucket: dynamoPrefix + "values",
+		Table:  dynamoPrefix + "Values",
+	}
+	repo, err := testDynamoNewRepository(resources)
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	class := Class{
+		Id:      "class",
+		Name:    "Class",
+		Created: time.Now(),
+		Updated: time.Now(),
+		Fields: []Field{
+			{Name: "field1", Sort: true},
+			{Name: "field2"},
+			{Name: "field3", Sort: true},
+			{Name: "field4"},
+		},
+	}
+	assert.NoError(t, repo.CreateClass(ctx, &class))
+
+	doc := Document{
+		Id:      "doc",
+		ClassId: "class",
+		Values: map[string]interface{}{
+			"field1": "abc",
+			"field2": "def",
+			"field3": "ghi",
+			"field4": "jkl",
+		},
+	}
+	assert.NoError(t, repo.CreateDocument(ctx, &doc))
+
+	docCheck, err := repo.GetDocumentById(ctx, doc.Id)
+	assert.NoError(t, err)
+
+	assert.DeepEqual(t, doc.Values, docCheck.Values)
+	// Can't use DeepEqual for ... reasons?
+	// Need to cast everything to string for assert.Equal
+	for key, expect := range doc.Values {
+		assert.Equal(t, fmt.Sprint(expect), fmt.Sprint(docCheck.Values[key]))
+	}
+
+	extra := Document{
+		Id:      "extra",
+		ClassId: "class",
+		Values: map[string]interface{}{
+			"field0": "abc", // extra
+			"field1": "def",
+			// field2 intentionally left out
+			"field3": "ghi",
+			"field4": "jkl",
+			"field5": "mno", // extra
+		},
+	}
+	assert.NoError(t, repo.CreateDocument(ctx, &extra))
+
+	extraCheck, err := repo.GetDocumentById(ctx, extra.Id)
+	assert.NoError(t, err)
+
+	// Should contain all the submitted values and match what was sent into the
+	// repo.
+	assert.DeepEqual(t, extra.Values, extraCheck.Values)
+}
