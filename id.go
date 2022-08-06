@@ -13,17 +13,11 @@ func SetIdProvider(provider IdProvider) {
 }
 
 type IdProvider interface {
-	New() string
 	NewWithTime(time.Time) string
 	IsValid(string) bool
 }
 
-type XidProvider struct {
-}
-
-func (p XidProvider) New() string {
-	return xid.New().String()
-}
+type XidProvider struct{}
 
 func (p XidProvider) NewWithTime(t time.Time) string {
 	return xid.NewWithTime(t).String()
