@@ -918,7 +918,7 @@ func (repo DynamoDBRepository) updateItem(ctx context.Context, item dynamoItem) 
 // S3 interaction
 
 func (repo DynamoDBRepository) valuesKey(doc *Document) string {
-	return fmt.Sprintf("%s/%s/%s_v%04d.json", doc.ClassId, doc.Id, doc.Id, doc.Version)
+	return fmt.Sprintf("documents/%s/%s/%s_v%04d.json", doc.ClassId, doc.Id, doc.Id, doc.Version)
 }
 
 func (repo DynamoDBRepository) getValues(ctx context.Context, doc *Document) (err error) {
