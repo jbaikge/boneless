@@ -917,14 +917,14 @@ func (repo DynamoDBRepository) updateItem(ctx context.Context, item dynamoItem) 
 
 // S3 interaction
 
-func (repo DynamoDBRepository) s3Key(doc *Document) string {
+func (repo DynamoDBRepository) valuesKey(doc *Document) string {
 	return fmt.Sprintf("%s/%s/%s_v%04d.json", doc.ClassId, doc.Id, doc.Id, doc.Version)
 }
 
 func (repo DynamoDBRepository) getValues(ctx context.Context, doc *Document) (err error) {
 	params := &s3.GetObjectInput{
 		Bucket: &repo.resources.Bucket,
-		Key:    aws.String(repo.s3Key(doc)),
+		Key:    aws.String(repo.valuesKey(doc)),
 	}
 	response, err := repo.s3.GetObject(ctx, params)
 	if err != nil {
@@ -944,7 +944,7 @@ func (repo DynamoDBRepository) putValues(ctx context.Context, doc *Document) (er
 
 	params := &s3.PutObjectInput{
 		Bucket:      &repo.resources.Bucket,
-		Key:         aws.String(repo.s3Key(doc)),
+		Key:         aws.String(repo.valuesKey(doc)),
 		Body:        bytes.NewReader(buffer.Bytes()),
 		ContentType: aws.String("application/json"),
 	}
