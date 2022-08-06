@@ -51,8 +51,8 @@ func NewClassService(repo ClassRepository) ClassService {
 }
 
 func (s ClassService) ById(ctx context.Context, id string) (Class, error) {
-	if _, err := xid.FromString(id); err != nil {
-		return Class{}, err
+	if !idProvider.IsValid(id) {
+		return Class{}, fmt.Errorf("invalid class ID: %s", id)
 	}
 	return s.repo.GetClassById(ctx, id)
 }

@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"time"
-
-	"github.com/rs/xid"
 )
 
 type Document struct {
@@ -48,8 +46,8 @@ func NewDocumentService(repo DocumentRepository) DocumentService {
 }
 
 func (s DocumentService) ById(ctx context.Context, id string) (Document, error) {
-	if _, err := xid.FromString(id); err != nil {
-		return Document{}, err
+	if !idProvider.IsValid(id) {
+		return Document{}, fmt.Errorf("invalid document ID: %s", id)
 	}
 	return s.repo.GetDocumentById(ctx, id)
 }
@@ -60,7 +58,7 @@ func (s DocumentService) Create(ctx context.Context, doc *Document) (err error) 
 	}
 
 	now := time.Now()
-	doc.Id = xid.NewWithTime(now).String()
+	doc.Id = idProvider.NewWithTime(now)
 	doc.Created = now
 	doc.Updated = now
 
