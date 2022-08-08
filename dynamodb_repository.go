@@ -28,6 +28,8 @@ const (
 	dynamoSortPartitionF  = "sort#%s#%s"
 	dynamoSortSortF       = "%s#%s"
 	dynamoSortValueLength = 64
+	dynamoTemplatePrefix  = "template#"
+	dynamoTemplateSortF   = dynamoTemplatePrefix + "v%04d"
 )
 
 var (
@@ -283,6 +285,55 @@ func (dyn dynamoSort) Truncate(v interface{}) string {
 func (dyn dynamoSort) GetCreated() time.Time { return dyn.Created }
 func (dyn dynamoSort) GetUpdated() time.Time { return dyn.Updated }
 
+// Template Type
+
+type dynamoTemplate struct {
+	PK      string
+	SK      string
+	Name    string
+	Version int
+	Created time.Time
+	Updated time.Time
+}
+
+func (dyn *dynamoTemplate) FromTemplate(template *Template) {
+	dyn.SetSK(template.Version)
+	dyn.PK = dynamoTemplatePrefix + template.Id
+	dyn.Name = template.Name
+	dyn.Version = template.Version
+	dyn.Created = template.Created
+	dyn.Updated = template.Updated
+}
+
+func (dyn dynamoTemplate) ToTemplate() (template Template) {
+	template.Id = dyn.PK[len(dynamoTemplatePrefix):]
+	template.Name = dyn.Name
+	template.Version = dyn.Version
+	template.Created = dyn.Created
+	template.Updated = dyn.Updated
+	return
+}
+
+func (dyn dynamoTemplate) PartitionKey() string {
+	return dyn.PK
+}
+
+func (dyn *dynamoTemplate) SetSK(version int) {
+	dyn.SK = fmt.Sprintf(dynamoTemplateSortF, version)
+}
+
+func (dyn dynamoTemplate) SortKey() string {
+	return dyn.SK
+}
+
+func (dyn dynamoTemplate) UpdateValues() map[string]interface{} {
+	return map[string]interface{}{
+		"Name":    dyn.Name,
+		"Version": dyn.Version,
+		"Updated": dyn.Updated,
+	}
+}
+
 // Repository
 
 type DynamoDBResources struct {
@@ -404,7 +455,7 @@ func (repo DynamoDBRepository) CreateDocument(ctx context.Context, doc *Document
 	dbDoc.FromDocument(doc)
 
 	for _, version := range []int{0, 1} {
-		dbDoc.SK = fmt.Sprintf(dynamoDocSortF, version)
+		dbDoc.SetSK(version)
 		if err = repo.putItem(ctx, dbDoc); err != nil {
 			return
 		}
@@ -804,6 +855,83 @@ func (repo DynamoDBRepository) updateSortDocuments(ctx context.Context, doc *Doc
 	return
 }
 
+// Template Methods
+
+func (repo DynamoDBRepository) CreateTemplate(ctx context.Context, template *Template) (err error) {
+	template.Version = 1
+
+	dbTemplate := new(dynamoTemplate)
+	dbTemplate.FromTemplate(template)
+
+	for _, version := range []int{0, 1} {
+		dbTemplate.SetSK(version)
+		if err = repo.putItem(ctx, dbTemplate); err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+func (repo DynamoDBRepository) DeleteTemplate(ctx context.Context, id string) (err error) {
+	dbTemplate := new(dynamoTemplate)
+	if err = repo.getItem(ctx, dynamoTemplatePrefix+id, fmt.Sprintf(dynamoTemplateSortF, 0), dbTemplate); err != nil {
+		return
+	}
+
+	// Delete all versions of the template
+	for i := 0; i <= dbTemplate.Version; i++ {
+		dbTemplate.SetSK(i)
+		if err = repo.deleteItem(ctx, dbTemplate.PK, dbTemplate.SK); err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+func (repo DynamoDBRepository) GetTemplateById(ctx context.Context, id string) (template Template, err error) {
+	dbTemplate := new(dynamoTemplate)
+	if err = repo.getItem(ctx, dynamoTemplatePrefix+id, fmt.Sprintf(dynamoTemplateSortF, 0), dbTemplate); err != nil {
+		return
+	}
+	template = dbTemplate.ToTemplate()
+	if err = repo.getTemplateBody(ctx, &template); err != nil {
+		return
+	}
+	return
+}
+
+func (repo DynamoDBRepository) GetTemplateList(ctx context.Context, filter TemplateFilter) (list []Template, r Range, err error) {
+	return
+}
+
+func (repo DynamoDBRepository) UpdateTemplate(ctx context.Context, template *Template) (err error) {
+	// Fetch old template to get latest version number
+	oldTemplate, err := repo.GetTemplateById(ctx, template.Id)
+	if err != nil {
+		return
+	}
+
+	// Update version value to the next one
+	template.Version = oldTemplate.Version + 1
+
+	// Push in new template version
+	dbTemplate := new(dynamoTemplate)
+	dbTemplate.FromTemplate(template)
+	if err = repo.putItem(ctx, dbTemplate); err != nil {
+		return
+	}
+
+	// Update version zero with latest data
+	dbTemplate.SetSK(0)
+	if err = repo.updateItem(ctx, dbTemplate); err != nil {
+		return
+	}
+
+	return
+}
+
 // Abstracted API calls to handle generic operations
 
 func (repo DynamoDBRepository) deleteItem(ctx context.Context, pk string, sk string) (err error) {
@@ -915,7 +1043,7 @@ func (repo DynamoDBRepository) updateItem(ctx context.Context, item dynamoItem) 
 	return
 }
 
-// S3 interaction
+// S3 Document interaction
 
 func (repo DynamoDBRepository) valuesKey(doc *Document) string {
 	return fmt.Sprintf("documents/%s/%s/%s_v%04d.json", doc.ClassId, doc.Id, doc.Id, doc.Version)
@@ -947,6 +1075,41 @@ func (repo DynamoDBRepository) putValues(ctx context.Context, doc *Document) (er
 		Key:         aws.String(repo.valuesKey(doc)),
 		Body:        bytes.NewReader(buffer.Bytes()),
 		ContentType: aws.String("application/json"),
+	}
+	_, err = repo.s3.PutObject(ctx, params)
+	return
+}
+
+// S3 Template interaction
+
+func (repo DynamoDBRepository) templateKey(template *Template) string {
+	return fmt.Sprintf("templates/%s/%s_v%04d.html", template.Id, template.Id, template.Version)
+}
+
+func (repo DynamoDBRepository) getTemplateBody(ctx context.Context, template *Template) (err error) {
+	params := &s3.GetObjectInput{
+		Bucket: &repo.resources.Bucket,
+		Key:    aws.String(repo.templateKey(template)),
+	}
+	response, err := repo.s3.GetObject(ctx, params)
+	if err != nil {
+		return
+	}
+	defer response.Body.Close()
+	buffer := new(bytes.Buffer)
+	if _, err = buffer.ReadFrom(response.Body); err != nil {
+		return
+	}
+	template.Body = buffer.String()
+	return
+}
+
+func (repo DynamoDBRepository) putTemplateBody(ctx context.Context, template *Template) (err error) {
+	params := &s3.PutObjectInput{
+		Bucket:      &repo.resources.Bucket,
+		Key:         aws.String(repo.templateKey(template)),
+		Body:        strings.NewReader(template.Body),
+		ContentType: aws.String("text/html"),
 	}
 	_, err = repo.s3.PutObject(ctx, params)
 	return

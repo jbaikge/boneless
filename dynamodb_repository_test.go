@@ -675,3 +675,23 @@ func TestDynamoDBRepositoryValues(t *testing.T) {
 	// repo.
 	assert.DeepEqual(t, extra.Values, extraCheck.Values)
 }
+
+func TestDynamoDBRepositoryTemplates(t *testing.T) {
+	resources := DynamoDBResources{
+		Bucket: dynamoPrefix + "templates",
+		Table:  dynamoPrefix + "Templates",
+	}
+	repo, err := testDynamoNewRepository(resources)
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	template := Template{
+		Id:      "template-1",
+		Name:    "Test Template",
+		Created: time.Now(),
+		Updated: time.Now(),
+		Body:    "This is a test template\n\nThis is another line in the test template",
+	}
+	assert.NoError(t, repo.CreateTemplate(ctx, &template))
+}
