@@ -719,4 +719,24 @@ func TestDynamoDBRepositoryTemplates(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, template.Body, check.Body)
 	})
+
+	t.Run("DeleteMultiVersion", func(t *testing.T) {
+		template := Template{
+			Id:      "delete-me",
+			Name:    "Delete Me v1",
+			Created: time.Now(),
+			Updated: time.Now(),
+			Body:    "Delete this content v1",
+		}
+		assert.NoError(t, repo.CreateTemplate(ctx, &template))
+
+		template.Name = "Delete Me v2"
+		template.Body = template.Body[len(template.Body)-2:] + "2"
+		assert.NoError(t, repo.UpdateTemplate(ctx, &template))
+
+		assert.NoError(t, repo.DeleteTemplate(ctx, template.Id))
+
+		_, err := repo.GetTemplateById(ctx, template.Id)
+		assert.Equal(t, ErrNotExist, err)
+	})
 }
