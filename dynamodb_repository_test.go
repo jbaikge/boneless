@@ -686,12 +686,37 @@ func TestDynamoDBRepositoryTemplates(t *testing.T) {
 
 	ctx := context.Background()
 
-	template := Template{
-		Id:      "template-1",
-		Name:    "Test Template",
-		Created: time.Now(),
-		Updated: time.Now(),
-		Body:    "This is a test template\n\nThis is another line in the test template",
-	}
-	assert.NoError(t, repo.CreateTemplate(ctx, &template))
+	t.Run("BasicInOut", func(t *testing.T) {
+		template := Template{
+			Id:      "template-1",
+			Name:    "Test Template",
+			Created: time.Now(),
+			Updated: time.Now(),
+			Body:    "This is a test template\n\nThis is another line in the test template",
+		}
+		assert.NoError(t, repo.CreateTemplate(ctx, &template))
+
+		check, err := repo.GetTemplateById(ctx, template.Id)
+		assert.NoError(t, err)
+		assert.Equal(t, template.Body, check.Body)
+	})
+
+	t.Run("Version2", func(t *testing.T) {
+		template := Template{
+			Id:      "two-versions",
+			Name:    "Version 1",
+			Created: time.Now(),
+			Updated: time.Now(),
+			Body:    "This is version one content",
+		}
+		assert.NoError(t, repo.CreateTemplate(ctx, &template))
+
+		template.Name = "Version 2"
+		template.Body = "This is version two content"
+		assert.NoError(t, repo.UpdateTemplate(ctx, &template))
+
+		check, err := repo.GetTemplateById(ctx, template.Id)
+		assert.NoError(t, err)
+		assert.Equal(t, template.Body, check.Body)
+	})
 }
