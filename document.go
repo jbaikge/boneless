@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"time"
-
-	"github.com/rs/xid"
 )
 
 type Document struct {
@@ -13,8 +11,7 @@ type Document struct {
 	ClassId    string                 `json:"class_id"`
 	ParentId   string                 `json:"parent_id"`
 	TemplateId string                 `json:"template_id"`
-	Title      string                 `json:"title"`
-	Url        string                 `json:"url"`
+	Path       string                 `json:"path"`
 	Version    int                    `json:"version"`
 	Created    time.Time              `json:"created"`
 	Updated    time.Time              `json:"updated"`
@@ -22,14 +19,18 @@ type Document struct {
 }
 
 type DocumentFilter struct {
-	ClassId string
-	Range   Range
+	ClassId  string
+	ParentId string
+	Field    string
+	Sort     string // ASC, DESC
+	Range    Range
 }
 
 type DocumentRepository interface {
 	CreateDocument(context.Context, *Document) error
 	DeleteDocument(context.Context, string) error
 	GetDocumentById(context.Context, string) (Document, error)
+	GetDocumentByPath(context.Context, string) (Document, error)
 	GetDocumentList(context.Context, DocumentFilter) ([]Document, Range, error)
 	UpdateDocument(context.Context, *Document) error
 }
@@ -45,8 +46,8 @@ func NewDocumentService(repo DocumentRepository) DocumentService {
 }
 
 func (s DocumentService) ById(ctx context.Context, id string) (Document, error) {
-	if _, err := xid.FromString(id); err != nil {
-		return Document{}, err
+	if !idProvider.IsValid(id) {
+		return Document{}, fmt.Errorf("invalid document ID: %s", id)
 	}
 	return s.repo.GetDocumentById(ctx, id)
 }
@@ -57,7 +58,7 @@ func (s DocumentService) Create(ctx context.Context, doc *Document) (err error) 
 	}
 
 	now := time.Now()
-	doc.Id = xid.NewWithTime(now).String()
+	doc.Id = idProvider.NewWithTime(now)
 	doc.Created = now
 	doc.Updated = now
 

@@ -2,52 +2,41 @@ package gocms
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/zeebo/assert"
 )
 
 var (
-	regionFlag string
-	resources  DynamoDBResources
+	dynamoPrefix  = time.Now().Format("20060102-150405-")
+	useLocalStack = false
 )
 
 func init() {
-	flag.StringVar(&regionFlag, "region", "local", "DynamoDB region: local for dy compatibility; localhost for nosql workbench compatibility")
-
-	tablePrefix := time.Now().Format("20060102-150405")
-	resources = DynamoDBResources{
-		Tables: DynamoDBTables{
-			Class:    tablePrefix + "-Class",
-			Document: tablePrefix + "-Document",
-			Sort:     tablePrefix + "-Sort",
-			Path:     tablePrefix + "-Path",
-			Template: tablePrefix + "-Template",
-		},
-	}
+	flag.BoolVar(&useLocalStack, "localstack", useLocalStack, "Force path style URLs for LocalStack compatibility")
 }
 
-func configureAndSetup() (cfg aws.Config, err error) {
+func testDynamoNewRepository(resources DynamoDBResources) (repo *DynamoDBRepository, err error) {
 	endpointResolverFunc := func(service string, region string, options ...interface{}) (endpoint aws.Endpoint, err error) {
 		endpoint = aws.Endpoint{
 			PartitionID:   "aws",
-			URL:           "http://localhost:8000",
-			SigningRegion: regionFlag,
+			URL:           "http://localhost:4566", // 4566 for LocalStack; 8000 for amazon/dynamodb-local
+			SigningRegion: "us-east-1",             // Must be a legitimate region for LocalStack S3 to work
 		}
 		return
 	}
 	endpointResolver := aws.EndpointResolverWithOptionsFunc(endpointResolverFunc)
 
-	cfg, err = config.LoadDefaultConfig(
+	cfg, err := config.LoadDefaultConfig(
 		context.Background(),
 		config.WithEndpointResolverWithOptions(endpointResolver),
 	)
@@ -55,485 +44,679 @@ func configureAndSetup() (cfg aws.Config, err error) {
 		return
 	}
 
-	tables := []*dynamodb.CreateTableInput{
-		{
-			TableName: &resources.Tables.Class,
-			AttributeDefinitions: []types.AttributeDefinition{
-				{
-					AttributeName: aws.String("ClassId"),
-					AttributeType: types.ScalarAttributeTypeS,
-				},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{
-					AttributeName: aws.String("ClassId"),
-					KeyType:       types.KeyTypeHash,
-				},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		},
-		{
-			TableName: &resources.Tables.Document,
-			AttributeDefinitions: []types.AttributeDefinition{
-				{
-					AttributeName: aws.String("DocumentId"),
-					AttributeType: types.ScalarAttributeTypeS,
-				},
-				{
-					AttributeName: aws.String("ClassId"),
-					AttributeType: types.ScalarAttributeTypeS,
-				},
-				{
-					AttributeName: aws.String("ParentId"),
-					AttributeType: types.ScalarAttributeTypeS,
-				},
-				{
-					AttributeName: aws.String("Version"),
-					AttributeType: types.ScalarAttributeTypeN,
-				},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{
-					AttributeName: aws.String("DocumentId"),
-					KeyType:       types.KeyTypeHash,
-				},
-				{
-					AttributeName: aws.String("Version"),
-					KeyType:       types.KeyTypeRange,
-				},
-			},
-			GlobalSecondaryIndexes: []types.GlobalSecondaryIndex{
-				{
-					IndexName: aws.String("GSI-Class"),
-					KeySchema: []types.KeySchemaElement{
-						{
-							AttributeName: aws.String("ClassId"),
-							KeyType:       types.KeyTypeHash,
-						},
-						{
-							AttributeName: aws.String("Version"),
-							KeyType:       types.KeyTypeRange,
-						},
-					},
-					Projection: &types.Projection{
-						ProjectionType: types.ProjectionTypeAll,
-					},
-				},
-				{
-					IndexName: aws.String("GSI-Parent"),
-					KeySchema: []types.KeySchemaElement{
-						{
-							AttributeName: aws.String("ParentId"),
-							KeyType:       types.KeyTypeHash,
-						},
-						{
-							AttributeName: aws.String("Version"),
-							KeyType:       types.KeyTypeRange,
-						},
-					},
-					Projection: &types.Projection{
-						ProjectionType: types.ProjectionTypeAll,
-					},
-				},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		},
-	}
-
-	client := dynamodb.NewFromConfig(cfg)
-
-	for _, table := range tables {
-		if _, err = client.CreateTable(context.Background(), table); err != nil {
-			return
-		}
-	}
-
-	return
-}
-
-func TestDynamoDBClassConversion(t *testing.T) {
-	classNilFields := &Class{
-		Id:   "NilFields",
-		Name: "Nil Fields",
-	}
-
-	dynamoNilFields := new(dynamoClass)
-	dynamoNilFields.FromClass(classNilFields)
-
-	jsonDynamoNilFields, err := json.Marshal(dynamoNilFields)
-	assert.NoError(t, err)
-	assert.True(t, strings.Contains(string(jsonDynamoNilFields), `"Fields":[]`))
-
-	classFromDynamo := dynamoNilFields.ToClass()
-	jsonClassNilFields, err := json.Marshal(classFromDynamo)
-	assert.NoError(t, err)
-	assert.True(t, strings.Contains(string(jsonClassNilFields), `"fields":[]`))
-}
-
-func TestDynamoDBDocumentConversion(t *testing.T) {
-	doc := &Document{
-		Id:    "TestDoc",
-		Title: "Test Doc",
-		Url:   "/test/doc",
-		Values: map[string]interface{}{
-			"date": "2022-07-28",
-		},
-	}
-
-	dynamoDoc := dynamoDocument{}
-	dynamoDoc.FromDocument(doc)
-
-	jsonDynamoDoc, err := json.Marshal(dynamoDoc)
-	assert.NoError(t, err)
-	assert.True(t, strings.Contains(string(jsonDynamoDoc), `"ParentId":"#NULL#"`))
-
-	fromDynamo := dynamoDoc.ToDocument()
-	jsonDoc, err := json.Marshal(fromDynamo)
-	assert.NoError(t, err)
-	assert.True(t, strings.Contains(string(jsonDoc), `"parent_id":""`))
-}
-
-func TestDynamoDBRepositoryClass(t *testing.T) {
-	resources := DynamoDBResources{
-		Tables: DynamoDBTables{
-			Class: t.Name() + time.Now().Format("-20060102-150405"),
-		},
-	}
-
-	endpointResolverFunc := func(service string, region string, options ...interface{}) (endpoint aws.Endpoint, err error) {
-		endpoint = aws.Endpoint{
-			PartitionID:   "aws",
-			URL:           "http://localhost:8000",
-			SigningRegion: regionFlag,
-		}
-		return
-	}
-
-	endpointResolver := aws.EndpointResolverWithOptionsFunc(endpointResolverFunc)
-
-	cfg, err := config.LoadDefaultConfig(
-		context.Background(),
-		config.WithEndpointResolverWithOptions(endpointResolver),
-	)
-	assert.NoError(t, err)
-
-	// TODO Move this block elsewhere, maybe into the makefile or somewhere it
-	// can match what is described in the deployment stack.
-	client := dynamodb.NewFromConfig(cfg)
-	_, err = client.CreateTable(context.Background(), &dynamodb.CreateTableInput{
-		TableName: &resources.Tables.Class,
-		AttributeDefinitions: []types.AttributeDefinition{
-			{
-				AttributeName: aws.String("ClassId"),
-				AttributeType: types.ScalarAttributeTypeS,
-			},
-		},
-		KeySchema: []types.KeySchemaElement{
-			{
-				AttributeName: aws.String("ClassId"),
-				KeyType:       types.KeyTypeHash,
-			},
-		},
+	// Build table before returning
+	createTable := &dynamodb.CreateTableInput{
+		TableName:   &resources.Table,
 		BillingMode: types.BillingModePayPerRequest,
-	})
-	assert.NoError(t, err)
-
-	repo := NewDynamoDBRepository(cfg, resources)
-
-	// Use of UnixMicro trims off the m variable in the Time struct to make
-	// reflect.DeepEqual function properly
-	now := time.UnixMicro(time.Now().UnixMicro())
-	class1 := Class{
-		Id:      "1",
-		Name:    "My Class",
-		Created: now,
-		Updated: now,
-		Fields:  []Field{},
-	}
-
-	t.Run("CreateClass", func(t *testing.T) {
-		assert.NoError(t, repo.CreateClass(context.Background(), &class1))
-	})
-
-	t.Run("GetClassById", func(t *testing.T) {
-		check, err := repo.GetClassById(context.Background(), class1.Id)
-		assert.NoError(t, err)
-		assert.DeepEqual(t, class1, check)
-	})
-
-	t.Run("UpdateClass", func(t *testing.T) {
-		class1.Name = "My New Class"
-		assert.NoError(t, repo.UpdateClass(context.Background(), &class1))
-		check, err := repo.GetClassById(context.Background(), class1.Id)
-		assert.NoError(t, err)
-		assert.DeepEqual(t, class1, check)
-	})
-
-	t.Run("GetClassList", func(t *testing.T) {
-		count := 10
-		for i := 2; i <= count; i++ {
-			class := Class{
-				Id:      fmt.Sprintf("%d", i),
-				Name:    fmt.Sprintf("Class %d", i),
-				Created: now,
-				Updated: now,
-			}
-			assert.NoError(t, repo.CreateClass(context.Background(), &class))
-		}
-
-		t.Run("All", func(t *testing.T) {
-			filter := ClassFilter{
-				Range: Range{
-					Start: 0,
-					End:   count - 1,
-				},
-			}
-
-			classes, r, err := repo.GetClassList(context.Background(), filter)
-			assert.NoError(t, err)
-			assert.Equal(t, filter.Range.Start, r.Start)
-			assert.Equal(t, filter.Range.End, r.End)
-			assert.Equal(t, count, r.Size)
-			assert.Equal(t, count, len(classes))
-		})
-
-		t.Run("Front", func(t *testing.T) {
-			filter := ClassFilter{
-				Range: Range{
-					Start: 0,
-					End:   4,
-				},
-			}
-
-			total := filter.Range.End - filter.Range.Start + 1
-
-			classes, r, err := repo.GetClassList(context.Background(), filter)
-			assert.NoError(t, err)
-			assert.Equal(t, filter.Range.Start, r.Start)
-			assert.Equal(t, filter.Range.End, r.End)
-			assert.Equal(t, count, r.Size)
-			assert.Equal(t, total, len(classes))
-		})
-
-		t.Run("Middle", func(t *testing.T) {
-			filter := ClassFilter{
-				Range: Range{
-					Start: 3,
-					End:   6,
-				},
-			}
-
-			total := filter.Range.End - filter.Range.Start + 1
-
-			classes, r, err := repo.GetClassList(context.Background(), filter)
-			assert.NoError(t, err)
-			assert.Equal(t, filter.Range.Start, r.Start)
-			assert.Equal(t, filter.Range.End, r.End)
-			assert.Equal(t, count, r.Size)
-			assert.Equal(t, total, len(classes))
-		})
-
-		t.Run("Back", func(t *testing.T) {
-			filter := ClassFilter{
-				Range: Range{
-					Start: 5,
-					End:   9,
-				},
-			}
-
-			total := filter.Range.End - filter.Range.Start + 1
-
-			classes, r, err := repo.GetClassList(context.Background(), filter)
-			assert.NoError(t, err)
-			assert.Equal(t, filter.Range.Start, r.Start)
-			assert.Equal(t, filter.Range.End, r.End)
-			assert.Equal(t, count, r.Size)
-			assert.Equal(t, total, len(classes))
-		})
-
-		t.Run("Overflow", func(t *testing.T) {
-			// In the API this should throw an HTTP 416 Range Not Satisfiable
-			// Ref: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/416
-			filter := ClassFilter{
-				Range: Range{
-					Start: 15,
-					End:   19,
-				},
-			}
-
-			_, _, err := repo.GetClassList(context.Background(), filter)
-			assert.Error(t, err)
-		})
-
-	})
-
-	t.Run("DeleteClass", func(t *testing.T) {
-		assert.NoError(t, repo.DeleteClass(context.Background(), class1.Id))
-		_, err := repo.GetClassById(context.Background(), class1.Id)
-		assert.Error(t, err)
-	})
-}
-
-func TestDynamoDBRepositoryDocument(t *testing.T) {
-	resources := DynamoDBResources{
-		Tables: DynamoDBTables{
-			Document: t.Name() + time.Now().Format("-20060102-150405"),
-		},
-	}
-
-	endpointResolverFunc := func(service string, region string, options ...interface{}) (endpoint aws.Endpoint, err error) {
-		endpoint = aws.Endpoint{
-			PartitionID:   "aws",
-			URL:           "http://localhost:8000",
-			SigningRegion: regionFlag,
-		}
-		return
-	}
-
-	endpointResolver := aws.EndpointResolverWithOptionsFunc(endpointResolverFunc)
-
-	cfg, err := config.LoadDefaultConfig(
-		context.Background(),
-		config.WithEndpointResolverWithOptions(endpointResolver),
-	)
-	assert.NoError(t, err)
-
-	// TODO Move this block elsewhere, maybe into the makefile or somewhere it
-	// can match what is described in the deployment stack.
-	client := dynamodb.NewFromConfig(cfg)
-	_, err = client.CreateTable(context.Background(), &dynamodb.CreateTableInput{
-		TableName: &resources.Tables.Document,
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
-				AttributeName: aws.String("DocumentId"),
+				AttributeName: aws.String("PK"),
 				AttributeType: types.ScalarAttributeTypeS,
 			},
 			{
-				AttributeName: aws.String("ClassId"),
+				AttributeName: aws.String("SK"),
 				AttributeType: types.ScalarAttributeTypeS,
-			},
-			{
-				AttributeName: aws.String("ParentId"),
-				AttributeType: types.ScalarAttributeTypeS,
-			},
-			{
-				AttributeName: aws.String("Version"),
-				AttributeType: types.ScalarAttributeTypeN,
 			},
 		},
 		KeySchema: []types.KeySchemaElement{
 			{
-				AttributeName: aws.String("DocumentId"),
+				AttributeName: aws.String("PK"),
 				KeyType:       types.KeyTypeHash,
 			},
 			{
-				AttributeName: aws.String("Version"),
+				AttributeName: aws.String("SK"),
 				KeyType:       types.KeyTypeRange,
 			},
 		},
-		GlobalSecondaryIndexes: []types.GlobalSecondaryIndex{
-			{
-				IndexName: aws.String("GSI-Class"),
-				KeySchema: []types.KeySchemaElement{
-					{
-						AttributeName: aws.String("ClassId"),
-						KeyType:       types.KeyTypeHash,
-					},
-					{
-						AttributeName: aws.String("Version"),
-						KeyType:       types.KeyTypeRange,
-					},
-				},
-				Projection: &types.Projection{
-					ProjectionType: types.ProjectionTypeAll,
-				},
+	}
+
+	db := dynamodb.NewFromConfig(cfg)
+	if _, err = db.CreateTable(context.Background(), createTable); err != nil {
+		return
+	}
+
+	// Create S3 bucket
+	createBucket := &s3.CreateBucketInput{
+		Bucket: &resources.Bucket,
+	}
+
+	// UsePathStyle is required to prevent host lookup exception
+	s3Client := s3.NewFromConfig(cfg, func(o *s3.Options) { o.UsePathStyle = useLocalStack })
+	if _, err = s3Client.CreateBucket(context.Background(), createBucket); err != nil {
+		return
+	}
+
+	return &DynamoDBRepository{
+		db:        db,
+		s3:        s3Client,
+		resources: resources,
+	}, nil
+}
+
+func testDynamoEmptyTable(repo *DynamoDBRepository, table string) (err error) {
+	params := &dynamodb.ScanInput{
+		TableName: &table,
+	}
+	response, err := repo.db.Scan(context.Background(), params)
+	if err != nil {
+		return
+	}
+
+	for _, item := range response.Items {
+		delete := &dynamodb.DeleteItemInput{
+			TableName: &table,
+			Key: map[string]types.AttributeValue{
+				"PK": item["PK"],
+				"SK": item["SK"],
 			},
-			{
-				IndexName: aws.String("GSI-Parent"),
-				KeySchema: []types.KeySchemaElement{
-					{
-						AttributeName: aws.String("ParentId"),
-						KeyType:       types.KeyTypeHash,
-					},
-					{
-						AttributeName: aws.String("Version"),
-						KeyType:       types.KeyTypeRange,
-					},
-				},
-				Projection: &types.Projection{
-					ProjectionType: types.ProjectionTypeAll,
-				},
-			},
-		},
-		BillingMode: types.BillingModePayPerRequest,
-	})
+		}
+		if _, err = repo.db.DeleteItem(context.Background(), delete); err != nil {
+			return
+		}
+	}
+	return
+}
+
+func TestDynamoFromClass(t *testing.T) {
+	class := Class{
+		Id:     "from_class",
+		Name:   t.Name(),
+		Fields: []Field{{Name: "field_1"}},
+	}
+
+	dc := new(dynamoClass)
+	dc.FromClass(&class)
+
+	assert.Equal(t, dynamoClassPrefix+class.Id, dc.PK)
+	assert.Equal(t, "class#v0000", dc.SK)
+	assert.Equal(t, t.Name(), dc.Name)
+	assert.DeepEqual(t, class.Fields, dc.Fields)
+}
+
+func TestDynamoToClass(t *testing.T) {
+	id := "to_class"
+	dc := dynamoClass{
+		PK:     dynamoClassPrefix + id,
+		SK:     "class_v0",
+		Name:   t.Name(),
+		Fields: []Field{{Name: "field_1"}},
+	}
+	class := dc.ToClass()
+
+	assert.Equal(t, id, class.Id)
+	assert.Equal(t, t.Name(), class.Name)
+	assert.DeepEqual(t, dc.Fields, class.Fields)
+}
+
+func TestDynamoDBRepository(t *testing.T) {
+	resources := DynamoDBResources{
+		Bucket: dynamoPrefix + "test",
+		Table:  dynamoPrefix + "Test",
+	}
+	repo, err := testDynamoNewRepository(resources)
 	assert.NoError(t, err)
 
-	repo := NewDynamoDBRepository(cfg, resources)
+	ctx := context.Background()
+
+	t.Run("CreateClass", func(t *testing.T) {
+		class := Class{
+			Id:   "class_create",
+			Name: t.Name(),
+		}
+		assert.NoError(t, repo.CreateClass(ctx, &class))
+	})
+
+	t.Run("GetClassByIdSuccess", func(t *testing.T) {
+		class := Class{
+			Id:   "get_success",
+			Name: t.Name(),
+		}
+		assert.NoError(t, repo.CreateClass(ctx, &class))
+
+		check, err := repo.GetClassById(ctx, class.Id)
+		assert.NoError(t, err)
+		assert.Equal(t, class.Id, check.Id)
+		assert.Equal(t, class.Name, check.Name)
+	})
+
+	t.Run("GetClassByIdFail", func(t *testing.T) {
+		_, err := repo.GetClassById(ctx, "get_fail")
+		assert.Equal(t, ErrNotExist, err)
+	})
+
+	t.Run("UpdateClass", func(t *testing.T) {
+		class := Class{
+			Id:          "update_class",
+			Name:        t.Name(),
+			TableLabels: "Field 1; Field 2",
+			TableFields: "field_1; field_2",
+			Created:     time.Now(),
+			Updated:     time.Now(),
+			Fields:      []Field{{Name: "field_2"}, {Name: "field_1"}},
+		}
+		assert.NoError(t, repo.CreateClass(ctx, &class))
+
+		class.Name = t.Name() + "-Updated"
+		class.TableLabels += "; Field 3"
+		class.TableFields += "; field_3"
+		class.Updated = time.UnixMicro(time.Now().UnixMicro())
+		class.Fields = append(class.Fields, Field{Name: "field_3"})
+		assert.NoError(t, repo.UpdateClass(ctx, &class))
+
+		check, err := repo.GetClassById(ctx, class.Id)
+		assert.NoError(t, err)
+		assert.Equal(t, class.Name, check.Name)
+		assert.Equal(t, class.TableFields, check.TableFields)
+		assert.Equal(t, class.TableLabels, check.TableLabels)
+		assert.Equal(t, class.Updated, check.Updated)
+		assert.DeepEqual(t, class.Fields, check.Fields)
+	})
+
+	t.Run("DeleteClass", func(t *testing.T) {
+		class := Class{
+			Id:   "delete_class",
+			Name: t.Name(),
+		}
+		assert.NoError(t, repo.CreateClass(ctx, &class))
+		assert.NoError(t, repo.DeleteClass(ctx, class.Id))
+		_, err := repo.GetClassById(ctx, class.Id)
+		assert.Equal(t, ErrNotExist, err)
+	})
+
+	t.Run("ClassList", func(t *testing.T) {
+		assert.NoError(t, testDynamoEmptyTable(repo, resources.Table))
+
+		t.Run("Empty", func(t *testing.T) {
+			filter := ClassFilter{Range: Range{End: 9}}
+			classes, r, err := repo.GetClassList(ctx, filter)
+			assert.NoError(t, err)
+			assert.DeepEqual(t, Range{}, r)
+			assert.Equal(t, 0, len(classes))
+		})
+
+		for i := 0; i < 10; i++ {
+			class := Class{
+				Id:   fmt.Sprintf("class_list_%02d", i),
+				Name: fmt.Sprintf("Class List (%02d)", i+1),
+			}
+			assert.NoError(t, repo.CreateClass(ctx, &class))
+		}
+
+		t.Run("All", func(t *testing.T) {
+			filter := ClassFilter{Range: Range{End: 9}}
+			classes, r, err := repo.GetClassList(ctx, filter)
+			assert.NoError(t, err)
+			assert.DeepEqual(t, Range{End: 9, Size: 10}, r)
+			assert.Equal(t, 10, len(classes))
+		})
+
+		t.Run("LargeWindow", func(t *testing.T) {
+			filter := ClassFilter{Range: Range{End: 99}}
+			classes, r, err := repo.GetClassList(ctx, filter)
+			assert.NoError(t, err)
+			assert.DeepEqual(t, Range{End: 9, Size: 10}, r)
+			assert.Equal(t, 10, len(classes))
+		})
+
+		t.Run("InvalidRange", func(t *testing.T) {
+			filter := ClassFilter{Range: Range{Start: 90, End: 99}}
+			classes, r, err := repo.GetClassList(ctx, filter)
+			assert.Equal(t, ErrBadRange, err)
+			assert.DeepEqual(t, Range{Size: 10}, r)
+			assert.Equal(t, 0, len(classes))
+		})
+
+		t.Run("Beginning", func(t *testing.T) {
+			filter := ClassFilter{Range: Range{Start: 0, End: 4}}
+			classes, r, err := repo.GetClassList(ctx, filter)
+			assert.NoError(t, err)
+			assert.DeepEqual(t, Range{End: 4, Size: 10}, r)
+			assert.Equal(t, 5, len(classes))
+		})
+
+		t.Run("End", func(t *testing.T) {
+			filter := ClassFilter{Range: Range{Start: 5, End: 9}}
+			classes, r, err := repo.GetClassList(ctx, filter)
+			assert.NoError(t, err)
+			assert.DeepEqual(t, Range{Start: 5, End: 9, Size: 10}, r)
+			assert.Equal(t, 5, len(classes))
+		})
+
+		t.Run("Middle", func(t *testing.T) {
+			filter := ClassFilter{Range: Range{Start: 3, End: 6}}
+			classes, r, err := repo.GetClassList(ctx, filter)
+			assert.NoError(t, err)
+			assert.DeepEqual(t, Range{Start: 3, End: 6, Size: 10}, r)
+			assert.Equal(t, 4, len(classes))
+		})
+	})
 
 	t.Run("CreateDocument", func(t *testing.T) {
-		doc := Document{
-			Id:         "doc_1",
-			ClassId:    "class_1",
-			TemplateId: "template_1",
-			ParentId:   "doc_0",
-			Title:      "CreateDocument Test",
+		class := Class{
+			Id:   "create_document_class",
+			Name: "Create Document Class",
 		}
-		assert.NoError(t, repo.CreateDocument(context.Background(), &doc))
+		assert.NoError(t, repo.CreateClass(ctx, &class))
+
+		doc := Document{
+			Id:      "create_document",
+			ClassId: class.Id,
+		}
+		assert.NoError(t, repo.CreateDocument(ctx, &doc))
 	})
 
-	t.Run("CreateDocumentNilParent", func(t *testing.T) {
-		doc := Document{
-			Id:      "doc_2",
-			ClassId: "class_1",
-			Title:   "CreateDocument Nil Parent Test",
+	t.Run("CreateDocumentWithPath", func(t *testing.T) {
+		class := Class{
+			Id:   "create_document_path_class",
+			Name: "Create Document with Path Class",
 		}
-		assert.NoError(t, repo.CreateDocument(context.Background(), &doc))
+		assert.NoError(t, repo.CreateClass(ctx, &class))
+
+		doc := Document{
+			Id:      "document_with_path",
+			ClassId: class.Id,
+			Path:    "/doc/with/path",
+		}
+		assert.NoError(t, repo.CreateDocument(ctx, &doc))
 	})
 
-	t.Run("GetDocumentById", func(t *testing.T) {
-		doc := Document{
-			Id:         "doc_3",
-			ClassId:    "class_2",
-			TemplateId: "template_2",
-			ParentId:   "doc_1",
+	t.Run("CreateDocumentWithSort", func(t *testing.T) {
+		assert.NoError(t, testDynamoEmptyTable(repo, resources.Table))
+
+		class := Class{
+			Id:   "sort_class",
+			Name: "Sort Class",
+			Fields: []Field{
+				{
+					Name: "existing_field",
+					Sort: true,
+				},
+				{
+					Name: "nonexistant_field",
+					Sort: true,
+				},
+				{
+					Name: "ignore_field",
+					Sort: false,
+				},
+				{
+					Name: "time_field",
+					Sort: true,
+				},
+			},
 		}
-		assert.NoError(t, repo.CreateDocument(context.Background(), &doc))
-		check, err := repo.GetDocumentById(context.Background(), doc.Id)
+		assert.NoError(t, repo.CreateClass(ctx, &class))
+
+		doc := Document{
+			Id:      "sort_doc",
+			ClassId: class.Id,
+			Values: map[string]interface{}{
+				"existing_field": "My Value",
+				"ignore_field":   "Ignore Me",
+				"extra_field":    "Extra Field",
+				"time_field":     time.Now(),
+			},
+		}
+		assert.NoError(t, repo.CreateDocument(ctx, &doc))
+	})
+
+	t.Run("GetDocumentByIdSuccess", func(t *testing.T) {
+		class := Class{
+			Id:   "get_document_success_class",
+			Name: "Get Document Success Class",
+		}
+		assert.NoError(t, repo.CreateClass(ctx, &class))
+
+		doc := Document{
+			Id:      "get_document_by_id_success",
+			ClassId: class.Id,
+		}
+		assert.NoError(t, repo.CreateDocument(ctx, &doc))
+
+		check, err := repo.GetDocumentById(ctx, doc.Id)
 		assert.NoError(t, err)
-		assert.DeepEqual(t, doc, check)
+		assert.Equal(t, doc.Id, check.Id)
+		assert.Equal(t, doc.ClassId, check.ClassId)
+	})
+
+	t.Run("GetDocumentByIdFail", func(t *testing.T) {
+		_, err := repo.GetDocumentById(ctx, "bad_doc_id")
+		assert.Equal(t, ErrNotExist, err)
+	})
+
+	t.Run("GetDocumentByPath", func(t *testing.T) {
+		class := Class{
+			Id:   "document_by_path_class",
+			Name: "Get Document By Path Class",
+		}
+		assert.NoError(t, repo.CreateClass(ctx, &class))
+
+		doc := Document{
+			Id:      "document_by_path",
+			ClassId: class.Id,
+			Path:    "/document/by/path",
+		}
+		assert.NoError(t, repo.CreateDocument(ctx, &doc))
+
+		check, err := repo.GetDocumentByPath(ctx, doc.Path)
+		assert.NoError(t, err)
+		assert.Equal(t, doc.Path, check.Path)
+
+		_, err = repo.GetDocumentByPath(ctx, "/invalid/path")
+		assert.Equal(t, ErrNotExist, err)
 	})
 
 	t.Run("UpdateDocument", func(t *testing.T) {
-		doc := Document{
-			Id:         "doc_4",
-			ClassId:    "class_2",
-			TemplateId: "template_2",
-			ParentId:   "doc_1",
+		class := Class{
+			Id:   "update_document_class",
+			Name: "Update Document Class",
 		}
-		assert.NoError(t, repo.CreateDocument(context.Background(), &doc))
+		assert.NoError(t, repo.CreateClass(ctx, &class))
 
-		doc.TemplateId = "template_3"
-		assert.NoError(t, repo.UpdateDocument(context.Background(), &doc))
+		t.Run("NoPathNoPath", func(t *testing.T) {
+			doc := Document{
+				Id:      "no_path_no_path",
+				ClassId: class.Id,
+				Path:    "",
+			}
+			assert.NoError(t, repo.CreateDocument(ctx, &doc))
 
-		check, err := repo.GetDocumentById(context.Background(), doc.Id)
-		assert.NoError(t, err)
-		assert.DeepEqual(t, doc, check)
+			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
+		})
+
+		t.Run("NoPathYesPath", func(t *testing.T) {
+			doc := Document{
+				Id:      "no_path_yes_path",
+				ClassId: class.Id,
+				Path:    "",
+			}
+			assert.NoError(t, repo.CreateDocument(ctx, &doc))
+
+			doc.Path = "/no/path/yes/path"
+			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
+		})
+
+		t.Run("YesPathNoPath", func(t *testing.T) {
+			doc := Document{
+				Id:      "yes_path_no_path",
+				ClassId: class.Id,
+				Path:    "/yes/path/no/path",
+			}
+			assert.NoError(t, repo.CreateDocument(ctx, &doc))
+
+			doc.Path = ""
+			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
+		})
+
+		t.Run("YesPathYesPath", func(t *testing.T) {
+			doc := Document{
+				Id:      "yes_path_yes_path",
+				ClassId: class.Id,
+				Path:    "/yes/path/yes/path",
+			}
+			assert.NoError(t, repo.CreateDocument(ctx, &doc))
+
+			doc.Path = "/yes/path/yes/path/updated"
+			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
+		})
+
+		t.Run("ForceTableScan", func(t *testing.T) {
+			doc := Document{
+				Id:      "force_table_scan",
+				ClassId: class.Id,
+				Path:    "/force/scan/original",
+			}
+			assert.NoError(t, repo.CreateDocument(ctx, &doc))
+
+			// Manually override the path - Not possible with the repo API
+			pk, _ := attributevalue.Marshal(dynamoDocPrefix + doc.Id)
+			sk, _ := attributevalue.Marshal(fmt.Sprintf(dynamoDocSortF, 0))
+			path, _ := attributevalue.Marshal("/force/scan/override")
+			_, err := repo.db.UpdateItem(ctx, &dynamodb.UpdateItemInput{
+				TableName: &resources.Table,
+				Key: map[string]types.AttributeValue{
+					"PK": pk,
+					"SK": sk,
+				},
+				UpdateExpression: aws.String("SET #path = :path"),
+				ExpressionAttributeNames: map[string]string{
+					"#path": "Path",
+				},
+				ExpressionAttributeValues: map[string]types.AttributeValue{
+					":path": path,
+				},
+			})
+			assert.NoError(t, err)
+
+			// Force table scan during update
+			doc.Path = "/force/scan/updated"
+			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
+		})
 	})
 
 	t.Run("DeleteDocument", func(t *testing.T) {
-		doc := Document{
-			Id:         "doc_5",
-			ClassId:    "class_1",
-			TemplateId: "template_1",
-			ParentId:   "doc_1",
+		class := Class{
+			Id:   "delete_document_class",
+			Name: "Delete Document Class",
+			Fields: []Field{
+				{Name: "field_1", Sort: true},
+				{Name: "field_2", Sort: true},
+				{Name: "field_3", Sort: true},
+			},
 		}
-		assert.NoError(t, repo.CreateDocument(context.Background(), &doc))
-		assert.NoError(t, repo.DeleteDocument(context.Background(), doc.Id))
+		assert.NoError(t, repo.CreateClass(ctx, &class))
 
-		// Make sure the document no longer exists
-		_, err := repo.GetDocumentById(context.Background(), doc.Id)
-		assert.Error(t, err)
-		assert.Equal(t, ErrNotFound, err)
+		doc := Document{
+			Id:      "delete_me",
+			ClassId: class.Id,
+			Path:    "/delete/me",
+			Values: map[string]interface{}{
+				"field_1": "My first value",
+				"field_2": "My second value",
+				"field_3": []int{1, 2, 3},
+			},
+		}
+		assert.NoError(t, repo.CreateDocument(ctx, &doc))
+
+		assert.NoError(t, repo.DeleteDocument(ctx, doc.Id))
+	})
+}
+
+func TestDynamoDBRepositoryDocumentList(t *testing.T) {
+	resources := DynamoDBResources{
+		Bucket: dynamoPrefix + "list",
+		Table:  dynamoPrefix + "List",
+	}
+	repo, err := testDynamoNewRepository(resources)
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	for _, class := range testClasses() {
+		assert.NoError(t, repo.CreateClass(ctx, &class))
+	}
+
+	for _, document := range testDocuments() {
+		assert.NoError(t, repo.CreateDocument(ctx, &document))
+	}
+
+	t.Run("ListPagesByTitle", func(t *testing.T) {
+		filter := DocumentFilter{
+			ClassId: "page",
+			Field:   "title",
+			Range:   Range{End: 9},
+		}
+		docs, r, err := repo.GetDocumentList(ctx, filter)
+		assert.NoError(t, err)
+		assert.DeepEqual(t, Range{End: 1, Size: 2}, r)
+		assert.Equal(t, 2, len(docs))
+		assert.Equal(t, "page-2", docs[0].Id)
+		assert.Equal(t, "page-1", docs[1].Id)
+	})
+
+	t.Run("ListSessionsByStart", func(t *testing.T) {
+		filter := DocumentFilter{
+			ClassId: "session",
+			Field:   "start",
+			Range:   Range{End: 9},
+		}
+		docs, r, err := repo.GetDocumentList(ctx, filter)
+		assert.NoError(t, err)
+		assert.DeepEqual(t, Range{End: 4, Size: 5}, r)
+		assert.Equal(t, 5, len(docs))
+	})
+
+	t.Run("ListSessionsByEvent", func(t *testing.T) {
+		filter := DocumentFilter{
+			ClassId:  "session",
+			ParentId: "event-1",
+			Field:    "start",
+			Range:    Range{End: 9},
+		}
+		docs, r, err := repo.GetDocumentList(ctx, filter)
+		assert.NoError(t, err)
+		assert.DeepEqual(t, Range{End: 2, Size: 3}, r)
+		assert.Equal(t, 3, len(docs))
+	})
+
+	t.Run("EmptyFilter", func(t *testing.T) {
+		// Should list all documents, sorted by creation date
+		filter := DocumentFilter{
+			Range: Range{End: 99},
+		}
+		docs, r, err := repo.GetDocumentList(ctx, filter)
+		assert.NoError(t, err)
+		assert.DeepEqual(t, Range{End: 19, Size: 20}, r)
+		assert.Equal(t, 20, len(docs))
+		assert.Equal(t, "event-1", docs[0].Id)
+		assert.Equal(t, "speaker-6", docs[19].Id)
+	})
+
+	t.Run("AllChildren", func(t *testing.T) {
+		// Should give all children of a parent document, regardless of class
+		// then sorted by creation date
+		filter := DocumentFilter{
+			ParentId: "event-1",
+			Range:    Range{End: 99},
+		}
+		docs, r, err := repo.GetDocumentList(ctx, filter)
+		assert.NoError(t, err)
+		assert.DeepEqual(t, Range{End: 2, Size: 3}, r)
+		assert.Equal(t, 3, len(docs))
+		assert.Equal(t, "session-1", docs[0].Id)
+		assert.Equal(t, "session-3", docs[2].Id)
+	})
+}
+
+func TestDynamoDBRepositoryValues(t *testing.T) {
+	resources := DynamoDBResources{
+		Bucket: dynamoPrefix + "values",
+		Table:  dynamoPrefix + "Values",
+	}
+	repo, err := testDynamoNewRepository(resources)
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	class := Class{
+		Id:      "class",
+		Name:    "Class",
+		Created: time.Now(),
+		Updated: time.Now(),
+		Fields: []Field{
+			{Name: "field1", Sort: true},
+			{Name: "field2"},
+			{Name: "field3", Sort: true},
+			{Name: "field4"},
+		},
+	}
+	assert.NoError(t, repo.CreateClass(ctx, &class))
+
+	doc := Document{
+		Id:      "doc",
+		ClassId: "class",
+		Values: map[string]interface{}{
+			"field1": "abc",
+			"field2": "def",
+			"field3": "ghi",
+			"field4": "jkl",
+		},
+	}
+	assert.NoError(t, repo.CreateDocument(ctx, &doc))
+
+	docCheck, err := repo.GetDocumentById(ctx, doc.Id)
+	assert.NoError(t, err)
+
+	assert.DeepEqual(t, doc.Values, docCheck.Values)
+	// Can't use DeepEqual for ... reasons?
+	// Need to cast everything to string for assert.Equal
+	for key, expect := range doc.Values {
+		assert.Equal(t, fmt.Sprint(expect), fmt.Sprint(docCheck.Values[key]))
+	}
+
+	extra := Document{
+		Id:      "extra",
+		ClassId: "class",
+		Values: map[string]interface{}{
+			"field0": "abc", // extra
+			"field1": "def",
+			// field2 intentionally left out
+			"field3": "ghi",
+			"field4": "jkl",
+			"field5": "mno", // extra
+		},
+	}
+	assert.NoError(t, repo.CreateDocument(ctx, &extra))
+
+	extraCheck, err := repo.GetDocumentById(ctx, extra.Id)
+	assert.NoError(t, err)
+
+	// Should contain all the submitted values and match what was sent into the
+	// repo.
+	assert.DeepEqual(t, extra.Values, extraCheck.Values)
+}
+
+func TestDynamoDBRepositoryTemplates(t *testing.T) {
+	resources := DynamoDBResources{
+		Bucket: dynamoPrefix + "templates",
+		Table:  dynamoPrefix + "Templates",
+	}
+	repo, err := testDynamoNewRepository(resources)
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	t.Run("BasicInOut", func(t *testing.T) {
+		template := Template{
+			Id:      "template-1",
+			Name:    "Test Template",
+			Created: time.Now(),
+			Updated: time.Now(),
+			Body:    "This is a test template\n\nThis is another line in the test template",
+		}
+		assert.NoError(t, repo.CreateTemplate(ctx, &template))
+
+		check, err := repo.GetTemplateById(ctx, template.Id)
+		assert.NoError(t, err)
+		assert.Equal(t, template.Body, check.Body)
+	})
+
+	t.Run("Version2", func(t *testing.T) {
+		template := Template{
+			Id:      "two-versions",
+			Name:    "Version 1",
+			Created: time.Now(),
+			Updated: time.Now(),
+			Body:    "This is version one content",
+		}
+		assert.NoError(t, repo.CreateTemplate(ctx, &template))
+
+		template.Name = "Version 2"
+		template.Body = "This is version two content"
+		assert.NoError(t, repo.UpdateTemplate(ctx, &template))
+
+		check, err := repo.GetTemplateById(ctx, template.Id)
+		assert.NoError(t, err)
+		assert.Equal(t, template.Body, check.Body)
 	})
 }
