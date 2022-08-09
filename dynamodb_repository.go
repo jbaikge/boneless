@@ -911,18 +911,18 @@ func (repo DynamoDBRepository) putValues(ctx context.Context, doc *Document) (er
 // Template Methods
 
 func (repo DynamoDBRepository) CreateTemplate(ctx context.Context, template *Template) (err error) {
-	template.Version = 1
-
 	dbTemplate := new(dynamoTemplate)
-	dbTemplate.FromTemplate(template)
-
+	template.Version = 1
 	for _, version := range []int{0, 1} {
+		dbTemplate.FromTemplate(template)
 		dbTemplate.SetSK(version)
 		if err = repo.putItem(ctx, dbTemplate); err != nil {
 			return
 		}
 	}
-
+	if err = repo.putTemplateBody(ctx, template); err != nil {
+		return
+	}
 	return
 }
 
@@ -1025,20 +1025,23 @@ func (repo DynamoDBRepository) UpdateTemplate(ctx context.Context, template *Tem
 	if err != nil {
 		return
 	}
-
-	// Update version value to the next one
 	template.Version = oldTemplate.Version + 1
 
-	// Push in new template version
+	// Add new version
 	dbTemplate := new(dynamoTemplate)
 	dbTemplate.FromTemplate(template)
 	if err = repo.putItem(ctx, dbTemplate); err != nil {
 		return
 	}
 
-	// Update version zero with latest data
+	// Update main version (zero)
 	dbTemplate.SetSK(0)
 	if err = repo.updateItem(ctx, dbTemplate); err != nil {
+		return
+	}
+
+	// Update content on S3
+	if err = repo.putTemplateBody(ctx, template); err != nil {
 		return
 	}
 
