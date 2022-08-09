@@ -517,9 +517,17 @@ func (repo DynamoDBRepository) DeleteDocument(ctx context.Context, id string) (e
 	}
 
 	// Delete all versions of the document
+	objects := make([]s3types.ObjectIdentifier, 0, dbDoc.Version)
+	doc := dbDoc.ToDocument()
 	for i := 0; i <= dbDoc.Version; i++ {
 		if err = repo.deleteItem(ctx, docId, fmt.Sprintf(dynamoDocSortF, i)); err != nil {
 			return
+		}
+		if i > 0 {
+			doc.Version = i
+			objects = append(objects, s3types.ObjectIdentifier{
+				Key: aws.String(repo.valuesKey(&doc)),
+			})
 		}
 	}
 
@@ -567,6 +575,17 @@ func (repo DynamoDBRepository) DeleteDocument(ctx context.Context, id string) (e
 			}
 		}
 	}
+
+	// Delete all values from S3 - this is at the end of the func to make sure
+	// everything is removed from the database first in case the S3 delete fails
+	delete := &s3.DeleteObjectsInput{
+		Bucket: &repo.resources.Bucket,
+		Delete: &s3types.Delete{
+			Objects: objects,
+		},
+	}
+	_, err = repo.s3.DeleteObjects(ctx, delete)
+
 	return
 }
 
