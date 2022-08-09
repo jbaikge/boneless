@@ -497,6 +497,28 @@ func TestDynamoDBRepository(t *testing.T) {
 			doc.Path = "/force/scan/updated"
 			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
 		})
+
+		t.Run("SortUpdates", func(t *testing.T) {
+			doc := Document{
+				Id:      "sort_update",
+				ClassId: class.Id,
+				Values: map[string]interface{}{
+					"field1": "v1",
+					"field2": "v1",
+					"field3": "v1",
+				},
+			}
+			assert.NoError(t, repo.CreateDocument(ctx, &doc))
+
+			doc.Values["field1"] = "v2"
+			doc.Values["field2"] = "v2"
+			doc.Values["field3"] = "v2"
+			assert.NoError(t, repo.UpdateDocument(ctx, &doc))
+
+			check, err := repo.GetDocumentById(ctx, doc.Id)
+			assert.NoError(t, err)
+			assert.DeepEqual(t, doc.Values, check.Values)
+		})
 	})
 
 	t.Run("DeleteDocument", func(t *testing.T) {
