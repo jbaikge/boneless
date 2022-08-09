@@ -883,9 +883,10 @@ func (repo DynamoDBRepository) updateSortDocuments(ctx context.Context, doc *Doc
 
 		// Add sort record
 		dbSort := new(dynamoSort)
-		dbSort.FromDocument(doc, key)
-		if err = repo.putItem(ctx, dbSort); err != nil {
-			return err
+		if ok := dbSort.FromDocument(doc, key); ok {
+			if err = repo.putItem(ctx, dbSort); err != nil {
+				return err
+			}
 		}
 	}
 	return

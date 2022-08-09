@@ -410,6 +410,11 @@ func TestDynamoDBRepository(t *testing.T) {
 		class := Class{
 			Id:   "update_document_class",
 			Name: "Update Document Class",
+			Fields: []Field{
+				{Name: "field1", Sort: true},
+				{Name: "field2"},
+				{Name: "field3", Sort: true},
+			},
 		}
 		assert.NoError(t, repo.CreateClass(ctx, &class))
 
