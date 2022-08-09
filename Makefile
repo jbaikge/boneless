@@ -3,7 +3,7 @@ LAMBDAS := $(notdir $(SRC))
 ASSETS := $(addsuffix /handler,$(addprefix assets/,$(LAMBDAS)))
 ADMIN := _frontend-admin/build/index.html
 
-.PHONY: all deploy diff frontend synth deploy-local diff-local synth-local
+.PHONY: all deploy diff frontend synth deploy-local diff-local synth-local localstack
 
 all: $(ASSETS) $(ADMIN)
 
@@ -21,6 +21,9 @@ diff-local: $(ASSETS) $(ADMIN)
 
 frontend:
 	$(MAKE) -C _frontend-admin start
+
+localstack:
+	/usr/bin/docker run --rm --add-host host.docker.internal:host-gateway --publish 4566:4566 --publish 4510-4559:4510-4559 localstack/localstack:1.0.0
 
 synth: $(ASSETS) $(ADMIN)
 	$(MAKE) -C _stack synth
