@@ -895,7 +895,7 @@ func (repo DynamoDBRepository) updateSortDocuments(ctx context.Context, doc *Doc
 // S3 Document interaction
 
 func (repo DynamoDBRepository) valuesKey(doc *Document) string {
-	return fmt.Sprintf("documents/%s/%s/%s_v%04d.json", doc.ClassId, doc.Id, doc.Id, doc.Version)
+	return fmt.Sprintf("documents/%s/%s/v%04d.json", doc.ClassId, doc.Id, doc.Version)
 }
 
 func (repo DynamoDBRepository) getValues(ctx context.Context, doc *Document) (err error) {
@@ -1088,7 +1088,7 @@ func (repo DynamoDBRepository) UpdateTemplate(ctx context.Context, template *Tem
 // S3 Template interaction
 
 func (repo DynamoDBRepository) templateKey(template *Template) string {
-	return fmt.Sprintf("templates/%s/%s_v%04d.html", template.Id, template.Id, template.Version)
+	return fmt.Sprintf("templates/%s/v%04d.html", template.Id, template.Version)
 }
 
 func (repo DynamoDBRepository) getTemplateBody(ctx context.Context, template *Template) (err error) {
