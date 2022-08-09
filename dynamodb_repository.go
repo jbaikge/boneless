@@ -334,6 +334,22 @@ func (dyn dynamoTemplate) UpdateValues() map[string]interface{} {
 	}
 }
 
+// Sort by name
+type dynamoTemplateByName []dynamoTemplate
+
+func (arr dynamoTemplateByName) Len() int           { return len(arr) }
+func (arr dynamoTemplateByName) Swap(i, j int)      { arr[i], arr[j] = arr[j], arr[i] }
+func (arr dynamoTemplateByName) Less(i, j int) bool { return arr[i].Name < arr[j].Name }
+
+// Sort by created time
+type dynamoTemplateByCreated []dynamoTemplate
+
+func (arr dynamoTemplateByCreated) Len() int      { return len(arr) }
+func (arr dynamoTemplateByCreated) Swap(i, j int) { arr[i], arr[j] = arr[j], arr[i] }
+func (arr dynamoTemplateByCreated) Less(i, j int) bool {
+	return arr[i].Created.Before(arr[j].Created)
+}
+
 // Repository
 
 type DynamoDBResources struct {
@@ -940,6 +956,66 @@ func (repo DynamoDBRepository) GetTemplateById(ctx context.Context, id string) (
 }
 
 func (repo DynamoDBRepository) GetTemplateList(ctx context.Context, filter TemplateFilter) (list []Template, r Range, err error) {
+	tmp := make([]dynamoTemplate, 0, 128)
+
+	// Filter out template-specific SortKeys
+	sk, err := attributevalue.Marshal(fmt.Sprintf(dynamoTemplateSortF, 0))
+	if err != nil {
+		return list, r, err
+	}
+	params := &dynamodb.ScanInput{
+		TableName:        &repo.resources.Table,
+		FilterExpression: aws.String("SK = :sk"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":sk": sk,
+		},
+	}
+	paginator := dynamodb.NewScanPaginator(repo.db, params)
+	for paginator.HasMorePages() {
+		response, err := paginator.NextPage(ctx)
+		if err != nil {
+			return list, r, err
+		}
+		dbTemplates := make([]dynamoTemplate, 0, len(response.Items))
+		if err = attributevalue.UnmarshalListOfMaps(response.Items, &dbTemplates); err != nil {
+			return list, r, err
+		}
+		tmp = append(tmp, dbTemplates...)
+	}
+
+	// Sort by name or created
+	var sorter sort.Interface
+	switch strings.ToLower(filter.Field) {
+	case "created":
+		sorter = dynamoTemplateByCreated(tmp)
+	default:
+		sorter = dynamoTemplateByName(tmp)
+	}
+	if filter.SortReverse {
+		sorter = sort.Reverse(sorter)
+	}
+	sort.Sort(sorter)
+
+	r.Size = len(tmp)
+	list = make([]Template, 0, filter.Range.End-filter.Range.Start+1)
+	for i := filter.Range.Start; i < len(tmp) && i <= filter.Range.End; i++ {
+		template := tmp[i].ToTemplate()
+		if err = repo.getTemplateBody(ctx, &template); err != nil {
+			return
+		}
+		list = append(list, template)
+	}
+
+	if filter.Range.Start > 0 && len(list) == 0 {
+		return list, r, ErrBadRange
+	}
+
+	r.Start = filter.Range.Start
+	r.End = r.Start
+	if len(list) > 0 {
+		r.End += len(list) - 1
+	}
+
 	return
 }
 
