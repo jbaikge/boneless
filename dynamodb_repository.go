@@ -855,6 +855,43 @@ func (repo DynamoDBRepository) updateSortDocuments(ctx context.Context, doc *Doc
 	return
 }
 
+// S3 Document interaction
+
+func (repo DynamoDBRepository) valuesKey(doc *Document) string {
+	return fmt.Sprintf("documents/%s/%s/%s_v%04d.json", doc.ClassId, doc.Id, doc.Id, doc.Version)
+}
+
+func (repo DynamoDBRepository) getValues(ctx context.Context, doc *Document) (err error) {
+	params := &s3.GetObjectInput{
+		Bucket: &repo.resources.Bucket,
+		Key:    aws.String(repo.valuesKey(doc)),
+	}
+	response, err := repo.s3.GetObject(ctx, params)
+	if err != nil {
+		return
+	}
+	if doc.Values == nil {
+		doc.Values = make(map[string]interface{})
+	}
+	return json.NewDecoder(response.Body).Decode(&doc.Values)
+}
+
+func (repo DynamoDBRepository) putValues(ctx context.Context, doc *Document) (err error) {
+	buffer := new(bytes.Buffer)
+	if err = json.NewEncoder(buffer).Encode(doc.Values); err != nil {
+		return
+	}
+
+	params := &s3.PutObjectInput{
+		Bucket:      &repo.resources.Bucket,
+		Key:         aws.String(repo.valuesKey(doc)),
+		Body:        bytes.NewReader(buffer.Bytes()),
+		ContentType: aws.String("application/json"),
+	}
+	_, err = repo.s3.PutObject(ctx, params)
+	return
+}
+
 // Template Methods
 
 func (repo DynamoDBRepository) CreateTemplate(ctx context.Context, template *Template) (err error) {
@@ -929,6 +966,41 @@ func (repo DynamoDBRepository) UpdateTemplate(ctx context.Context, template *Tem
 		return
 	}
 
+	return
+}
+
+// S3 Template interaction
+
+func (repo DynamoDBRepository) templateKey(template *Template) string {
+	return fmt.Sprintf("templates/%s/%s_v%04d.html", template.Id, template.Id, template.Version)
+}
+
+func (repo DynamoDBRepository) getTemplateBody(ctx context.Context, template *Template) (err error) {
+	params := &s3.GetObjectInput{
+		Bucket: &repo.resources.Bucket,
+		Key:    aws.String(repo.templateKey(template)),
+	}
+	response, err := repo.s3.GetObject(ctx, params)
+	if err != nil {
+		return
+	}
+	defer response.Body.Close()
+	buffer := new(bytes.Buffer)
+	if _, err = buffer.ReadFrom(response.Body); err != nil {
+		return
+	}
+	template.Body = buffer.String()
+	return
+}
+
+func (repo DynamoDBRepository) putTemplateBody(ctx context.Context, template *Template) (err error) {
+	params := &s3.PutObjectInput{
+		Bucket:      &repo.resources.Bucket,
+		Key:         aws.String(repo.templateKey(template)),
+		Body:        strings.NewReader(template.Body),
+		ContentType: aws.String("text/html"),
+	}
+	_, err = repo.s3.PutObject(ctx, params)
 	return
 }
 
@@ -1040,77 +1112,5 @@ func (repo DynamoDBRepository) updateItem(ctx context.Context, item dynamoItem) 
 
 	_, err = repo.db.UpdateItem(ctx, params)
 
-	return
-}
-
-// S3 Document interaction
-
-func (repo DynamoDBRepository) valuesKey(doc *Document) string {
-	return fmt.Sprintf("documents/%s/%s/%s_v%04d.json", doc.ClassId, doc.Id, doc.Id, doc.Version)
-}
-
-func (repo DynamoDBRepository) getValues(ctx context.Context, doc *Document) (err error) {
-	params := &s3.GetObjectInput{
-		Bucket: &repo.resources.Bucket,
-		Key:    aws.String(repo.valuesKey(doc)),
-	}
-	response, err := repo.s3.GetObject(ctx, params)
-	if err != nil {
-		return
-	}
-	if doc.Values == nil {
-		doc.Values = make(map[string]interface{})
-	}
-	return json.NewDecoder(response.Body).Decode(&doc.Values)
-}
-
-func (repo DynamoDBRepository) putValues(ctx context.Context, doc *Document) (err error) {
-	buffer := new(bytes.Buffer)
-	if err = json.NewEncoder(buffer).Encode(doc.Values); err != nil {
-		return
-	}
-
-	params := &s3.PutObjectInput{
-		Bucket:      &repo.resources.Bucket,
-		Key:         aws.String(repo.valuesKey(doc)),
-		Body:        bytes.NewReader(buffer.Bytes()),
-		ContentType: aws.String("application/json"),
-	}
-	_, err = repo.s3.PutObject(ctx, params)
-	return
-}
-
-// S3 Template interaction
-
-func (repo DynamoDBRepository) templateKey(template *Template) string {
-	return fmt.Sprintf("templates/%s/%s_v%04d.html", template.Id, template.Id, template.Version)
-}
-
-func (repo DynamoDBRepository) getTemplateBody(ctx context.Context, template *Template) (err error) {
-	params := &s3.GetObjectInput{
-		Bucket: &repo.resources.Bucket,
-		Key:    aws.String(repo.templateKey(template)),
-	}
-	response, err := repo.s3.GetObject(ctx, params)
-	if err != nil {
-		return
-	}
-	defer response.Body.Close()
-	buffer := new(bytes.Buffer)
-	if _, err = buffer.ReadFrom(response.Body); err != nil {
-		return
-	}
-	template.Body = buffer.String()
-	return
-}
-
-func (repo DynamoDBRepository) putTemplateBody(ctx context.Context, template *Template) (err error) {
-	params := &s3.PutObjectInput{
-		Bucket:      &repo.resources.Bucket,
-		Key:         aws.String(repo.templateKey(template)),
-		Body:        strings.NewReader(template.Body),
-		ContentType: aws.String("text/html"),
-	}
-	_, err = repo.s3.PutObject(ctx, params)
 	return
 }
