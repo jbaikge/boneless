@@ -16,7 +16,9 @@ type Template struct {
 }
 
 type TemplateFilter struct {
-	Range Range
+	Field       string
+	SortReverse bool
+	Range       Range
 }
 
 type TemplateRepository interface {
