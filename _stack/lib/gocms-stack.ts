@@ -1,4 +1,4 @@
-import { RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
+import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
@@ -10,8 +10,8 @@ import { Distribution, OriginAccessIdentity } from 'aws-cdk-lib/aws-cloudfront';
 import { S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins';
 
 
-export class GocmsStack extends Stack {
-  constructor(scope: Construct, id: string, props?: StackProps) {
+export class GocmsStack extends cdk.Stack {
+  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     // DynamoDB table
@@ -20,7 +20,7 @@ export class GocmsStack extends Stack {
       // Not used when billingMode is PAY_PER_REQUEST
       // readCapacity: 1,
       // writeCapacity: 1,
-      removalPolicy: RemovalPolicy.DESTROY,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
       partitionKey: {
         name: 'PK',
         type: dynamodb.AttributeType.STRING,
@@ -34,6 +34,7 @@ export class GocmsStack extends Stack {
     // S3 Repository Bucket (document values and templates)
     const repositoryBucket = new s3.Bucket(this, 'RepositoryBucket', {
       accessControl: s3.BucketAccessControl.PRIVATE,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // Environment variables
@@ -160,5 +161,10 @@ export class GocmsStack extends Stack {
       }
     });
     */
+
+    new cdk.CfnOutput(this, 'repository_bucket', {
+      value: repositoryBucket.bucketName,
+      description: 'Repository S3 bucket',
+    });
   }
 }
