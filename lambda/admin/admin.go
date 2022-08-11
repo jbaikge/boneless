@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -21,10 +22,6 @@ type Error struct {
 	Error string `json:"error"`
 }
 
-type Handlers struct {
-	Repo gocms.Repository
-}
-
 const (
 	ClassRangeUnit = "classes"
 )
@@ -34,23 +31,35 @@ var (
 	resources gocms.DynamoDBResources
 )
 
-func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse, err error) {
+type HandlerFunc func(context.Context, events.APIGatewayProxyRequest, *events.APIGatewayProxyResponse) (interface{}, error)
+
+type Handlers struct {
+	Repo gocms.Repository
+}
+
+func (h Handlers) GetHandler(request events.APIGatewayProxyRequest) (f HandlerFunc, found bool) {
+	key := fmt.Sprintf("%s %s", request.HTTPMethod, request.Resource)
+	funcMap := map[string]HandlerFunc{
+		"GET /classes":  h.ClassList,
+		"POST /classes": h.ClassCreate,
+	}
+	f, found = funcMap[key]
+	return
+}
+
+func (h Handlers) HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse, err error) {
 	response.StatusCode = http.StatusOK
 	response.Headers = map[string]string{
 		"Content-Type":                  "application/json",
 		"Access-Control-Expose-Headers": "Content-Range, X-Total-Count",
 	}
 
-	handlers := Handlers{
-		Repo: gocms.NewDynamoDBRepository(awsConfig, resources),
-	}
-
 	var data interface{}
-	switch fmt.Sprintf("%s %s", request.HTTPMethod, request.Resource) {
-	case "GET /classes":
-		data, err = handlers.ClassList(ctx, request, &response)
-	case "POST /classes":
-		data, err = handlers.ClassCreate(ctx, request, &response)
+	if handler, found := h.GetHandler(request); found {
+		data, err = handler(ctx, request, &response)
+	} else {
+		response.StatusCode = http.StatusNotFound
+		err = errors.New("no handler found for resource: " + request.Resource)
 	}
 
 	// Redirect the error so it comes out as JSON instead of a 500
@@ -93,33 +102,43 @@ func main() {
 
 	resources.FromEnv()
 
-	lambda.Start(HandleRequest)
+	handlers := Handlers{
+		Repo: gocms.NewDynamoDBRepository(awsConfig, resources),
+	}
+	lambda.Start(handlers.HandleRequest)
 }
 
 //
 // Handlers
 //
 
-func (h Handlers) ClassCreate(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (class gocms.Class, err error) {
+func (h Handlers) ClassCreate(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
+	var class gocms.Class
 	reader := strings.NewReader(request.Body)
 	if err = json.NewDecoder(reader).Decode(&class); err != nil {
 		return
 	}
 
 	classService := gocms.NewClassService(h.Repo)
-	err = classService.Create(ctx, &class)
-	return
+	if err = classService.Create(ctx, &class); err != nil {
+		return
+	}
+
+	return class, nil
 }
 
-func (h Handlers) ClassList(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (classes []gocms.Class, err error) {
+func (h Handlers) ClassList(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
 	classService := gocms.NewClassService(h.Repo)
 
 	filter := gocms.ClassFilter{
 		Range: gocms.Range{End: 9},
 	}
 	classes, r, err := classService.List(ctx, filter)
+	if err != nil {
+		return
+	}
 
 	response.Headers["Content-Range"] = r.ContentRangeHeader(ClassRangeUnit)
 	response.Headers["X-Total-Count"] = fmt.Sprint(r.Size)
-	return
+	return classes, nil
 }
