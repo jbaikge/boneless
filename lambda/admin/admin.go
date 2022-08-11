@@ -40,8 +40,11 @@ type Handlers struct {
 func (h Handlers) GetHandler(request events.APIGatewayProxyRequest) (f HandlerFunc, found bool) {
 	key := fmt.Sprintf("%s %s", request.HTTPMethod, request.Resource)
 	funcMap := map[string]HandlerFunc{
-		"GET /classes":  h.ClassList,
-		"POST /classes": h.ClassCreate,
+		"GET /classes":             h.ClassList,
+		"POST /classes":            h.ClassCreate,
+		"GET /class/{class_id}":    h.ClassById,
+		"PUT /class/{class_id}":    h.ClassUpdate,
+		"DELETE /class/{class_id}": h.ClassDelete,
 	}
 	f, found = funcMap[key]
 	return
@@ -112,6 +115,16 @@ func main() {
 // Handlers
 //
 
+func (h Handlers) ClassById(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
+	id, ok := request.PathParameters["class_id"]
+	if !ok {
+		response.StatusCode = http.StatusBadRequest
+		return nil, errors.New("no class_id specified")
+	}
+
+	return gocms.NewClassService(h.Repo).ById(ctx, id)
+}
+
 func (h Handlers) ClassCreate(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
 	var class gocms.Class
 	reader := strings.NewReader(request.Body)
@@ -125,6 +138,17 @@ func (h Handlers) ClassCreate(ctx context.Context, request events.APIGatewayProx
 	}
 
 	return class, nil
+}
+
+func (h Handlers) ClassDelete(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
+	id, ok := request.PathParameters["class_id"]
+	if !ok {
+		response.StatusCode = http.StatusBadRequest
+		return nil, errors.New("no class_id specified")
+	}
+
+	err = gocms.NewClassService(h.Repo).Delete(ctx, id)
+	return
 }
 
 func (h Handlers) ClassList(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
@@ -141,4 +165,28 @@ func (h Handlers) ClassList(ctx context.Context, request events.APIGatewayProxyR
 	response.Headers["Content-Range"] = r.ContentRangeHeader(ClassRangeUnit)
 	response.Headers["X-Total-Count"] = fmt.Sprint(r.Size)
 	return classes, nil
+}
+
+func (h Handlers) ClassUpdate(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
+	id, ok := request.PathParameters["class_id"]
+	if !ok {
+		response.StatusCode = http.StatusBadRequest
+		return nil, errors.New("no class_id specified")
+	}
+
+	var class gocms.Class
+	if err = json.NewDecoder(strings.NewReader(request.Body)).Decode(&class); err != nil {
+		response.StatusCode = http.StatusBadRequest
+		return nil, fmt.Errorf("bad json: %w", err)
+	}
+
+	// Force ID to be what is in the URL. Not sure if necessary? Should prevent
+	// changing a class ID.
+	class.Id = id
+	if err = gocms.NewClassService(h.Repo).Update(ctx, &class); err != nil {
+		response.StatusCode = http.StatusInternalServerError
+		return nil, err
+	}
+
+	return class, nil
 }
