@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -20,6 +21,14 @@ type Error struct {
 	Error string `json:"error"`
 }
 
+type Handlers struct {
+	Repo gocms.Repository
+}
+
+const (
+	ClassRangeUnit = "classes"
+)
+
 var (
 	awsConfig aws.Config
 	resources gocms.DynamoDBResources
@@ -31,14 +40,16 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		"Content-Type": "application/json",
 	}
 
-	repo := gocms.NewDynamoDBRepository(awsConfig, resources)
+	handlers := Handlers{
+		Repo: gocms.NewDynamoDBRepository(awsConfig, resources),
+	}
 
 	var data interface{}
 	switch fmt.Sprintf("%s %s", request.HTTPMethod, request.Resource) {
 	case "GET /classes":
-		data, err = handleClassList(ctx, request, repo)
+		data, err = handlers.ClassList(ctx, request, &response)
 	case "POST /classes":
-		data, err = handleClassCreate(ctx, request, repo)
+		data, err = handlers.ClassCreate(ctx, request, &response)
 	}
 
 	// Redirect the error so it comes out as JSON instead of a 500
@@ -57,7 +68,24 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 
 func main() {
 	var err error
-	awsConfig, err = config.LoadDefaultConfig(context.Background())
+	if os.Getenv("USER") == "localstack" {
+		endpointResolverFunc := func(service string, region string, options ...interface{}) (endpoint aws.Endpoint, err error) {
+			endpoint = aws.Endpoint{
+				PartitionID:   "aws",
+				URL:           "http://localhost:4566", // 4566 for LocalStack; 8000 for amazon/dynamodb-local
+				SigningRegion: "us-east-1",             // Must be a legitimate region for LocalStack S3 to work
+			}
+			return
+		}
+		endpointResolver := aws.EndpointResolverWithOptionsFunc(endpointResolverFunc)
+
+		awsConfig, err = config.LoadDefaultConfig(
+			context.Background(),
+			config.WithEndpointResolverWithOptions(endpointResolver),
+		)
+	} else {
+		awsConfig, err = config.LoadDefaultConfig(context.Background())
+	}
 	if err != nil {
 		log.Fatalf("Failed to load default config: %v", err)
 	}
@@ -71,17 +99,26 @@ func main() {
 // Handlers
 //
 
-func handleClassCreate(ctx context.Context, request events.APIGatewayProxyRequest, repo gocms.Repository) (class gocms.Class, err error) {
+func (h Handlers) ClassCreate(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (class gocms.Class, err error) {
 	reader := strings.NewReader(request.Body)
 	if err = json.NewDecoder(reader).Decode(&class); err != nil {
 		return
 	}
 
-	classService := gocms.NewClassService(repo)
+	classService := gocms.NewClassService(h.Repo)
 	err = classService.Create(ctx, &class)
 	return
 }
 
-func handleClassList(ctx context.Context, request events.APIGatewayProxyRequest, repo gocms.Repository) (classes []gocms.Class, err error) {
+func (h Handlers) ClassList(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (classes []gocms.Class, err error) {
+	classService := gocms.NewClassService(h.Repo)
+
+	filter := gocms.ClassFilter{
+		Range: gocms.Range{End: 9},
+	}
+	classes, r, err := classService.List(ctx, filter)
+
+	response.Headers["Content-Range"] = r.ContentRangeHeader(ClassRangeUnit)
+	response.Headers["X-Total-Count"] = fmt.Sprint(r.Size)
 	return
 }
