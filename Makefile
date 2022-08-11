@@ -23,7 +23,7 @@ frontend:
 	$(MAKE) -C _frontend-admin start
 
 localstack:
-	/usr/bin/docker run --rm --add-host host.docker.internal:host-gateway --publish 4566:4566 --publish 4510-4559:4510-4559 localstack/localstack:1.0.0
+	/usr/bin/docker run --rm --add-host host.docker.internal:host-gateway --publish 4566:4566 --publish 4510-4559:4510-4559 localstack/localstack:latest
 
 synth: $(ASSETS) $(ADMIN)
 	$(MAKE) -C _stack synth
