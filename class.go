@@ -72,6 +72,10 @@ func (s ClassService) Create(ctx context.Context, class *Class) (err error) {
 	return s.repo.CreateClass(ctx, class)
 }
 
+func (s ClassService) Delete(ctx context.Context, id string) (err error) {
+	return s.repo.DeleteClass(ctx, id)
+}
+
 func (s ClassService) List(ctx context.Context, filter ClassFilter) ([]Class, Range, error) {
 	return s.repo.GetClassList(ctx, filter)
 }
