@@ -37,7 +37,8 @@ var (
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse, err error) {
 	response.StatusCode = http.StatusOK
 	response.Headers = map[string]string{
-		"Content-Type": "application/json",
+		"Content-Type":                  "application/json",
+		"Access-Control-Expose-Headers": "Content-Range, X-Total-Count",
 	}
 
 	handlers := Handlers{
