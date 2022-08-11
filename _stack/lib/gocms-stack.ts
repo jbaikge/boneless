@@ -15,87 +15,26 @@ export class GocmsStack extends Stack {
     super(scope, id, props);
 
     // DynamoDB tables
-    const classTable = new dynamodb.Table(this, 'Classes', {
+    const repositoryTable = new dynamodb.Table(this, 'Table', {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       // Not used when billingMode is PAY_PER_REQUEST
       // readCapacity: 1,
       // writeCapacity: 1,
       removalPolicy: RemovalPolicy.DESTROY,
       partitionKey: {
-        name: 'ClassId',
-        type: dynamodb.AttributeType.STRING,
-      },
-    });
-
-    const docTable = new dynamodb.Table(this, 'Documents', {
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: RemovalPolicy.DESTROY,
-      partitionKey: {
-        name: 'DocumentId',
+        name: 'PK',
         type: dynamodb.AttributeType.STRING,
       },
       sortKey: {
-        name: 'Version',
-        type: dynamodb.AttributeType.NUMBER,
-      },
-    });
-
-    docTable.addGlobalSecondaryIndex({
-      indexName: 'GSI-Class',
-      partitionKey: {
-        name: 'ClassId',
-        type: dynamodb.AttributeType.STRING,
-      },
-      sortKey: {
-        name: 'Version',
-        type: dynamodb.AttributeType.NUMBER,
-      },
-      projectionType: dynamodb.ProjectionType.ALL,
-    });
-
-    docTable.addGlobalSecondaryIndex({
-      indexName: 'GSI-Parent',
-      partitionKey: {
-        name: 'ParentId',
-        type: dynamodb.AttributeType.STRING,
-      },
-      sortKey: {
-        name: 'Version',
-        type: dynamodb.AttributeType.NUMBER,
-      },
-      projectionType: dynamodb.ProjectionType.ALL,
-    });
-
-    const sortTable = new dynamodb.Table(this, 'Sort', {
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: RemovalPolicy.DESTROY,
-      partitionKey: {
-        name: 'ClassField',
-        type: dynamodb.AttributeType.STRING,
-      },
-      sortKey: {
-        name: 'Value',
-        type: dynamodb.AttributeType.STRING,
-      },
-    });
-
-    sortTable.addGlobalSecondaryIndex({
-      indexName: 'GSI-Documents',
-      partitionKey: {
-        name: 'DocumentId',
+        name: 'SK',
         type: dynamodb.AttributeType.STRING,
       },
     });
 
     // Environment variables
     const environment = {
-      'BUCKET_DOCUMENT': '',
-      'BUCKET_STATIC': '',
-      'DYNAMODB_CLASS_TABLE': classTable.tableName,
-      'DYNAMODB_DOCUMENT_TABLE': docTable.tableName,
-      'DYNAMODB_PATH_TABLE': '',
-      'DYNAMODB_SORT_TABLE': sortTable.tableName,
-      'DYNAMODB_TEMPLATE_TABLE': '',
+      'REPOSITORY_BUCKET': '',
+      'REPOSITORY_TABLE': repositoryTable.tableName,
     }
 
     // Path back to repo root
@@ -111,7 +50,7 @@ export class GocmsStack extends Stack {
       code:        lambda.Code.fromAsset(join(assetDir, 'create-class')),
       handler:     'handler'
     });
-    classTable.grantWriteData(createClassLambda);
+    repositoryTable.grantWriteData(createClassLambda);
 
     // Get class lambda function
     const getClassByIdLambda = new lambda.Function(this, 'GetClassByIdHandler', {
@@ -120,7 +59,7 @@ export class GocmsStack extends Stack {
       code:        lambda.Code.fromAsset(join(assetDir, 'get-class-by-id')),
       handler:     'handler'
     });
-    classTable.grantReadData(getClassByIdLambda);
+    repositoryTable.grantReadData(getClassByIdLambda);
 
     // List class lambda function
     const listClassesLambda = new lambda.Function(this, 'ListClassesHandler', {
@@ -129,7 +68,7 @@ export class GocmsStack extends Stack {
       code:        lambda.Code.fromAsset(join(assetDir, 'list-classes')),
       handler:     'handler'
     });
-    classTable.grantReadData(listClassesLambda);
+    repositoryTable.grantReadData(listClassesLambda);
 
     // Update class lambda function
     const updateClassLambda = new lambda.Function(this, 'UpdateClassHandler', {
@@ -138,7 +77,7 @@ export class GocmsStack extends Stack {
       code:        lambda.Code.fromAsset(join(assetDir, 'update-class')),
       handler:     'handler'
     });
-    classTable.grantWriteData(updateClassLambda);
+    repositoryTable.grantWriteData(updateClassLambda);
 
     // REST API
     const api = new apigw.RestApi(this, 'GoCMS Endpoint', {
