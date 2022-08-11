@@ -3,8 +3,8 @@ import { Construct } from 'constructs';
 import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import { join } from 'path';
-import { Bucket, BucketAccessControl } from 'aws-cdk-lib/aws-s3';
 import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
 import { Distribution, OriginAccessIdentity } from 'aws-cdk-lib/aws-cloudfront';
 import { S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins';
@@ -14,8 +14,8 @@ export class GocmsStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    // DynamoDB tables
-    const repositoryTable = new dynamodb.Table(this, 'Table', {
+    // DynamoDB table
+    const repositoryTable = new dynamodb.Table(this, 'RepositoryTable', {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       // Not used when billingMode is PAY_PER_REQUEST
       // readCapacity: 1,
@@ -31,9 +31,14 @@ export class GocmsStack extends Stack {
       },
     });
 
+    // S3 Repository Bucket (document values and templates)
+    const repositoryBucket = new s3.Bucket(this, 'RepositoryBucket', {
+      accessControl: s3.BucketAccessControl.PRIVATE,
+    });
+
     // Environment variables
     const environment = {
-      'REPOSITORY_BUCKET': '',
+      'REPOSITORY_BUCKET': repositoryBucket.bucketName,
       'REPOSITORY_TABLE': repositoryTable.tableName,
     }
 
@@ -43,6 +48,17 @@ export class GocmsStack extends Stack {
     // Asset directory where all the lambda binaries come from
     const assetDir = join(rootDir, 'assets');
 
+    // Admin handler
+    const adminLambda = new lambda.Function(this, 'AdminHandler', {
+      environment: environment,
+      runtime: lambda.Runtime.GO_1_X,
+      code: lambda.Code.fromAsset(join(assetDir, 'admin')),
+      handler: 'handler',
+    });
+    repositoryBucket.grantReadWrite(adminLambda);
+    repositoryTable.grantReadWriteData(adminLambda);
+
+    /*
     // Create class lambda function
     const createClassLambda = new lambda.Function(this, 'CreateClassHandler', {
       environment: environment,
@@ -78,6 +94,7 @@ export class GocmsStack extends Stack {
       handler:     'handler'
     });
     repositoryTable.grantWriteData(updateClassLambda);
+    */
 
     // REST API
     const api = new apigw.RestApi(this, 'GoCMS Endpoint', {
@@ -102,6 +119,7 @@ export class GocmsStack extends Stack {
     // Ref: https://rahullokurte.com/how-to-validate-requests-to-the-aws-api-gateway-using-cdk
     // Ref: https://stackoverflow.com/a/68305757
     // Ref: https://blog.kewah.com/2020/api-gateway-caching-with-aws-cdk/
+    /*
     const classResource = api.root.addResource('classes');
     classResource.addMethod('GET', new apigw.LambdaIntegration(listClassesLambda));
     classResource.addMethod('POST', new apigw.LambdaIntegration(createClassLambda));
@@ -109,11 +127,22 @@ export class GocmsStack extends Stack {
     const classIdResource = classResource.addResource('{id}')
     classIdResource.addMethod('GET', new apigw.LambdaIntegration(getClassByIdLambda));
     classIdResource.addMethod('PUT', new apigw.LambdaIntegration(updateClassLambda));
+    */
+   const adminIntegration = new apigw.LambdaIntegration(adminLambda);
+   const classResource = api.root.addResource('classes');
+   classResource.addMethod('GET', adminIntegration);
+   classResource.addMethod('POST', adminIntegration);
+
+   const classItemResource = classResource.addResource('{class_id}');
+   classItemResource.addMethod('GET', adminIntegration);
+   classItemResource.addMethod('PUT', adminIntegration);
+   classItemResource.addMethod('DELETE', adminIntegration);
 
     // Admin frontend
     // https://aws-cdk.com/deploying-a-static-website-using-s3-and-cloudfront/
-    const adminBucket = new Bucket(this, 'FrontendAdminBucket', {
-      accessControl: BucketAccessControl.PRIVATE,
+    /*
+    const adminBucket = new s3.Bucket(this, 'FrontendAdminBucket', {
+      accessControl: s3.BucketAccessControl.PRIVATE,
     });
 
     new BucketDeployment(this, 'FrontendAdminBucketDeployment', {
@@ -130,5 +159,6 @@ export class GocmsStack extends Stack {
         origin: new S3Origin(adminBucket, {originAccessIdentity: adminOriginAccessIdentity}),
       }
     });
+    */
   }
 }
