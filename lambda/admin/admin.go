@@ -23,7 +23,8 @@ type Error struct {
 }
 
 const (
-	ClassRangeUnit = "classes"
+	ClassRangeUnit    = "classes"
+	DocumentRangeUnit = "documents"
 )
 
 var (
@@ -40,11 +41,19 @@ type Handlers struct {
 func (h Handlers) GetHandler(request events.APIGatewayProxyRequest) (f HandlerFunc, found bool) {
 	key := fmt.Sprintf("%s %s", request.HTTPMethod, request.Resource)
 	funcMap := map[string]HandlerFunc{
-		"GET /classes":             h.ClassList,
-		"POST /classes":            h.ClassCreate,
-		"GET /class/{class_id}":    h.ClassById,
-		"PUT /class/{class_id}":    h.ClassUpdate,
-		"DELETE /class/{class_id}": h.ClassDelete,
+		"GET /classes":                                  h.ClassList,
+		"POST /classes":                                 h.ClassCreate,
+		"GET /classes/{class_id}":                       h.ClassById,
+		"PUT /classes/{class_id}":                       h.ClassUpdate,
+		"DELETE /classes/{class_id}":                    h.ClassDelete,
+		"GET /classes/{class_id}/documents":             h.DocumentList,
+		"POST /classes/{class_id}/documents":            h.DocumentCreate,
+		"GET /classes/{class_id}/documents/{doc_id}":    h.DocumentById,
+		"PUT /classes/{class_id}/documents/{doc_id}":    h.DocumentUpdate,
+		"DELETE /classes/{class_id}/documents/{doc_id}": h.DocumentDelete,
+		"GET /documents/{doc_id}":                       h.DocumentById,
+		"PUT /documents/{doc_id}":                       h.DocumentUpdate,
+		"DELETE /documents/{doc_id}":                    h.DocumentDelete,
 	}
 	f, found = funcMap[key]
 	return
@@ -132,8 +141,7 @@ func (h Handlers) ClassCreate(ctx context.Context, request events.APIGatewayProx
 		return
 	}
 
-	classService := gocms.NewClassService(h.Repo)
-	if err = classService.Create(ctx, &class); err != nil {
+	if err = gocms.NewClassService(h.Repo).Create(ctx, &class); err != nil {
 		return
 	}
 
@@ -152,12 +160,10 @@ func (h Handlers) ClassDelete(ctx context.Context, request events.APIGatewayProx
 }
 
 func (h Handlers) ClassList(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
-	classService := gocms.NewClassService(h.Repo)
-
 	filter := gocms.ClassFilter{
 		Range: gocms.Range{End: 9},
 	}
-	classes, r, err := classService.List(ctx, filter)
+	classes, r, err := gocms.NewClassService(h.Repo).List(ctx, filter)
 	if err != nil {
 		return
 	}
@@ -189,4 +195,86 @@ func (h Handlers) ClassUpdate(ctx context.Context, request events.APIGatewayProx
 	}
 
 	return class, nil
+}
+
+func (h Handlers) DocumentById(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
+	id, ok := request.PathParameters["doc_id"]
+	if !ok {
+		response.StatusCode = http.StatusBadRequest
+		return nil, fmt.Errorf("no doc_id specified")
+	}
+
+	return gocms.NewDocumentService(h.Repo).ById(ctx, id)
+}
+
+func (h Handlers) DocumentCreate(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
+	var doc gocms.Document
+	reader := strings.NewReader(request.Body)
+	if err = json.NewDecoder(reader).Decode(&doc); err != nil {
+		return
+	}
+
+	classId, hasClassId := request.PathParameters["class_id"]
+	if !hasClassId && doc.ClassId == "" {
+		return nil, fmt.Errorf("no class_id specified in URL or body")
+	}
+
+	// URL is the authority. Set/Override Class ID based on the URL if it exists
+	if hasClassId {
+		doc.ClassId = classId
+	}
+
+	if err = gocms.NewDocumentService(h.Repo).Create(ctx, &doc); err != nil {
+		return
+	}
+
+	return doc, nil
+}
+
+func (h Handlers) DocumentDelete(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
+	id, ok := request.PathParameters["doc_id"]
+	if !ok {
+		response.StatusCode = http.StatusBadRequest
+		return nil, fmt.Errorf("no doc_id specified")
+	}
+
+	err = gocms.NewDocumentService(h.Repo).Delete(ctx, id)
+	return
+}
+
+func (h Handlers) DocumentList(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
+	filter := gocms.DocumentFilter{
+		Range: gocms.Range{End: 9},
+	}
+	docs, r, err := gocms.NewDocumentService(h.Repo).List(ctx, filter)
+	if err != nil {
+		return
+	}
+
+	response.Headers["Content-Range"] = r.ContentRangeHeader(DocumentRangeUnit)
+	response.Headers["X-Total-Count"] = fmt.Sprint(r.Size)
+	return docs, nil
+}
+
+func (h Handlers) DocumentUpdate(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
+	id, ok := request.PathParameters["doc_id"]
+	if !ok {
+		response.StatusCode = http.StatusBadRequest
+		return nil, fmt.Errorf("no doc_id specified")
+	}
+
+	var doc gocms.Document
+	if err = json.NewDecoder(strings.NewReader(request.Body)).Decode(&doc); err != nil {
+		response.StatusCode = http.StatusBadRequest
+		return nil, fmt.Errorf("bad json: %w", err)
+	}
+
+	// Force ID to be what it is in the URL.
+	doc.Id = id
+	if err = gocms.NewDocumentService(h.Repo).Update(ctx, &doc); err != nil {
+		response.StatusCode = http.StatusInternalServerError
+		return nil, err
+	}
+
+	return doc, nil
 }
