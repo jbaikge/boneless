@@ -6,8 +6,10 @@ import { ClassCreate, ClassEdit, ClassList } from './classes';
 import { darkTheme } from './theme';
 import { DocumentCreate, DocumentEdit, DocumentList } from './documents';
 
+const API_URL = process.env.REACT_APP_API_URL;
+
 const fetchResources = () =>
-  fetch(window._env_.API_URL + '/classes?_start=0&_end=50')
+  fetch(API_URL + '/classes?_start=0&_end=50')
     .then(response => response.json())
     .then(classes => classes.map(c => <Resource
       options={{ label: c.name }}
@@ -19,7 +21,7 @@ const fetchResources = () =>
     />));
 
 const App = () => (
-  <Admin dataProvider={simpleRestProvider(window._env_.API_URL)} theme={darkTheme}>
+  <Admin dataProvider={simpleRestProvider(API_URL)} theme={darkTheme}>
     {fetchResources}
     <Resource name="classes" options={{ label: 'Manage Classes' }} create={ClassCreate} edit={ClassEdit} list={ClassList} />
     <Resource name="templates" list={ClassList} />
