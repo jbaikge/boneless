@@ -65,6 +65,13 @@ func (s DocumentService) Create(ctx context.Context, doc *Document) (err error) 
 	return s.repo.CreateDocument(ctx, doc)
 }
 
+func (s DocumentService) Delete(ctx context.Context, id string) (err error) {
+	if !idProvider.IsValid(id) {
+		return fmt.Errorf("invalid document ID: %s", id)
+	}
+	return s.repo.DeleteDocument(ctx, id)
+}
+
 func (s DocumentService) List(ctx context.Context, filter DocumentFilter) ([]Document, Range, error) {
 	return s.repo.GetDocumentList(ctx, filter)
 }
