@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import * as apigw from 'aws-cdk-lib/aws-apigateway';
+import * as apigateway from '@aws-cdk/aws-apigatewayv2-alpha';
+import * as integration from '@aws-cdk/aws-apigatewayv2-integrations-alpha';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as s3 from 'aws-cdk-lib/aws-s3';
@@ -8,6 +9,7 @@ import { join } from 'path';
 import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
 import { Distribution, OriginAccessIdentity } from 'aws-cdk-lib/aws-cloudfront';
 import { S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins';
+import { CfnOutput } from 'aws-cdk-lib';
 
 
 export class GocmsStack extends cdk.Stack {
@@ -97,21 +99,21 @@ export class GocmsStack extends cdk.Stack {
     repositoryTable.grantWriteData(updateClassLambda);
     */
 
-    // REST API
-    const api = new apigw.RestApi(this, 'GoCMS Endpoint', {
-      defaultCorsPreflightOptions: {
-        allowOrigins: apigw.Cors.ALL_ORIGINS,
-        allowHeaders: [
-          'Content-Type',
-          'Range',
-          'Authorization'
-        ],
-        exposeHeaders: [
-          'Content-Range',
-          'X-Total-Count',
-        ],
-      }
-    });
+    // // REST API (v1)
+    // const api = new apigw.RestApi(this, 'GoCMS Endpoint', {
+    //   defaultCorsPreflightOptions: {
+    //     allowOrigins: apigw.Cors.ALL_ORIGINS,
+    //     allowHeaders: [
+    //       'Content-Type',
+    //       'Range',
+    //       'Authorization'
+    //     ],
+    //     exposeHeaders: [
+    //       'Content-Range',
+    //       'X-Total-Count',
+    //     ],
+    //   }
+    // });
 
     // Class endpoints
     // Allow the Range header with requests for pagination
@@ -129,6 +131,86 @@ export class GocmsStack extends cdk.Stack {
     classIdResource.addMethod('GET', new apigw.LambdaIntegration(getClassByIdLambda));
     classIdResource.addMethod('PUT', new apigw.LambdaIntegration(updateClassLambda));
     */
+
+    const api = new apigateway.HttpApi(this, 'Endpoint', {
+      createDefaultStage: true,
+      corsPreflight: {
+        allowOrigins: [
+          '*',
+        ],
+        allowHeaders: [
+          'Content-Type',
+          'Range',
+          'Authorization',
+        ],
+        exposeHeaders: [
+          'Content-Range',
+          'X-Total-Count',
+        ],
+      },
+    });
+
+    new CfnOutput(this, 'EndpointUrl', { value: api.url! })
+
+    const adminIntegration = new integration.HttpLambdaIntegration('AdminIntegration', adminLambda)
+    api.addRoutes({
+      path: '/classes',
+      integration: adminIntegration,
+      methods: [
+        apigateway.HttpMethod.GET,
+        apigateway.HttpMethod.POST,
+      ],
+    });
+
+    api.addRoutes({
+      path: '/classes/{class_id}',
+      integration: adminIntegration,
+      methods: [
+        apigateway.HttpMethod.GET,
+        apigateway.HttpMethod.PUT,
+        apigateway.HttpMethod.DELETE,
+      ],
+    });
+
+    api.addRoutes({
+      path: '/classes/{class_id}/documents',
+      integration: adminIntegration,
+      methods: [
+        apigateway.HttpMethod.GET,
+        apigateway.HttpMethod.POST,
+      ],
+    });
+
+    api.addRoutes({
+      path: '/classes/{class_id}/documents/{doc_id}',
+      integration: adminIntegration,
+      methods: [
+        apigateway.HttpMethod.GET,
+        apigateway.HttpMethod.PUT,
+        apigateway.HttpMethod.DELETE,
+      ],
+    });
+
+    api.addRoutes({
+      path: '/documents',
+      integration: adminIntegration,
+      methods: [
+        apigateway.HttpMethod.GET,
+        apigateway.HttpMethod.POST,
+      ],
+    });
+
+    api.addRoutes({
+      path: '/documents/{doc_id}',
+      integration: adminIntegration,
+      methods: [
+        apigateway.HttpMethod.GET,
+        apigateway.HttpMethod.PUT,
+        apigateway.HttpMethod.DELETE,
+      ],
+    });
+
+    /*
     const adminIntegration = new apigw.LambdaIntegration(adminLambda);
     const classResource = api.root.addResource('classes');
     classResource.addMethod('GET', adminIntegration);
@@ -156,7 +238,7 @@ export class GocmsStack extends cdk.Stack {
     documentItemResource.addMethod('GET', adminIntegration);
     documentItemResource.addMethod('PUT', adminIntegration);
     documentItemResource.addMethod('DELETE', adminIntegration);
-
+    */
 
     // Admin frontend
     // https://aws-cdk.com/deploying-a-static-website-using-s3-and-cloudfront/
