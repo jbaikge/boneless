@@ -1,7 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import * as apigateway from '@aws-cdk/aws-apigatewayv2-alpha';
-import * as integration from '@aws-cdk/aws-apigatewayv2-integrations-alpha';
+// import * as apigateway from '@aws-cdk/aws-apigatewayv2-alpha';
+// import * as integration from '@aws-cdk/aws-apigatewayv2-integrations-alpha';
+import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as s3 from 'aws-cdk-lib/aws-s3';
@@ -163,6 +164,7 @@ export class GocmsStack extends cdk.Stack {
     classIdResource.addMethod('PUT', new apigw.LambdaIntegration(updateClassLambda));
     */
 
+    /*
     const api = new apigateway.HttpApi(this, 'Endpoint', {
       createDefaultStage: true,
       corsPreflight: {
@@ -240,9 +242,25 @@ export class GocmsStack extends cdk.Stack {
         apigateway.HttpMethod.DELETE,
       ],
     });
+    */
 
-    /*
-    const adminIntegration = new apigw.LambdaIntegration(adminLambda);
+    const api = new apigateway.RestApi(this, 'Endpoint', {
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowHeaders: [
+          'Content-Type',
+          'Range',
+          'Authorization'
+        ],
+        exposeHeaders: [
+          'Content-Range',
+          'X-Total-Count',
+        ],
+      }
+    });
+
+    const adminIntegration = new apigateway.LambdaIntegration(adminLambda);
+
     const classResource = api.root.addResource('classes');
     classResource.addMethod('GET', adminIntegration);
     classResource.addMethod('POST', adminIntegration);
@@ -269,7 +287,6 @@ export class GocmsStack extends cdk.Stack {
     documentItemResource.addMethod('GET', adminIntegration);
     documentItemResource.addMethod('PUT', adminIntegration);
     documentItemResource.addMethod('DELETE', adminIntegration);
-    */
 
     // Admin frontend
     // https://aws-cdk.com/deploying-a-static-website-using-s3-and-cloudfront/
