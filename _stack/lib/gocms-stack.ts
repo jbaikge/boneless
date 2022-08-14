@@ -5,7 +5,8 @@ import * as integration from '@aws-cdk/aws-apigatewayv2-integrations-alpha';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as s3 from 'aws-cdk-lib/aws-s3';
-import { join } from 'path';
+import * as path from 'path';
+import * as childProcess from 'child_process';
 import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
 import { Distribution, OriginAccessIdentity } from 'aws-cdk-lib/aws-cloudfront';
 import { S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins';
@@ -39,24 +40,54 @@ export class GocmsStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    // Environment variables
-    const environment = {
-      'REPOSITORY_BUCKET': repositoryBucket.bucketName,
-      'REPOSITORY_TABLE': repositoryTable.tableName,
-    }
-
     // Path back to repo root
-    const rootDir = join(__dirname, '..', '..');
-
-    // Asset directory where all the lambda binaries come from
-    const assetDir = join(rootDir, 'assets');
+    const rootDir = path.resolve(__dirname, '..', '..');
 
     // Admin handler
+    // Ref: https://github.com/aws-samples/cdk-build-bundle-deploy-example/blob/main/cdk-bundle-go-lambda-example/lib/api-stack.ts
+    const adminLambdaDir = path.join(rootDir, 'lambda', 'admin');
     const adminLambda = new lambda.Function(this, 'AdminHandler', {
-      environment: environment,
+      code: lambda.Code.fromAsset(adminLambdaDir, {
+        bundling: {
+          local: {
+            tryBundle(outputDir: string) {
+              try {
+                // make sure that we have all the required dependencies to 
+                // build the executable locally.
+                localExec('go version', {
+                  stdio: [ // show output
+                    'ignore', //ignore stdio
+                    process.stderr, // redirect stdout to stderr
+                    'inherit', // inherit stderr
+                  ],
+                });
+                // build the binary
+                localExec(`echo ${outputDir} && go build -o ${path.join(outputDir, 'bootstrap')} ${adminLambdaDir}`, {
+                  stdio: [
+                    'ignore',
+                    process.stderr,
+                    'inherit',
+                  ],
+                })
+              } catch (error) {
+                console.error(error);
+                // if we don't have go installed return false which
+                // tells the CDK to try Docker bundling
+                return false;
+              }
+
+              return true;
+            },
+          },
+          image: lambda.Runtime.GO_1_X.bundlingImage, // lambci/lambda:build-go1.x
+        }
+      }),
       runtime: lambda.Runtime.GO_1_X,
-      code: lambda.Code.fromAsset(join(assetDir, 'admin')),
-      handler: 'handler',
+      handler: 'bootstrap',
+      environment: {
+        'REPOSITORY_BUCKET': repositoryBucket.bucketName,
+        'REPOSITORY_TABLE': repositoryTable.tableName,
+      },
     });
     repositoryBucket.grantReadWrite(adminLambda);
     repositoryTable.grantReadWriteData(adminLambda);
@@ -150,7 +181,7 @@ export class GocmsStack extends cdk.Stack {
       },
     });
 
-    new CfnOutput(this, 'EndpointUrl', { value: api.url! })
+    new CfnOutput(this, 'EndpointUrl', { value: api.url!, description: 'API URL' })
 
     const adminIntegration = new integration.HttpLambdaIntegration('AdminIntegration', adminLambda)
     api.addRoutes({
@@ -268,4 +299,21 @@ export class GocmsStack extends cdk.Stack {
       description: 'Repository S3 bucket',
     });
   }
+}
+
+function localExec(command: string, options?: childProcess.SpawnSyncOptions) {
+  const proc = childProcess.spawnSync('bash', ['-c', command], options);
+
+  if (proc.error) {
+    throw proc.error;
+  }
+
+  if (proc.status != 0) {
+    if (proc.stdout || proc.stderr) {
+      throw new Error(`[Status ${proc.status}] stdout: ${proc.stdout?.toString().trim()}\n\n\nstderr: ${proc.stderr?.toString().trim()}`);
+    }
+    throw new Error(`process exited with status ${proc.status}`);
+  }
+
+  return proc;
 }
