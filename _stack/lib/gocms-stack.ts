@@ -129,15 +129,34 @@ export class GocmsStack extends cdk.Stack {
     classIdResource.addMethod('GET', new apigw.LambdaIntegration(getClassByIdLambda));
     classIdResource.addMethod('PUT', new apigw.LambdaIntegration(updateClassLambda));
     */
-   const adminIntegration = new apigw.LambdaIntegration(adminLambda);
-   const classResource = api.root.addResource('classes');
-   classResource.addMethod('GET', adminIntegration);
-   classResource.addMethod('POST', adminIntegration);
+    const adminIntegration = new apigw.LambdaIntegration(adminLambda);
+    const classResource = api.root.addResource('classes');
+    classResource.addMethod('GET', adminIntegration);
+    classResource.addMethod('POST', adminIntegration);
 
-   const classItemResource = classResource.addResource('{class_id}');
-   classItemResource.addMethod('GET', adminIntegration);
-   classItemResource.addMethod('PUT', adminIntegration);
-   classItemResource.addMethod('DELETE', adminIntegration);
+    const classItemResource = classResource.addResource('{class_id}');
+    classItemResource.addMethod('GET', adminIntegration);
+    classItemResource.addMethod('PUT', adminIntegration);
+    classItemResource.addMethod('DELETE', adminIntegration);
+
+    const classDocumentResource = classItemResource.addResource('documents');
+    classDocumentResource.addMethod('GET', adminIntegration);
+    classDocumentResource.addMethod('POST', adminIntegration);
+
+    const classDocumentItemResource = classDocumentResource.addResource('{doc_id}')
+    classDocumentItemResource.addMethod('GET', adminIntegration);
+    classDocumentItemResource.addMethod('PUT', adminIntegration);
+    classDocumentItemResource.addMethod('DELETE', adminIntegration);
+
+    const documentResource = api.root.addResource('documents')
+    documentResource.addMethod('GET', adminIntegration);
+    documentResource.addMethod('POST', adminIntegration);
+
+    const documentItemResource = documentResource.addResource('{doc_id}')
+    documentItemResource.addMethod('GET', adminIntegration);
+    documentItemResource.addMethod('PUT', adminIntegration);
+    documentItemResource.addMethod('DELETE', adminIntegration);
+
 
     // Admin frontend
     // https://aws-cdk.com/deploying-a-static-website-using-s3-and-cloudfront/
