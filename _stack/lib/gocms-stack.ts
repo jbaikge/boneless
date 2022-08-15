@@ -6,12 +6,13 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as s3Deployment from 'aws-cdk-lib/aws-s3-deployment';
 import * as path from 'path';
 import * as childProcess from 'child_process';
-import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
+import * as fs from 'fs-extra';
 import { Distribution, OriginAccessIdentity } from 'aws-cdk-lib/aws-cloudfront';
 import { S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins';
-import { CfnOutput } from 'aws-cdk-lib';
+
 
 
 export class GocmsStack extends cdk.Stack {
@@ -78,6 +79,13 @@ export class GocmsStack extends cdk.Stack {
             },
           },
           image: lambda.Runtime.GO_1_X.bundlingImage, // lambci/lambda:build-go1.x
+          command: [
+            'bash', '-c', [
+              'cd /asset-input',
+              'go build -o /asset-output/bootstrap',
+            ].join(' && '),
+          ],
+          environment: goEnvironment,
         }
       }),
       runtime: lambda.Runtime.GO_1_X,
@@ -128,7 +136,7 @@ export class GocmsStack extends cdk.Stack {
     repositoryTable.grantWriteData(updateClassLambda);
     */
 
-    // // REST API (v1)
+    // First attempt with API
     // const api = new apigw.RestApi(this, 'GoCMS Endpoint', {
     //   defaultCorsPreflightOptions: {
     //     allowOrigins: apigw.Cors.ALL_ORIGINS,
@@ -241,6 +249,7 @@ export class GocmsStack extends cdk.Stack {
     });
     */
 
+    // REST API (v1)
     const api = new apigateway.RestApi(this, 'Endpoint', {
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
@@ -286,31 +295,76 @@ export class GocmsStack extends cdk.Stack {
     documentItemResource.addMethod('DELETE', adminIntegration);
 
     // Admin frontend
-    // https://aws-cdk.com/deploying-a-static-website-using-s3-and-cloudfront/
-    /*
+    // Ref: https://aws-cdk.com/deploying-a-static-website-using-s3-and-cloudfront/
+    // Ref: https://github.com/aws-samples/cdk-build-bundle-deploy-example/blob/main/cdk-bundle-static-site-example/lib/static-site-stack.ts
     const adminBucket = new s3.Bucket(this, 'FrontendAdminBucket', {
+      bucketName: cdk.PhysicalName.GENERATE_IF_NEEDED,
+      encryption: s3.BucketEncryption.S3_MANAGED,
       accessControl: s3.BucketAccessControl.PRIVATE,
-    });
-
-    new BucketDeployment(this, 'FrontendAdminBucketDeployment', {
-      destinationBucket: adminBucket,
-      sources: [Source.asset(join(rootDir, '_frontend-admin', 'build'))],
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
     });
 
     const adminOriginAccessIdentity = new OriginAccessIdentity(this, 'FrontendAdminOAI');
     adminBucket.grantRead(adminOriginAccessIdentity);
 
-    new Distribution(this, 'FrontendAdminDistribution', {
+    const distribution = new Distribution(this, 'FrontendAdminDistribution', {
       defaultRootObject: 'index.html',
       defaultBehavior: {
         origin: new S3Origin(adminBucket, {originAccessIdentity: adminOriginAccessIdentity}),
       }
     });
-    */
 
-    new cdk.CfnOutput(this, 'repository_bucket', {
+    const adminFrontendDir = path.join(rootDir, '_frontend-admin');
+    new s3Deployment.BucketDeployment(this, 'FrontendAdminDeployment', {
+      destinationBucket: adminBucket,
+      distribution: distribution,
+      memoryLimit: 128,
+      sources: [
+        s3Deployment.Source.asset(adminFrontendDir, {
+          bundling: {
+            local: {
+              tryBundle(outputDir: string) {
+                try {
+                  localExec('npm run build', {
+                    cwd: adminFrontendDir,
+                    env: { ...process.env, REACT_APP_API_URL: api.url },
+                    stdio: [
+                      'ignore',
+                      process.stderr,
+                      'inherit',
+                    ],
+                  });
+                  fs.copySync(path.join(adminFrontendDir, 'build'), outputDir);
+                } catch (error) {
+                  console.error(error)
+                  return false;
+                }
+                return true;
+              }
+            },
+            image: cdk.DockerImage.fromRegistry('node:lts'),
+            command: [
+              'bash', '-c', [
+                'cd /asset-input',
+                'npm install',
+                'npm run build',
+                'cp -r /asset/input/build/* /asset-output/',
+              ].join(' && '),
+            ],
+            environment: { REACT_APP_API_URL: api.url },
+          }
+        }),
+      ],
+    });
+
+    new cdk.CfnOutput(this, 'RepositoryBucketName', {
       value: repositoryBucket.bucketName,
       description: 'Repository S3 bucket',
+    });
+
+    new cdk.CfnOutput(this, 'CloudFrontUrl', {
+      value: distribution.distributionDomainName,
+      description: 'CloudFront distribution domain',
     });
   }
 }
