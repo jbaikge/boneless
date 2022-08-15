@@ -257,7 +257,7 @@ export class GocmsStack extends cdk.Stack {
                 try {
                   localExec('npm run build', {
                     cwd: adminFrontendDir,
-                    env: { ...process.env, REACT_APP_API_URL: api.url! },
+                    env: process.env,
                     stdio: [
                       'ignore',
                       process.stderr,
@@ -281,12 +281,11 @@ export class GocmsStack extends cdk.Stack {
                 'cp -r /asset/input/build/* /asset-output/',
               ].join(' && '),
             ],
-            environment: { REACT_APP_API_URL: api.url! },
+            environment: {},
           }
         }),
       ],
     });
-    adminDeployment.node.addDependency(api);
 
     new cdk.CfnOutput(this, 'RepositoryBucketName', {
       value: repositoryBucket.bucketName,
