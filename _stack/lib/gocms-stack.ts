@@ -1,8 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-// import * as apigateway from '@aws-cdk/aws-apigatewayv2-alpha';
-// import * as integration from '@aws-cdk/aws-apigatewayv2-integrations-alpha';
-import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as apigateway from '@aws-cdk/aws-apigatewayv2-alpha';
+import * as integration from '@aws-cdk/aws-apigatewayv2-integrations-alpha';
+// import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as s3 from 'aws-cdk-lib/aws-s3';
@@ -98,78 +98,7 @@ export class GocmsStack extends cdk.Stack {
     repositoryBucket.grantReadWrite(adminLambda);
     repositoryTable.grantReadWriteData(adminLambda);
 
-    /*
-    // Create class lambda function
-    const createClassLambda = new lambda.Function(this, 'CreateClassHandler', {
-      environment: environment,
-      runtime:     lambda.Runtime.GO_1_X,
-      code:        lambda.Code.fromAsset(join(assetDir, 'create-class')),
-      handler:     'handler'
-    });
-    repositoryTable.grantWriteData(createClassLambda);
-
-    // Get class lambda function
-    const getClassByIdLambda = new lambda.Function(this, 'GetClassByIdHandler', {
-      environment: environment,
-      runtime:     lambda.Runtime.GO_1_X,
-      code:        lambda.Code.fromAsset(join(assetDir, 'get-class-by-id')),
-      handler:     'handler'
-    });
-    repositoryTable.grantReadData(getClassByIdLambda);
-
-    // List class lambda function
-    const listClassesLambda = new lambda.Function(this, 'ListClassesHandler', {
-      environment: environment,
-      runtime:     lambda.Runtime.GO_1_X,
-      code:        lambda.Code.fromAsset(join(assetDir, 'list-classes')),
-      handler:     'handler'
-    });
-    repositoryTable.grantReadData(listClassesLambda);
-
-    // Update class lambda function
-    const updateClassLambda = new lambda.Function(this, 'UpdateClassHandler', {
-      environment: environment,
-      runtime:     lambda.Runtime.GO_1_X,
-      code:        lambda.Code.fromAsset(join(assetDir, 'update-class')),
-      handler:     'handler'
-    });
-    repositoryTable.grantWriteData(updateClassLambda);
-    */
-
-    // First attempt with API
-    // const api = new apigw.RestApi(this, 'GoCMS Endpoint', {
-    //   defaultCorsPreflightOptions: {
-    //     allowOrigins: apigw.Cors.ALL_ORIGINS,
-    //     allowHeaders: [
-    //       'Content-Type',
-    //       'Range',
-    //       'Authorization'
-    //     ],
-    //     exposeHeaders: [
-    //       'Content-Range',
-    //       'X-Total-Count',
-    //     ],
-    //   }
-    // });
-
-    // Class endpoints
-    // Allow the Range header with requests for pagination
-    // 2022-07-22: After days of this not working, just leaving URLs here for
-    // posterity in case another attempt is made.
-    // Ref: https://rahullokurte.com/how-to-validate-requests-to-the-aws-api-gateway-using-cdk
-    // Ref: https://stackoverflow.com/a/68305757
-    // Ref: https://blog.kewah.com/2020/api-gateway-caching-with-aws-cdk/
-    /*
-    const classResource = api.root.addResource('classes');
-    classResource.addMethod('GET', new apigw.LambdaIntegration(listClassesLambda));
-    classResource.addMethod('POST', new apigw.LambdaIntegration(createClassLambda));
-
-    const classIdResource = classResource.addResource('{id}')
-    classIdResource.addMethod('GET', new apigw.LambdaIntegration(getClassByIdLambda));
-    classIdResource.addMethod('PUT', new apigw.LambdaIntegration(updateClassLambda));
-    */
-
-    /*
+    // REST API (v2)
     const api = new apigateway.HttpApi(this, 'Endpoint', {
       createDefaultStage: true,
       corsPreflight: {
@@ -188,7 +117,7 @@ export class GocmsStack extends cdk.Stack {
       },
     });
 
-    new CfnOutput(this, 'EndpointUrl', { value: api.url!, description: 'API URL' })
+    new cdk.CfnOutput(this, 'EndpointUrl', { value: api.url!, description: 'API URL' })
 
     const adminIntegration = new integration.HttpLambdaIntegration('AdminIntegration', adminLambda)
     api.addRoutes({
@@ -247,8 +176,8 @@ export class GocmsStack extends cdk.Stack {
         apigateway.HttpMethod.DELETE,
       ],
     });
-    */
 
+    /*
     // REST API (v1)
     const api = new apigateway.RestApi(this, 'Endpoint', {
       defaultCorsPreflightOptions: {
@@ -293,6 +222,7 @@ export class GocmsStack extends cdk.Stack {
     documentItemResource.addMethod('GET', adminIntegration);
     documentItemResource.addMethod('PUT', adminIntegration);
     documentItemResource.addMethod('DELETE', adminIntegration);
+    */
 
     // Admin frontend
     // Ref: https://aws-cdk.com/deploying-a-static-website-using-s3-and-cloudfront/
@@ -315,7 +245,7 @@ export class GocmsStack extends cdk.Stack {
     });
 
     const adminFrontendDir = path.join(rootDir, '_frontend-admin');
-    new s3Deployment.BucketDeployment(this, 'FrontendAdminDeployment', {
+    const adminDeployment = new s3Deployment.BucketDeployment(this, 'FrontendAdminDeployment', {
       destinationBucket: adminBucket,
       distribution: distribution,
       memoryLimit: 128,
@@ -327,7 +257,7 @@ export class GocmsStack extends cdk.Stack {
                 try {
                   localExec('npm run build', {
                     cwd: adminFrontendDir,
-                    env: { ...process.env, REACT_APP_API_URL: api.url },
+                    env: { ...process.env, REACT_APP_API_URL: api.url! },
                     stdio: [
                       'ignore',
                       process.stderr,
@@ -351,11 +281,12 @@ export class GocmsStack extends cdk.Stack {
                 'cp -r /asset/input/build/* /asset-output/',
               ].join(' && '),
             ],
-            environment: { REACT_APP_API_URL: api.url },
+            environment: { REACT_APP_API_URL: api.url! },
           }
         }),
       ],
     });
+    adminDeployment.node.addDependency(api);
 
     new cdk.CfnOutput(this, 'RepositoryBucketName', {
       value: repositoryBucket.bucketName,
