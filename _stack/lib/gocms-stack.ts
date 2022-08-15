@@ -60,7 +60,7 @@ export class GocmsStack extends cdk.Stack {
             tryBundle(outputDir: string) {
               try {
                 // build the binary
-                localExec(`go build -o ${path.join(outputDir, 'bootstrap')}`, {
+                localExec(`go build -o ${path.join(outputDir, 'handler')}`, {
                   cwd: adminLambdaDir,
                   env: { ...process.env, ...goEnvironment },
                   stdio: [
@@ -82,14 +82,14 @@ export class GocmsStack extends cdk.Stack {
           command: [
             'bash', '-c', [
               'cd /asset-input',
-              'go build -o /asset-output/bootstrap',
+              'go build -o /asset-output/handler',
             ].join(' && '),
           ],
           environment: goEnvironment,
         }
       }),
       runtime: lambda.Runtime.GO_1_X,
-      handler: 'bootstrap',
+      handler: 'handler',
       environment: {
         'REPOSITORY_BUCKET': repositoryBucket.bucketName,
         'REPOSITORY_TABLE': repositoryTable.tableName,
