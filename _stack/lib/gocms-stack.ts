@@ -46,6 +46,11 @@ export class GocmsStack extends cdk.Stack {
 
     // Admin handler
     // Ref: https://github.com/aws-samples/cdk-build-bundle-deploy-example/blob/main/cdk-bundle-go-lambda-example/lib/api-stack.ts
+    const goEnvironment = {
+      CGO_ENABLED: '0',
+      GOOS:        'linux',
+      GOARCH:      'amd64',
+    };
     const adminLambdaDir = path.join(rootDir, 'lambda', 'admin');
     const adminLambda = new lambda.Function(this, 'AdminHandler', {
       code: lambda.Code.fromAsset(adminLambdaDir, {
@@ -53,25 +58,17 @@ export class GocmsStack extends cdk.Stack {
           local: {
             tryBundle(outputDir: string) {
               try {
-                // make sure that we have all the required dependencies to 
-                // build the executable locally.
-                localExec('go version', {
-                  stdio: [ // show output
-                    'ignore', //ignore stdio
-                    process.stderr, // redirect stdout to stderr
-                    'inherit', // inherit stderr
-                  ],
-                });
                 // build the binary
-                localExec(`echo ${outputDir} && go build -o ${path.join(outputDir, 'bootstrap')} ${adminLambdaDir}`, {
+                localExec(`go build -o ${path.join(outputDir, 'bootstrap')}`, {
+                  cwd: adminLambdaDir,
+                  env: { ...process.env, ...goEnvironment },
                   stdio: [
-                    'ignore',
-                    process.stderr,
-                    'inherit',
+                    'ignore',       // ignore stdio
+                    process.stderr, // redirect stdout to stderr
+                    'inherit',      // inherit stderr
                   ],
                 })
               } catch (error) {
-                console.error(error);
                 // if we don't have go installed return false which
                 // tells the CDK to try Docker bundling
                 return false;
