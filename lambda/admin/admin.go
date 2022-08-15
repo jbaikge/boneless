@@ -32,14 +32,15 @@ var (
 	resources gocms.DynamoDBResources
 )
 
-type HandlerFunc func(context.Context, events.APIGatewayProxyRequest, *events.APIGatewayProxyResponse) (interface{}, error)
+type HandlerFunc func(context.Context, events.APIGatewayV2HTTPRequest, *events.APIGatewayV2HTTPResponse) (interface{}, error)
 
 type Handlers struct {
 	Repo gocms.Repository
 }
 
-func (h Handlers) GetHandler(request events.APIGatewayProxyRequest) (f HandlerFunc, found bool) {
-	key := fmt.Sprintf("%s %s", request.HTTPMethod, request.Resource)
+func (h Handlers) GetHandler(request events.APIGatewayV2HTTPRequest) (f HandlerFunc, found bool) {
+	// key := fmt.Sprintf("%s %s", request.HTTPMethod, request.Resource)
+	key := request.RouteKey
 	funcMap := map[string]HandlerFunc{
 		"GET /classes":                                  h.ClassList,
 		"POST /classes":                                 h.ClassCreate,
@@ -59,7 +60,7 @@ func (h Handlers) GetHandler(request events.APIGatewayProxyRequest) (f HandlerFu
 	return
 }
 
-func (h Handlers) HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse, err error) {
+func (h Handlers) HandleRequest(ctx context.Context, request events.APIGatewayV2HTTPRequest) (response events.APIGatewayV2HTTPResponse, err error) {
 	response.StatusCode = http.StatusOK
 	response.Headers = map[string]string{
 		"Content-Type":                  "application/json",
@@ -71,7 +72,7 @@ func (h Handlers) HandleRequest(ctx context.Context, request events.APIGatewayPr
 		data, err = handler(ctx, request, &response)
 	} else {
 		response.StatusCode = http.StatusNotFound
-		err = errors.New("no handler found for resource: " + request.Resource)
+		err = errors.New("no handler found for resource: " + request.RouteKey)
 	}
 
 	// Redirect the error so it comes out as JSON instead of a 500
@@ -124,7 +125,7 @@ func main() {
 // Handlers
 //
 
-func (h Handlers) ClassById(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
+func (h Handlers) ClassById(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
 	id, ok := request.PathParameters["class_id"]
 	if !ok {
 		response.StatusCode = http.StatusBadRequest
@@ -134,7 +135,7 @@ func (h Handlers) ClassById(ctx context.Context, request events.APIGatewayProxyR
 	return gocms.NewClassService(h.Repo).ById(ctx, id)
 }
 
-func (h Handlers) ClassCreate(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
+func (h Handlers) ClassCreate(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
 	var class gocms.Class
 	reader := strings.NewReader(request.Body)
 	if err = json.NewDecoder(reader).Decode(&class); err != nil {
@@ -148,7 +149,7 @@ func (h Handlers) ClassCreate(ctx context.Context, request events.APIGatewayProx
 	return class, nil
 }
 
-func (h Handlers) ClassDelete(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
+func (h Handlers) ClassDelete(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
 	id, ok := request.PathParameters["class_id"]
 	if !ok {
 		response.StatusCode = http.StatusBadRequest
@@ -159,7 +160,7 @@ func (h Handlers) ClassDelete(ctx context.Context, request events.APIGatewayProx
 	return
 }
 
-func (h Handlers) ClassList(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
+func (h Handlers) ClassList(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
 	filter := gocms.ClassFilter{
 		Range: gocms.Range{End: 9},
 	}
@@ -173,7 +174,7 @@ func (h Handlers) ClassList(ctx context.Context, request events.APIGatewayProxyR
 	return classes, nil
 }
 
-func (h Handlers) ClassUpdate(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
+func (h Handlers) ClassUpdate(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
 	id, ok := request.PathParameters["class_id"]
 	if !ok {
 		response.StatusCode = http.StatusBadRequest
@@ -197,7 +198,7 @@ func (h Handlers) ClassUpdate(ctx context.Context, request events.APIGatewayProx
 	return class, nil
 }
 
-func (h Handlers) DocumentById(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
+func (h Handlers) DocumentById(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
 	id, ok := request.PathParameters["doc_id"]
 	if !ok {
 		response.StatusCode = http.StatusBadRequest
@@ -207,7 +208,7 @@ func (h Handlers) DocumentById(ctx context.Context, request events.APIGatewayPro
 	return gocms.NewDocumentService(h.Repo).ById(ctx, id)
 }
 
-func (h Handlers) DocumentCreate(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
+func (h Handlers) DocumentCreate(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
 	var doc gocms.Document
 	reader := strings.NewReader(request.Body)
 	if err = json.NewDecoder(reader).Decode(&doc); err != nil {
@@ -231,7 +232,7 @@ func (h Handlers) DocumentCreate(ctx context.Context, request events.APIGatewayP
 	return doc, nil
 }
 
-func (h Handlers) DocumentDelete(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
+func (h Handlers) DocumentDelete(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
 	id, ok := request.PathParameters["doc_id"]
 	if !ok {
 		response.StatusCode = http.StatusBadRequest
@@ -242,7 +243,7 @@ func (h Handlers) DocumentDelete(ctx context.Context, request events.APIGatewayP
 	return
 }
 
-func (h Handlers) DocumentList(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
+func (h Handlers) DocumentList(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
 	filter := gocms.DocumentFilter{
 		Range: gocms.Range{End: 9},
 	}
@@ -256,7 +257,7 @@ func (h Handlers) DocumentList(ctx context.Context, request events.APIGatewayPro
 	return docs, nil
 }
 
-func (h Handlers) DocumentUpdate(ctx context.Context, request events.APIGatewayProxyRequest, response *events.APIGatewayProxyResponse) (value interface{}, err error) {
+func (h Handlers) DocumentUpdate(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
 	id, ok := request.PathParameters["doc_id"]
 	if !ok {
 		response.StatusCode = http.StatusBadRequest
