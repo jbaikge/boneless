@@ -1164,6 +1164,9 @@ func (repo DynamoDBRepository) getItem(ctx context.Context, pk string, sk string
 		},
 	}
 	response, err := repo.db.GetItem(ctx, params)
+	if err != nil {
+		return
+	}
 
 	if len(response.Item) == 0 {
 		return ErrNotExist
