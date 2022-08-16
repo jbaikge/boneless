@@ -20,6 +20,7 @@ import {
   BooleanInput,
   useRedirect
 } from 'react-admin';
+import './App.css';
 
 const fieldChoices = [
   { id: 'date',          name: 'Date' },
@@ -72,7 +73,7 @@ export const ClassEdit = (props) => {
       <SimpleForm>
         <TextInput source="name" validate={[required()]} fullWidth />
         <ArrayInput source="fields">
-          <SimpleFormIterator>
+          <SimpleFormIterator className="field-row">
             <TextInput source="label" />
             <TextInput source="name" />
             <BooleanInput source="sort" />
