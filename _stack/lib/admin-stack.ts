@@ -35,46 +35,12 @@ export class AdminStack extends cdk.Stack {
       }
     });
 
-    const adminFrontendDir = path.join(rootDir, '_frontend-admin');
-    const adminDeployment = new s3Deployment.BucketDeployment(this, 'FrontendAdminDeployment', {
+    new s3Deployment.BucketDeployment(this, 'FrontendAdminDeployment', {
       destinationBucket: adminBucket,
       distribution: distribution,
       memoryLimit: 128,
       sources: [
-        s3Deployment.Source.asset(adminFrontendDir, {
-          bundling: {
-            local: {
-              tryBundle(outputDir: string) {
-                try {
-                  exec('npm run build', {
-                    cwd: adminFrontendDir,
-                    env: process.env,
-                    stdio: [
-                      'ignore',
-                      process.stderr,
-                      'inherit',
-                    ],
-                  });
-                  fs.copySync(path.join(adminFrontendDir, 'build'), outputDir);
-                } catch (error) {
-                  console.error(error)
-                  return false;
-                }
-                return true;
-              }
-            },
-            image: cdk.DockerImage.fromRegistry('node:lts'),
-            command: [
-              'bash', '-c', [
-                'cd /asset-input',
-                'npm install',
-                'npm run build',
-                'cp -r /asset/input/build/* /asset-output/',
-              ].join(' && '),
-            ],
-            environment: {},
-          }
-        }),
+        s3Deployment.Source.asset(path.join(rootDir, '_frontend-admin', 'build')),
       ],
     });
 

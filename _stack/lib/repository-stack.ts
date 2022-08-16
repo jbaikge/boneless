@@ -46,42 +46,8 @@ export class RepositoryStack extends cdk.Stack {
       GOOS:        'linux',
       GOARCH:      'amd64',
     };
-    const adminLambdaDir = path.join(rootDir, 'lambda', 'admin');
     const adminLambda = new lambda.Function(this, 'AdminHandler', {
-      code: lambda.Code.fromAsset(adminLambdaDir, {
-        bundling: {
-          local: {
-            tryBundle(outputDir: string) {
-              try {
-                // build the binary
-                exec(`go build -o ${path.join(outputDir, 'handler')}`, {
-                  cwd: adminLambdaDir,
-                  env: { ...process.env, ...goEnvironment },
-                  stdio: [
-                    'ignore',       // ignore stdio
-                    process.stderr, // redirect stdout to stderr
-                    'inherit',      // inherit stderr
-                  ],
-                })
-              } catch (error) {
-                // if we don't have go installed return false which
-                // tells the CDK to try Docker bundling
-                return false;
-              }
-
-              return true;
-            },
-          },
-          image: lambda.Runtime.GO_1_X.bundlingImage, // lambci/lambda:build-go1.x
-          command: [
-            'bash', '-c', [
-              'cd /asset-input',
-              'go build -o /asset-output/handler',
-            ].join(' && '),
-          ],
-          environment: goEnvironment,
-        }
-      }),
+      code: lambda.Code.fromAsset(path.join(rootDir, 'lambda', 'admin')),
       runtime: lambda.Runtime.GO_1_X,
       handler: 'handler',
       environment: {
