@@ -14,12 +14,10 @@ const App = () => {
 
   React.useEffect(() => {
     const fetchClasses = async () => {
-      console.log('Setting up resources');
       const response = await fetch(API_URL + '/classes?_start=0&_end=50');
       const data = await response.json();
       const classes = data.map(c => <Resource options={{ label: c.name }} key={c.id} name={"classes/" + c.id + "/documents"} create={DocumentCreate} edit={DocumentEdit} list={DocumentList} />);
       setResources(classes);
-      console.log('Finished setting up resources');
     };
     fetchClasses();
   }, [updateResources]);
