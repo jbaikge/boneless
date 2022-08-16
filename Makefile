@@ -52,10 +52,10 @@ clean:
 	$(MAKE) -C _frontend-admin $@
 	$(MAKE) -C _stack $@
 
-deploy: all
+deploy: lambdas
 	$(MAKE) -C _stack $@
 
-deploy-admin: admin
+deploy-admin:
 	$(MAKE) -C _stack $@
 
 deploy-repository: lambdas
