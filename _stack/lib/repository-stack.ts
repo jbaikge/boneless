@@ -74,6 +74,9 @@ export class RepositoryStack extends cdk.Stack {
           'Content-Range',
           'X-Total-Count',
         ],
+        allowMethods: [
+          apigateway.CorsHttpMethod.ANY,
+        ],
       },
     });
 
