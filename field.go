@@ -5,6 +5,7 @@ type Field struct {
 	Name    string `json:"name"`
 	Label   string `json:"label"`
 	Sort    bool   `json:"sort"`
+	Column  int    `json:"column"`
 	Min     string `json:"min"`
 	Max     string `json:"max"`
 	Step    string `json:"step"`
