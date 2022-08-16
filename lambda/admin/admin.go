@@ -65,6 +65,7 @@ func (h Handlers) HandleRequest(ctx context.Context, request events.APIGatewayV2
 	response.Headers = map[string]string{
 		"Content-Type":                  "application/json",
 		"Access-Control-Expose-Headers": "Content-Range, X-Total-Count",
+		"Access-Control-Allow-Origin":   "*",
 	}
 
 	var data interface{}
