@@ -2,13 +2,16 @@
 
 # Live endpoints
 diff:
-	cdk diff
+	cdk --profile jake diff
 
 synth:
-	cdk synth
+	cdk --profile jake synth
 
 deploy:
-	cdk deploy
+	cdk --profile jake --outputs-file /tmp/repository-stack.json deploy RepositoryStack
+	jq --raw-output '"REACT_APP_API_URL=" + .RepositoryStack.EndpointUrl | rtrimstr("/")' /tmp/repository-stack.json > ../_frontend-admin/.env.production.local
+	$(MAKE) -C ../_frontend-admin
+	cdk --profile jake deploy AdminStack
 
 # Localstack endpoints
 diff-local:
