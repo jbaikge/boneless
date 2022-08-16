@@ -1,6 +1,15 @@
-.PHONY: deploy deploy-admin deploy-repository diff synth deploy-local diff-local synth-local
+.PHONY: deploy deploy-admin deploy-repository diff synth
 
-# Live endpoints
+all:
+	@echo "Can't decide what to do for 'all' so you get to choose your adventure:"
+	@echo "make clean"
+	@echo "make diff"
+	@echo "make synth"
+	@echo "make deploy"
+
+clean:
+	rm --recursive --force cdk.out
+
 diff:
 	cdk diff
 
@@ -29,13 +38,3 @@ cdk.out/RepositoryStack.outputs.json: lib/* bin/* ../lambda/admin/handler
 # Create .env.production.local from the outputs of the repository deployment
 ../_frontend-admin/.env.production.local: cdk.out/RepositoryStack.outputs.json
 	jq --raw-output '"REACT_APP_API_URL=" + .RepositoryStack.EndpointUrl | rtrimstr("/")' $< > $@
-
-# Localstack endpoints
-diff-local:
-	cdklocal diff
-
-synth-local:
-	cdklocal synth
-
-deploy-local:
-	cdklocal deploy
