@@ -1,7 +1,15 @@
 /* .field-row {} */
-
+@media (min-width: 800px) {
+  .field-row .RaSimpleFormIterator-form {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (min-width: 1200px) {
+  .field-row .RaSimpleFormIterator-form {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
 .field-row .RaSimpleFormIterator-form {
   display: grid !important;
-  grid-template-columns: repeat(5, 1fr);
   column-gap: 2em;
 }
