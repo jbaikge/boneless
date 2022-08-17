@@ -3,7 +3,7 @@ import { Admin, Resource } from 'react-admin';
 import simpleRestProvider from 'ra-data-simple-rest';
 import { ClassCreate, ClassEdit, ClassList } from './classes';
 // import dataProvider from './dataProvider';
-import { darkTheme } from './theme';
+import { darkTheme, lightTheme } from './theme';
 import { DocumentCreate, DocumentEdit, DocumentList } from './documents';
 
 const API_URL = process.env.REACT_APP_API_URL;
@@ -11,6 +11,7 @@ const API_URL = process.env.REACT_APP_API_URL;
 const App = () => {
   const [resources, setResources] = React.useState([]);
   const [updateResources, setUpdateResources] = React.useState(0);
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
   React.useEffect(() => {
     const fetchClasses = async () => {
@@ -23,7 +24,7 @@ const App = () => {
   }, [updateResources]);
 
   return (
-    <Admin dataProvider={simpleRestProvider(API_URL)} theme={darkTheme}>
+    <Admin dataProvider={simpleRestProvider(API_URL)} theme={prefersDark ? darkTheme : lightTheme}>
       {resources}
       <Resource name="classes" options={{ label: 'Manage Classes' }} create={<ClassCreate update={setUpdateResources} />} edit={<ClassEdit update={setUpdateResources} />} list={ClassList} />
       <Resource name="templates" list={ClassList} />
