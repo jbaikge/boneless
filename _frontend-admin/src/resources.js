@@ -9,7 +9,6 @@ export const AsyncResources = () => {
     const dataProvider = useDataProvider();
 
     React.useEffect(() => {
-      console.log('useEffect called');
       dataProvider.getList('classes', {
         filter: '',
         pagination: {page: 1, perPage: 50},
