@@ -1,51 +1,24 @@
 import * as React from 'react';
-import { Admin, Resource } from 'react-admin';
+import { AdminContext, defaultI18nProvider, localStorageStore } from 'react-admin';
 import simpleRestProvider from 'ra-data-simple-rest';
-import { ClassCreate, ClassEdit, ClassList } from './classes';
-// import dataProvider from './dataProvider';
 import { darkTheme, lightTheme } from './theme';
-import { DocumentCreate, DocumentEdit, DocumentList } from './documents';
+import { AsyncResources } from './resources';
 
 const API_URL = process.env.REACT_APP_API_URL;
+const store = localStorageStore();
 
 const App = () => {
-  const [resources, setResources] = React.useState([]);
-  const [updateResources, setUpdateResources] = React.useState(0);
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-  React.useEffect(() => {
-    const fetchClasses = async () => {
-      const dataProvider = simpleRestProvider(API_URL);
-      const list = await dataProvider.getList('classes', {
-        filter: '',
-        pagination: {page: 1, perPage: 50},
-        sort: {field: 'name', order: 'ASC'},
-      });
-      const classes = list.data.map(c => <Resource
-        options={{ label: c.name }}
-        key={c.id}
-        name={"classes/" + c.id + "/documents"}
-        create={DocumentCreate}
-        edit={DocumentEdit}
-        list={DocumentList}
-      />);
-      setResources(classes);
-    };
-    fetchClasses();
-  }, [updateResources]);
-
   return (
-    <Admin dataProvider={simpleRestProvider(API_URL)} theme={prefersDark ? darkTheme : lightTheme}>
-      {resources}
-      <Resource
-        name="classes"
-        options={{ label: 'Manage Classes' }}
-        create={<ClassCreate update={setUpdateResources} />}
-        edit={<ClassEdit update={setUpdateResources} />}
-        list={ClassList}
-      />
-      <Resource name="templates" list={ClassList} />
-    </Admin>
+    <AdminContext
+      dataProvider={simpleRestProvider(API_URL)}
+      i18nProvider={defaultI18nProvider}
+      store={store}
+      theme={prefersDark ? darkTheme : lightTheme}
+    >
+      <AsyncResources />
+    </AdminContext>
   );
 };
 
