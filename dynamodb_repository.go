@@ -660,9 +660,9 @@ func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter Docum
 		if err != nil {
 			return list, r, err
 		}
+		filterExpression := "SK = :sk"
 		params := &dynamodb.ScanInput{
-			TableName:        &repo.resources.Table,
-			FilterExpression: aws.String("SK = :sk"),
+			TableName: &repo.resources.Table,
 			ExpressionAttributeValues: map[string]types.AttributeValue{
 				":sk": sk,
 			},
@@ -672,9 +672,19 @@ func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter Docum
 			if err != nil {
 				return list, r, err
 			}
-			params.FilterExpression = aws.String("SK = :sk AND ParentId = :parent_id")
+			filterExpression += " AND ParentId = :parent_id"
 			params.ExpressionAttributeValues[":parent_id"] = parentId
 		}
+		if filter.ClassId != "" {
+			classId, err := attributevalue.Marshal(filter.ClassId)
+			if err != nil {
+				return list, r, err
+			}
+			filterExpression += " AND ClassId = :class_id"
+			params.ExpressionAttributeValues[":class_id"] = classId
+		}
+		params.FilterExpression = &filterExpression
+
 		paginator := dynamodb.NewScanPaginator(repo.db, params)
 		for paginator.HasMorePages() {
 			response, err := paginator.NextPage(ctx)
