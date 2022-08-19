@@ -1,6 +1,7 @@
 import {
   Create,
   Datagrid,
+  DateField,
   DateTimeInput,
   Edit,
   EditButton,
@@ -13,6 +14,8 @@ import {
   useResourceContext,
 } from 'react-admin';
 import { RichTextInput } from 'ra-input-rich-text';
+
+const resourceRE = /([^/]+)\/([^/]+)\/.*/;
 
 export const DocumentCreate = (props) => (
   <Create {...props}>
@@ -35,7 +38,7 @@ export const DocumentEdit = (props) => (
 export const DocumentInputs = () => {
   const resourceContext = useResourceContext();
   // resourceContext should be "classes/<id>/documents"
-  const [ , resource, id ] = /([^/]+)\/([^/]+)\/.*/.exec(resourceContext);
+  const [ , resource, id ] = resourceRE.exec(resourceContext);
   const { data, isLoading } = useGetOne(resource, { id });
 
   if (isLoading) {
@@ -57,29 +60,31 @@ export const DocumentInputs = () => {
   });
 }
 
-export const DocumentList = (props) => (
-  <List {...props}>
-    <Datagrid rowClick="edit">
-      <DocumentFields />
-      <EditButton />
-    </Datagrid>
-  </List>
-);
-
-export const DocumentFields = () => {
+export const DocumentList = (props) => {
   const resourceContext = useResourceContext();
-  const [ , resource, id ] = /([^/]+)\/([^/]+)\/.*/.exec(resourceContext);
+  const [ , resource, id ] = resourceRE.exec(resourceContext);
   const { data, isLoading } = useGetOne(resource, { id });
 
   if (isLoading) {
     return <Loading />;
   }
 
-  return data.fields.filter(field => field.column > 0).sort((a, b) => a.column - b.column).map(field => {
-    const source = `values.${field.name}`;
-    switch (field.type) {
-      default:
-        return <TextField source={source} label={field.label} />
-    }
-  });
-}
+  return (
+    <List {...props}>
+      <Datagrid rowClick="edit">
+        {data.fields.filter(field => field.column > 0).sort((a, b) => a.column - b.column).map(field => {
+          const source = `values.${field.name}`;
+          switch (field.type) {
+            case 'date':
+              return <DateField source={source} label={field.label} />
+            case 'datetime':
+              return <DateField source={source} label={field.label} showTime />
+            default:
+              return <TextField source={source} label={field.label} />
+          }
+        })}
+        <EditButton />
+      </Datagrid>
+    </List>
+  );
+};
