@@ -248,6 +248,11 @@ func (h Handlers) DocumentList(ctx context.Context, request events.APIGatewayV2H
 	filter := gocms.DocumentFilter{
 		Range: gocms.Range{End: 9},
 	}
+
+	if classId, ok := request.PathParameters["class_id"]; ok {
+		filter.ClassId = classId
+	}
+
 	docs, r, err := gocms.NewDocumentService(h.Repo).List(ctx, filter)
 	if err != nil {
 		return
