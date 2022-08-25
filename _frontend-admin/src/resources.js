@@ -2,6 +2,7 @@ import * as React from 'react';
 import { AdminUI, Loading, Resource, useDataProvider } from 'react-admin';
 import { ClassCreate, ClassEdit, ClassList } from './classes';
 import { DocumentCreate, DocumentEdit, DocumentList } from './documents';
+import { TemplateCreate, TemplateEdit, TemplateList } from './templates';
 
 export const AsyncResources = () => {
     const [resources, setResources] = React.useState([]);
@@ -35,7 +36,12 @@ export const AsyncResources = () => {
           edit={<ClassEdit update={setUpdateResources} />}
           list={ClassList}
         />
-        <Resource name="templates" list={ClassList} />
+        <Resource
+          name="templates"
+          create={TemplateCreate}
+          edit={TemplateEdit}
+          list={TemplateList}
+        />
       </AdminUI>
     )
   }
