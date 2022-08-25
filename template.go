@@ -7,12 +7,12 @@ import (
 )
 
 type Template struct {
-	Id      string
-	Name    string
-	Version int
-	Body    string
-	Created time.Time
-	Updated time.Time
+	Id      string    `json:"id"`
+	Name    string    `json:"name"`
+	Version int       `json:"version"`
+	Body    string    `json:"body"`
+	Created time.Time `json:"created"`
+	Updated time.Time `json:"updated"`
 }
 
 type TemplateFilter struct {
