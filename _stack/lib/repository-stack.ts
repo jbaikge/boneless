@@ -139,5 +139,24 @@ export class RepositoryStack extends cdk.Stack {
         apigateway.HttpMethod.DELETE,
       ],
     });
+
+    api.addRoutes({
+      path: '/templates',
+      integration: adminIntegration,
+      methods: [
+        apigateway.HttpMethod.GET,
+        apigateway.HttpMethod.POST,
+      ],
+    });
+
+    api.addRoutes({
+      path: '/templates/{template_id}',
+      integration: adminIntegration,
+      methods: [
+        apigateway.HttpMethod.GET,
+        apigateway.HttpMethod.PUT,
+        apigateway.HttpMethod.DELETE,
+      ],
+    });
   }
 }
