@@ -25,6 +25,7 @@ type Error struct {
 const (
 	ClassRangeUnit    = "classes"
 	DocumentRangeUnit = "documents"
+	TemplateRangeUnit = "templates"
 )
 
 var (
@@ -55,6 +56,11 @@ func (h Handlers) GetHandler(request events.APIGatewayV2HTTPRequest) (f HandlerF
 		"GET /documents/{doc_id}":                       h.DocumentById,
 		"PUT /documents/{doc_id}":                       h.DocumentUpdate,
 		"DELETE /documents/{doc_id}":                    h.DocumentDelete,
+		"GET /templates":                                h.TemplateList,
+		"POST /templates":                               h.TemplateCreate,
+		"GET /templates/{template_id}":                  h.TemplateById,
+		"PUT /templates/{template_id}":                  h.TemplateUpdate,
+		"DELETE /templates/{template_id}":               h.TemplateDelete,
 	}
 	f, found = funcMap[key]
 	return
@@ -284,4 +290,77 @@ func (h Handlers) DocumentUpdate(ctx context.Context, request events.APIGatewayV
 	}
 
 	return doc, nil
+}
+
+func (h Handlers) TemplateById(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
+	id, ok := request.PathParameters["template_id"]
+	if !ok {
+		response.StatusCode = http.StatusBadRequest
+		return nil, fmt.Errorf("no template_id specified")
+	}
+
+	return gocms.NewTemplateService(h.Repo).ById(ctx, id)
+}
+
+func (h Handlers) TemplateCreate(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
+	template := new(gocms.Template)
+	reader := strings.NewReader(request.Body)
+	if err = json.NewDecoder(reader).Decode(template); err != nil {
+		return
+	}
+
+	if err = gocms.NewTemplateService(h.Repo).Create(ctx, template); err != nil {
+		return
+	}
+
+	return template, nil
+}
+
+func (h Handlers) TemplateDelete(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
+	id, ok := request.PathParameters["template_id"]
+	if !ok {
+		response.StatusCode = http.StatusBadRequest
+		return nil, fmt.Errorf("no template_id specified")
+	}
+
+	err = gocms.NewTemplateService(h.Repo).Delete(ctx, id)
+	return
+}
+
+func (h Handlers) TemplateList(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
+	filter := gocms.TemplateFilter{
+		Range: gocms.Range{End: 9},
+	}
+
+	templates, r, err := gocms.NewTemplateService(h.Repo).List(ctx, filter)
+	if err != nil {
+		return
+	}
+
+	response.Headers["Content-Range"] = r.ContentRangeHeader(TemplateRangeUnit)
+	response.Headers["X-Total-Count"] = fmt.Sprint(r.Size)
+	return templates, nil
+}
+
+func (h Handlers) TemplateUpdate(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
+	id, ok := request.PathParameters["template_id"]
+	if !ok {
+		response.StatusCode = http.StatusBadRequest
+		return nil, fmt.Errorf("no template_id specified")
+	}
+
+	template := new(gocms.Template)
+	if err = json.NewDecoder(strings.NewReader(request.Body)).Decode(template); err != nil {
+		response.StatusCode = http.StatusBadRequest
+		return nil, fmt.Errorf("bad json: %w", err)
+	}
+
+	// Force ID to be what it is in the URL
+	template.Id = id
+	if err = gocms.NewTemplateService(h.Repo).Update(ctx, template); err != nil {
+		response.StatusCode = http.StatusInternalServerError
+		return nil, fmt.Errorf("update error: %w", err)
+	}
+
+	return template, nil
 }
