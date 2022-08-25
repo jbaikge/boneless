@@ -59,6 +59,10 @@ func (s TemplateService) Create(ctx context.Context, template *Template) (err er
 	return s.repo.CreateTemplate(ctx, template)
 }
 
+func (s TemplateService) Delete(ctx context.Context, id string) (err error) {
+	return s.repo.DeleteTemplate(ctx, id)
+}
+
 func (s TemplateService) List(ctx context.Context, filter TemplateFilter) ([]Template, Range, error) {
 	return s.repo.GetTemplateList(ctx, filter)
 }
