@@ -158,5 +158,50 @@ export class RepositoryStack extends cdk.Stack {
         apigateway.HttpMethod.DELETE,
       ],
     });
+
+    //
+    // Frontend Endpoint
+    //
+    const frontendLambda = new lambda.Function(this, 'FrontendHandler', {
+      code: lambda.Code.fromAsset(path.join(rootDir, 'lambda', 'frontend')),
+      runtime: lambda.Runtime.GO_1_X,
+      handler: 'handler',
+      environment: {
+        'REPOSITORY_BUCKET': repositoryBucket.bucketName,
+        'REPOSITORY_TABLE': repositoryTable.tableName,
+      },
+    });
+    repositoryBucket.grantRead(frontendLambda);
+    repositoryTable.grantReadData(frontendLambda);
+
+    // REST API (v2)
+    const frontendAPI = new apigateway.HttpApi(this, 'Frontend', {
+      createDefaultStage: true,
+      corsPreflight: {
+        allowOrigins: [
+          '*',
+        ],
+        allowHeaders: [
+        ],
+        exposeHeaders: [
+        ],
+        allowMethods: [
+          apigateway.CorsHttpMethod.ANY,
+        ],
+      },
+    });
+
+    new cdk.CfnOutput(this, 'FrontendUrl', { value: frontendAPI.url!, description: 'Frontend URL' })
+
+    const frontendIntegration = new integration.HttpLambdaIntegration('FrontendIntegration', adminLambda)
+
+    frontendAPI.addRoutes({
+      path: '/',
+      integration: frontendIntegration,
+      methods: [
+        apigateway.HttpMethod.GET,
+      ],
+    });
+
   }
 }
