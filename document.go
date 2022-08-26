@@ -52,6 +52,10 @@ func (s DocumentService) ById(ctx context.Context, id string) (Document, error) 
 	return s.repo.GetDocumentById(ctx, id)
 }
 
+func (s DocumentService) ByPath(ctx context.Context, path string) (Document, error) {
+	return s.repo.GetDocumentByPath(ctx, path)
+}
+
 func (s DocumentService) Create(ctx context.Context, doc *Document) (err error) {
 	if doc.Id != "" {
 		return fmt.Errorf("document already has an ID")
