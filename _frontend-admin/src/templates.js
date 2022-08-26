@@ -1,4 +1,4 @@
-import { RichTextInput } from 'ra-input-rich-text';
+import React from 'react';
 import {
   Create,
   Datagrid,
@@ -10,12 +10,13 @@ import {
   TextField,
   TextInput,
 } from 'react-admin';
+import { CodeInput } from './codeInput';
 
 export const TemplateCreate = (props) => (
   <Create {...props}>
     <SimpleForm>
       <TextInput source="name" fullWidth />
-      <RichTextInput source="body" fullWidth />
+      <CodeInput source="body" />
     </SimpleForm>
   </Create>
 );
@@ -24,13 +25,13 @@ export const TemplateEdit = (props) => (
   <Edit {...props}>
     <SimpleForm>
       <TextInput source="name" fullWidth />
-      <RichTextInput source="body" fullWidth />
+      <CodeInput source="body" />
     </SimpleForm>
   </Edit>
 );
 
 export const TemplateList = (props) => (
-  <List>
+  <List {...props}>
     <Datagrid rowClick="edit">
       <TextField source="name" />
       <DateField source="created" />
