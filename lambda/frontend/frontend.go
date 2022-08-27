@@ -69,6 +69,9 @@ func (frontend Frontend) HandleRequest(ctx context.Context, request events.APIGa
 	buffer := new(bytes.Buffer)
 	t.ExecuteTemplate(buffer, name, data)
 	response.StatusCode = http.StatusOK
+	response.Headers = map[string]string{
+		"Content-Type": "text/html",
+	}
 	response.Body = buffer.String()
 	return
 }
