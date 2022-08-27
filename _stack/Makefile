@@ -31,7 +31,7 @@ deploy-repository: cdk.out/RepositoryStack.outputs.json
 
 # (Re-)create the outputs file if it does not exist or the stack or binaries
 # have changed.
-cdk.out/RepositoryStack.outputs.json: lib/* bin/* ../lambda/admin/handler
+cdk.out/RepositoryStack.outputs.json: lib/* bin/* ../lambda/admin/handler ../lambda/frontend/handler
 	mkdir -p cdk.out
 	cdk --outputs-file $@ deploy RepositoryStack
 
