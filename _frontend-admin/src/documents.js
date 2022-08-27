@@ -21,6 +21,7 @@ export const DocumentCreate = (props) => (
   <Create {...props}>
     <SimpleForm>
       <TextInput source="path" fullWidth />
+      <TextInput source="template_id" fullWidth />
       <DocumentInputs />
     </SimpleForm>
   </Create>
@@ -30,6 +31,7 @@ export const DocumentEdit = (props) => (
   <Edit {...props}>
     <SimpleForm>
       <TextInput source="path" fullWidth />
+      <TextInput source="template_id" fullWidth />
       <DocumentInputs />
     </SimpleForm>
   </Edit>
