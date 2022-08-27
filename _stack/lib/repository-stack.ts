@@ -193,7 +193,7 @@ export class RepositoryStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, 'FrontendUrl', { value: frontendAPI.url!, description: 'Frontend URL' })
 
-    const frontendIntegration = new integration.HttpLambdaIntegration('FrontendIntegration', adminLambda)
+    const frontendIntegration = new integration.HttpLambdaIntegration('FrontendIntegration', frontendLambda)
 
     frontendAPI.addRoutes({
       path: '/',
