@@ -9,13 +9,11 @@ import (
 )
 
 type Class struct {
-	Id          string    `json:"id"`
-	Name        string    `json:"name"`
-	TableLabels string    `json:"table_labels"`
-	TableFields string    `json:"table_fields"`
-	Created     time.Time `json:"created"`
-	Updated     time.Time `json:"updated"`
-	Fields      []Field   `json:"fields"`
+	Id      string    `json:"id"`
+	Name    string    `json:"name"`
+	Created time.Time `json:"created"`
+	Updated time.Time `json:"updated"`
+	Fields  []Field   `json:"fields"`
 }
 
 func (c Class) SortFields() (fields []string) {

@@ -186,19 +186,15 @@ func TestDynamoDBRepository(t *testing.T) {
 
 	t.Run("UpdateClass", func(t *testing.T) {
 		class := Class{
-			Id:          "update_class",
-			Name:        t.Name(),
-			TableLabels: "Field 1; Field 2",
-			TableFields: "field_1; field_2",
-			Created:     time.Now(),
-			Updated:     time.Now(),
-			Fields:      []Field{{Name: "field_2"}, {Name: "field_1"}},
+			Id:      "update_class",
+			Name:    t.Name(),
+			Created: time.Now(),
+			Updated: time.Now(),
+			Fields:  []Field{{Name: "field_2"}, {Name: "field_1"}},
 		}
 		assert.NoError(t, repo.CreateClass(ctx, &class))
 
 		class.Name = t.Name() + "-Updated"
-		class.TableLabels += "; Field 3"
-		class.TableFields += "; field_3"
 		class.Updated = time.UnixMicro(time.Now().UnixMicro())
 		class.Fields = append(class.Fields, Field{Name: "field_3"})
 		assert.NoError(t, repo.UpdateClass(ctx, &class))
@@ -206,8 +202,6 @@ func TestDynamoDBRepository(t *testing.T) {
 		check, err := repo.GetClassById(ctx, class.Id)
 		assert.NoError(t, err)
 		assert.Equal(t, class.Name, check.Name)
-		assert.Equal(t, class.TableFields, check.TableFields)
-		assert.Equal(t, class.TableLabels, check.TableLabels)
 		assert.Equal(t, class.Updated, check.Updated)
 		assert.DeepEqual(t, class.Fields, check.Fields)
 	})
