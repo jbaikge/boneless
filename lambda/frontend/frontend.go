@@ -26,8 +26,8 @@ type Frontend struct {
 
 func (frontend Frontend) HandleRequest(ctx context.Context, request events.APIGatewayV2HTTPRequest) (response events.APIGatewayV2HTTPResponse, err error) {
 	documentService := gocms.NewDocumentService(frontend.Repo)
-	document, err := documentService.ByPath(ctx, request.RawPath)
-	if err != nil {
+	document, byPathErr := documentService.ByPath(ctx, request.RawPath)
+	if byPathErr != nil {
 		response.StatusCode = http.StatusNotFound
 		response.Body = "Not found!"
 		return
@@ -39,10 +39,10 @@ func (frontend Frontend) HandleRequest(ctx context.Context, request events.APIGa
 			End: 1000,
 		},
 	}
-	templates, _, err := templateService.List(ctx, filter)
-	if err != nil {
+	templates, _, listErr := templateService.List(ctx, filter)
+	if listErr != nil {
 		response.StatusCode = http.StatusInternalServerError
-		response.Body = fmt.Sprintf("Something went wrong trying to fetch templates: %v", err)
+		response.Body = fmt.Sprintf("Something went wrong trying to fetch templates: %v", listErr)
 		return
 	}
 
@@ -53,9 +53,9 @@ func (frontend Frontend) HandleRequest(ctx context.Context, request events.APIGa
 		if document.TemplateId == tmpl.Id {
 			name = tmpl.Name
 		}
-		if _, err = t.New(tmpl.Name).Parse(tmpl.Body); err != nil {
+		if _, tmplErr := t.New(tmpl.Name).Parse(tmpl.Body); tmplErr != nil {
 			response.StatusCode = http.StatusInternalServerError
-			response.Body = fmt.Sprintf("Template compilation error: %v", err)
+			response.Body = fmt.Sprintf("Template compilation error: %v", tmplErr)
 			return
 		}
 	}
