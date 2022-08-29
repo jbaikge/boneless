@@ -6,7 +6,6 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as path from 'path';
-import exec from './exec';
 
 
 export class RepositoryStack extends cdk.Stack {
@@ -34,6 +33,7 @@ export class RepositoryStack extends cdk.Stack {
     const repositoryBucket = new s3.Bucket(this, 'RepositoryBucket', {
       accessControl: s3.BucketAccessControl.PRIVATE,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
     });
 
     // Path back to repo root

@@ -6,7 +6,6 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigins from 'aws-cdk-lib/aws-cloudfront-origins';
-import exec from './exec';
 
 
 export class AdminStack extends cdk.Stack {
@@ -23,6 +22,8 @@ export class AdminStack extends cdk.Stack {
       encryption: s3.BucketEncryption.S3_MANAGED,
       accessControl: s3.BucketAccessControl.PRIVATE,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
     });
 
     const adminOriginAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'FrontendAdminOAI');
