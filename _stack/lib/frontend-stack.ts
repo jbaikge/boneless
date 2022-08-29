@@ -23,7 +23,12 @@ export class FrontendStack extends cdk.Stack {
     props.bucket.grantRead(frontendLambda);
     props.db.grantReadData(frontendLambda);
 
+    const frontendIntegration = new integration.HttpLambdaIntegration('FrontendIntegration', frontendLambda);
+
+    // https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-routes.html
+    // https://docs.aws.amazon.com/cdk/api/v1/docs/aws-apigateway-readme.html#default-integration-and-method-options
     const api = new apigateway.HttpApi(this, 'Frontend', {
+      defaultIntegration: frontendIntegration,
       createDefaultStage: true,
       corsPreflight: {
         allowOrigins: [
@@ -37,17 +42,6 @@ export class FrontendStack extends cdk.Stack {
           apigateway.CorsHttpMethod.GET,
         ],
       },
-    });
-
-    const frontendIntegration = new integration.HttpLambdaIntegration('FrontendIntegration', frontendLambda);
-
-    // https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-routes.html
-    api.addRoutes({
-      path: '$default',
-      integration: frontendIntegration,
-      methods: [
-        apigateway.HttpMethod.GET,
-      ],
     });
 
     new cdk.CfnOutput(this, 'FrontendUrl', {
