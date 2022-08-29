@@ -41,8 +41,9 @@ export class FrontendStack extends cdk.Stack {
 
     const frontendIntegration = new integration.HttpLambdaIntegration('FrontendIntegration', frontendLambda);
 
+    // https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-routes.html
     api.addRoutes({
-      path: '/',
+      path: '$default',
       integration: frontendIntegration,
       methods: [
         apigateway.HttpMethod.GET,
