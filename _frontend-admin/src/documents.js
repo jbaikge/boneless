@@ -14,6 +14,7 @@ import {
   useGetOne,
   useResourceContext,
 } from 'react-admin';
+import { TinyInput } from './tinyInput';
 
 const resourceRE = /([^/]+)\/([^/]+)\/.*/;
 
@@ -56,6 +57,8 @@ export const DocumentInputs = () => {
         return <RichTextInput key={field.name} source={source} label={field.label} fullWidth />
       case 'text':
         return <TextInput key={field.name} source={source} label={field.label} fullWidth />
+      case 'tiny':
+        return <TinyInput key={field.name} source={source} label={field.label} fullWidth />
       default:
         return <TextInput key={field.name} source={source} label={`Unknown type (${field.type}) - ${field.label}`} fullWidth />
     }
