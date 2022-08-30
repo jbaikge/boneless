@@ -34,6 +34,7 @@ const fieldChoices = [
   { id: 'text',          name: 'Text' },
   { id: 'textarea',      name: 'Textarea' },
   { id: 'time',          name: 'Time' },
+  { id: 'tiny',          name: 'TinyMCE Editor' },
   { id: 'any-upload',    name: 'Upload (Any)' },
   { id: 'image-upload',  name: 'Upload (Image)' },
 ];
