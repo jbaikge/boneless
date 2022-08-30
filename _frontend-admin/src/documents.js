@@ -8,6 +8,8 @@ import {
   EditButton,
   List,
   Loading,
+  ReferenceInput,
+  SelectInput,
   SimpleForm,
   TextField,
   TextInput,
@@ -22,7 +24,9 @@ export const DocumentCreate = (props) => (
   <Create {...props}>
     <SimpleForm>
       <TextInput source="path" fullWidth />
-      <TextInput source="template_id" fullWidth />
+      <ReferenceInput source="template_id" reference="templates" perPage={100}>
+        <SelectInput />
+      </ReferenceInput>
       <DocumentInputs />
     </SimpleForm>
   </Create>
@@ -32,7 +36,9 @@ export const DocumentEdit = (props) => (
   <Edit {...props}>
     <SimpleForm>
       <TextInput source="path" fullWidth />
-      <TextInput source="template_id" fullWidth />
+      <ReferenceInput source="template_id" reference="templates" perPage={100}>
+        <SelectInput />
+      </ReferenceInput>
       <DocumentInputs />
     </SimpleForm>
   </Edit>
