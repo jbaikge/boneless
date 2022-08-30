@@ -81,11 +81,11 @@ export const DocumentList = (props) => {
           const source = `values.${field.name}`;
           switch (field.type) {
             case 'date':
-              return <DateField source={source} label={field.label} />
+              return <DateField key={field.label} source={source} label={field.label} />
             case 'datetime':
-              return <DateField source={source} label={field.label} showTime />
+              return <DateField key={field.label} source={source} label={field.label} showTime />
             default:
-              return <TextField source={source} label={field.label} />
+              return <TextField key={field.label} source={source} label={field.label} />
           }
         })}
         <EditButton />
