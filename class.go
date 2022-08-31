@@ -48,6 +48,14 @@ func NewClassService(repo ClassRepository) ClassService {
 	}
 }
 
+func (s ClassService) All(ctx context.Context) (classes []Class, err error) {
+	filter := ClassFilter{
+		Range: Range{End: 1000},
+	}
+	classes, _, err = s.List(ctx, filter)
+	return
+}
+
 func (s ClassService) ById(ctx context.Context, id string) (Class, error) {
 	if !idProvider.IsValid(id) {
 		return Class{}, fmt.Errorf("invalid class ID: %s", id)
