@@ -3,6 +3,7 @@ package gocms
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -18,11 +19,23 @@ type Document struct {
 	Values     map[string]interface{} `json:"values"`
 }
 
+type DocumentFilterSort struct {
+	Field     string
+	Direction string
+}
+
+func (dfs DocumentFilterSort) Ascending() bool {
+	return strings.ToUpper(dfs.Direction) == "ASC" || dfs.Direction == ""
+}
+
+func (dfs DocumentFilterSort) Descending() bool {
+	return strings.ToUpper(dfs.Direction) == "DESC"
+}
+
 type DocumentFilter struct {
 	ClassId  string
 	ParentId string
-	Field    string
-	Sort     string // ASC, DESC
+	Sort     DocumentFilterSort
 	Range    Range
 }
 

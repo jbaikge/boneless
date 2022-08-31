@@ -603,21 +603,18 @@ func (repo DynamoDBRepository) GetDocumentByPath(ctx context.Context, path strin
 }
 
 func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter DocumentFilter) (list []Document, r Range, err error) {
-	sortAsc := filter.Sort == "ASC" || filter.Sort == ""
-	scanForward := aws.Bool(sortAsc)
-
 	tmp := make([]dynamoDocumentInterface, 0, 128)
 
 	// Handle a class-field search, ordered by field values
 	switch {
-	case filter.ClassId != "" && filter.Field != "":
-		pk, err := attributevalue.Marshal(fmt.Sprintf(dynamoSortPartitionF, filter.ClassId, filter.Field))
+	case filter.ClassId != "" && filter.Sort.Field != "":
+		pk, err := attributevalue.Marshal(fmt.Sprintf(dynamoSortPartitionF, filter.ClassId, filter.Sort.Field))
 		if err != nil {
 			return list, r, err
 		}
 		params := &dynamodb.QueryInput{
 			TableName:              &repo.resources.Table,
-			ScanIndexForward:       scanForward,
+			ScanIndexForward:       aws.Bool(filter.Sort.Ascending()),
 			Limit:                  aws.Int32(int32(filter.Range.End + 1)),
 			KeyConditionExpression: aws.String("PK = :pk"),
 			ExpressionAttributeValues: map[string]types.AttributeValue{
@@ -696,14 +693,14 @@ func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter Docum
 
 	// Sort results in memory if the field is a certain option
 	var sorter sort.Interface
-	switch filter.Field {
-	case "Created", "":
+	switch strings.ToLower(filter.Sort.Field) {
+	case "created", "":
 		sorter = dynamoDocumentByCreated(tmp)
-	case "Updated":
+	case "updated":
 		sorter = dynamoDocumentByUpdated(tmp)
 	}
 	if sorter != nil {
-		if !sortAsc {
+		if filter.Sort.Descending() || filter.Sort.Field == "" {
 			sorter = sort.Reverse(sorter)
 		}
 		sort.Sort(sorter)

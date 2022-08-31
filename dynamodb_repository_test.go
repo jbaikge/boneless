@@ -564,7 +564,7 @@ func TestDynamoDBRepositoryDocumentList(t *testing.T) {
 	t.Run("ListPagesByTitle", func(t *testing.T) {
 		filter := DocumentFilter{
 			ClassId: "page",
-			Field:   "title",
+			Sort:    DocumentFilterSort{Field: "title"},
 			Range:   Range{End: 9},
 		}
 		docs, r, err := repo.GetDocumentList(ctx, filter)
@@ -578,7 +578,7 @@ func TestDynamoDBRepositoryDocumentList(t *testing.T) {
 	t.Run("ListSessionsByStart", func(t *testing.T) {
 		filter := DocumentFilter{
 			ClassId: "session",
-			Field:   "start",
+			Sort:    DocumentFilterSort{Field: "start"},
 			Range:   Range{End: 9},
 		}
 		docs, r, err := repo.GetDocumentList(ctx, filter)
@@ -591,7 +591,7 @@ func TestDynamoDBRepositoryDocumentList(t *testing.T) {
 		filter := DocumentFilter{
 			ClassId:  "session",
 			ParentId: "event-1",
-			Field:    "start",
+			Sort:     DocumentFilterSort{Field: "start"},
 			Range:    Range{End: 9},
 		}
 		docs, r, err := repo.GetDocumentList(ctx, filter)
