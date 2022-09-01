@@ -1,5 +1,5 @@
 import React from 'react';
-import { useInput } from 'ra-core';
+import { useInput, FieldTitle } from 'ra-core';
 import { Editor } from '@tinymce/tinymce-react';
 
 // This implementation may change if there are complaints about performance
@@ -37,14 +37,17 @@ export const TinyInput = (props) => {
   });
 
   return (
-    <Editor
-      apiKey={process.env.REACT_APP_TINYMCE_KEY}
-      init={{
-        width: '100%',
-      }}
-      plugins={['code']}
-      value={field.value}
-      onEditorChange={(newValue) => field.onChange(newValue)}
-    />
+    <div style={{ marginBottom: '1em', width: '100%' }}>
+      <FieldTitle label={label} source={source} resource={resource} />
+      <Editor
+        apiKey={process.env.REACT_APP_TINYMCE_KEY}
+        init={{
+          width: '100%',
+        }}
+        plugins={['code']}
+        value={field.value}
+        onEditorChange={(newValue) => field.onChange(newValue)}
+      />
+    </div>
   )
 };
