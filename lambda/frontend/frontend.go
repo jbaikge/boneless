@@ -152,6 +152,19 @@ func (frontend Frontend) funcMap() (funcs template.FuncMap, err error) {
 			docs, _, err = documentService.List(context.Background(), filter)
 			return
 		},
+		"many_documents": func(ids []string) (docs []gocms.Document, err error) {
+			docs = make([]gocms.Document, 0, len(ids))
+			documentService := gocms.NewDocumentService(frontend.Repo)
+			for _, id := range ids {
+				doc, err := documentService.ById(context.Background(), id)
+				if err != nil {
+					return nil, err
+				}
+				docs = append(docs, doc)
+			}
+			return
+		},
+		"split": strings.Fields,
 	}, nil
 }
 
