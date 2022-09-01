@@ -22,6 +22,10 @@ type Error struct {
 	Error string `json:"error"`
 }
 
+type FilterGetMany struct {
+	Ids []string `json:"id"`
+}
+
 const (
 	ClassRangeUnit    = "classes"
 	DocumentRangeUnit = "documents"
@@ -251,6 +255,28 @@ func (h Handlers) DocumentDelete(ctx context.Context, request events.APIGatewayV
 }
 
 func (h Handlers) DocumentList(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
+	documentService := gocms.NewDocumentService(h.Repo)
+
+	// simple rest data provider calls "getMany" by using ?filter={"id":[1, 2, 3]}
+	filterParam, found := request.QueryStringParameters["filter"]
+	if found {
+		var getMany FilterGetMany
+		if err = json.NewDecoder(strings.NewReader(filterParam)).Decode(&getMany); err != nil {
+			return
+		}
+		docs := make([]gocms.Document, 0, len(getMany.Ids))
+		for _, id := range getMany.Ids {
+			doc, err := documentService.ById(ctx, id)
+			if err != nil {
+				return nil, err
+			}
+			docs = append(docs, doc)
+		}
+
+		return docs, nil
+	}
+
+	// Handle remaining GET calls
 	filter := gocms.DocumentFilter{
 		Range: gocms.Range{End: 9},
 	}
@@ -259,7 +285,7 @@ func (h Handlers) DocumentList(ctx context.Context, request events.APIGatewayV2H
 		filter.ClassId = classId
 	}
 
-	docs, r, err := gocms.NewDocumentService(h.Repo).List(ctx, filter)
+	docs, r, err := documentService.List(ctx, filter)
 	if err != nil {
 		return
 	}
