@@ -22,8 +22,35 @@ type Error struct {
 	Error string `json:"error"`
 }
 
-type FilterGetMany struct {
-	Ids []string `json:"id"`
+type FilterParam struct {
+	Ids    []string
+	Fields map[string]string
+}
+
+func (f *FilterParam) UnmarshalJSON(data []byte) (err error) {
+	fields := make(map[string]json.RawMessage)
+	if err = json.Unmarshal(data, &fields); err != nil {
+		return
+	}
+
+	if f.Fields == nil {
+		f.Fields = make(map[string]string)
+	}
+
+	for key, value := range fields {
+		switch key {
+		case "id":
+			err = json.Unmarshal(value, &f.Ids)
+		default:
+			var s string
+			err = json.Unmarshal(value, &s)
+			f.Fields[key] = s
+		}
+		if err != nil {
+			return
+		}
+	}
+	return nil
 }
 
 const (
@@ -254,29 +281,12 @@ func (h Handlers) DocumentDelete(ctx context.Context, request events.APIGatewayV
 	return
 }
 
+// filter: {} - For filtering, {"field":"value"}; for getMany, {"id":[1,2,3]}
+// range: [0,9]
+// sort: ["id","ASC"]
 func (h Handlers) DocumentList(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
 	documentService := gocms.NewDocumentService(h.Repo)
 
-	// simple rest data provider calls "getMany" by using ?filter={"id":[1, 2, 3]}
-	filterParam, found := request.QueryStringParameters["filter"]
-	if found {
-		var getMany FilterGetMany
-		if err = json.NewDecoder(strings.NewReader(filterParam)).Decode(&getMany); err != nil {
-			return
-		}
-		docs := make([]gocms.Document, 0, len(getMany.Ids))
-		for _, id := range getMany.Ids {
-			doc, err := documentService.ById(ctx, id)
-			if err != nil {
-				return nil, err
-			}
-			docs = append(docs, doc)
-		}
-
-		return docs, nil
-	}
-
-	// Handle remaining GET calls
 	filter := gocms.DocumentFilter{
 		Range: gocms.Range{End: 9},
 	}
@@ -284,6 +294,28 @@ func (h Handlers) DocumentList(ctx context.Context, request events.APIGatewayV2H
 	if classId, ok := request.PathParameters["class_id"]; ok {
 		filter.ClassId = classId
 	}
+
+	// simple rest data provider calls "getMany" by using ?filter={"id":[1, 2, 3]}
+	filterParam := new(FilterParam)
+	if param, ok := request.QueryStringParameters["filter"]; ok {
+		if err = json.Unmarshal([]byte(param), filterParam); err != nil {
+			return nil, fmt.Errorf("unmarshalling filter parameter: %w", err)
+		}
+	}
+
+	if len(filterParam.Ids) > 0 {
+		docs := make([]gocms.Document, 0, len(filterParam.Ids))
+		for _, id := range filterParam.Ids {
+			doc, err := documentService.ById(ctx, id)
+			if err != nil {
+				return nil, fmt.Errorf("getting documents by id: %w", err)
+			}
+			docs = append(docs, doc)
+		}
+		return docs, nil
+	}
+
+	// Handle remaining GET calls
 
 	docs, r, err := documentService.List(ctx, filter)
 	if err != nil {
