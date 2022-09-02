@@ -25,16 +25,15 @@ import './App.css';
 const fieldChoices = [
   { id: 'date',          name: 'Date' },
   { id: 'datetime',      name: 'Date & Time' },
+  { id: 'tiny',          name: 'Editor' },
   { id: 'email',         name: 'Email' },
-  { id: 'select',        name: 'Multi-Select' },
   { id: 'number',        name: 'Number' },
-  { id: 'richtext',      name: 'Rich Text' },
-  // { id: 'select-class',  name: 'Select (Class)' }, // Need data_source_* fields on Field struct
+  { id: 'select-class',  name: 'Select (Class)' },
+  { id: 'multi-class',   name: 'Mutli-Select (Class)'},
   { id: 'select-static', name: 'Select (Static)' },
   { id: 'text',          name: 'Text' },
   { id: 'textarea',      name: 'Textarea' },
   { id: 'time',          name: 'Time' },
-  { id: 'tiny',          name: 'TinyMCE Editor' },
   { id: 'any-upload',    name: 'Upload (Any)' },
   { id: 'image-upload',  name: 'Upload (Image)' },
 ];
@@ -127,13 +126,13 @@ export const ClassEdit = (props) => {
                     </>
                   );
                 case 'select-class':
+                case 'multi-class':
                   return (
                     <>
-                      <ReferenceInput source={getSource('data_source_id')} reference="classes">
+                      <ReferenceInput source={getSource('class_id')} reference="classes">
                         <SelectInput optionText="name" />
                       </ReferenceInput>
-                      <TextInput source={getSource('data_source_value')} />
-                      <TextInput source={getSource('data_source_label')} />
+                      <TextInput source={getSource('field')} />
                     </>
                   );
                 default:
