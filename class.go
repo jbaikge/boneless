@@ -9,11 +9,12 @@ import (
 )
 
 type Class struct {
-	Id      string    `json:"id"`
-	Name    string    `json:"name"`
-	Created time.Time `json:"created"`
-	Updated time.Time `json:"updated"`
-	Fields  []Field   `json:"fields"`
+	Id       string    `json:"id"`
+	ParentId string    `json:"parent_id"`
+	Name     string    `json:"name"`
+	Created  time.Time `json:"created"`
+	Updated  time.Time `json:"updated"`
+	Fields   []Field   `json:"fields"`
 }
 
 func (c Class) SortFields() (fields []string) {

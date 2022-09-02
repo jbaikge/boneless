@@ -47,17 +47,19 @@ type dynamoItem interface {
 // Class Types
 
 type dynamoClass struct {
-	PK      string
-	SK      string
-	Name    string
-	Created time.Time
-	Updated time.Time
-	Fields  []Field
+	PK       string
+	SK       string
+	ParentId string
+	Name     string
+	Created  time.Time
+	Updated  time.Time
+	Fields   []Field
 }
 
 func (dyn *dynamoClass) FromClass(c *Class) {
 	dyn.PK = dynamoClassPrefix + c.Id
 	dyn.SK = fmt.Sprintf(dynamoClassSortF, 0)
+	dyn.ParentId = c.ParentId
 	dyn.Name = c.Name
 	dyn.Created = c.Created
 	dyn.Updated = c.Updated
@@ -67,6 +69,7 @@ func (dyn *dynamoClass) FromClass(c *Class) {
 
 func (dyn dynamoClass) ToClass() (c Class) {
 	c.Id = dyn.PK[len(dynamoClassPrefix):]
+	c.ParentId = dyn.ParentId
 	c.Name = dyn.Name
 	c.Created = dyn.Created
 	c.Updated = dyn.Updated
@@ -85,9 +88,10 @@ func (dyn dynamoClass) SortKey() string {
 
 func (dyn dynamoClass) UpdateValues() map[string]interface{} {
 	return map[string]interface{}{
-		"Name":    dyn.Name,
-		"Fields":  dyn.Fields,
-		"Updated": dyn.Updated,
+		"ParentId": dyn.ParentId,
+		"Name":     dyn.Name,
+		"Fields":   dyn.Fields,
+		"Updated":  dyn.Updated,
 	}
 }
 
