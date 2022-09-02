@@ -113,6 +113,8 @@ func (frontend Frontend) decodeFilter(s string) (filter gocms.DocumentFilter, er
 			}
 			filter.Sort.Field = strings.TrimSpace(field)
 			filter.Sort.Direction = strings.TrimSpace(dir)
+		case "parent":
+			filter.ParentId = value
 		}
 	}
 
