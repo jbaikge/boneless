@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -98,6 +99,7 @@ func (h Handlers) GetHandler(request events.APIGatewayV2HTTPRequest) (f HandlerF
 }
 
 func (h Handlers) HandleRequest(ctx context.Context, request events.APIGatewayV2HTTPRequest) (response events.APIGatewayV2HTTPResponse, err error) {
+	start := time.Now()
 	response.StatusCode = http.StatusOK
 	response.Headers = map[string]string{
 		"Content-Type":                  "application/json",
@@ -123,6 +125,7 @@ func (h Handlers) HandleRequest(ctx context.Context, request events.APIGatewayV2
 	if err = json.NewEncoder(&buffer).Encode(data); err != nil {
 		return
 	}
+	response.Headers["X-Handler-Time"] = time.Since(start).String()
 	response.Body = buffer.String()
 	return
 }
