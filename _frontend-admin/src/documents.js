@@ -75,6 +75,8 @@ export const DocumentForm = () => {
             );
           case 'text':
             return <TextInput key={field.name} source={source} label={field.label} fullWidth />
+          case 'textarea':
+            return <TextInput key={field.name} source={source} label={field.label} fullWidth multiline />
           case 'time':
             return <TextInput type="time" key={field.name} source={source} label={field.label} fullWidth />
           case 'tiny':
