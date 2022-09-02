@@ -166,6 +166,21 @@ func (frontend Frontend) funcMap() (funcs template.FuncMap, err error) {
 			}
 			return
 		},
+		"child_documents": func(className string, parentId string) (docs []gocms.Document, err error) {
+			id, found := classNameMap[className]
+			if !found {
+				err = fmt.Errorf("invalid class name: %s", className)
+				return
+			}
+
+			filter := gocms.DocumentFilter{
+				ClassId:  id,
+				ParentId: parentId,
+				Range:    gocms.Range{End: 100},
+			}
+			docs, _, err = gocms.NewDocumentService(frontend.Repo).List(context.Background(), filter)
+			return
+		},
 		"split": strings.Fields,
 	}, nil
 }
