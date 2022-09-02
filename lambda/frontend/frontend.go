@@ -52,10 +52,19 @@ func (frontend Frontend) HandleRequest(ctx context.Context, request events.APIGa
 		return
 	}
 
+	stats := fmt.Sprintf(
+		"Fetch %d Insert %d Update %d Delete %d",
+		frontend.Repo.Stats().Fetches,
+		frontend.Repo.Stats().Inserts,
+		frontend.Repo.Stats().Updates,
+		frontend.Repo.Stats().Deletes,
+	)
+
 	response.StatusCode = http.StatusOK
 	response.Headers = map[string]string{
 		"Content-Type":   "text/html",
 		"X-Handler-Time": time.Since(start).String(),
+		"X-Stats":        stats,
 	}
 	response.Body = buffer.String()
 	return
