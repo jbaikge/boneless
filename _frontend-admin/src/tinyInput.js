@@ -7,6 +7,8 @@ import { Editor } from '@tinymce/tinymce-react';
 // keystroke as the current implementation does.
 // See: https://www.tiny.cloud/docs/tinymce/6/react-ref/#using-the-tinymce-react-component-as-a-uncontrolled-component
 export const TinyInput = (props) => {
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
   const {
     defaultValue = '',
     format,
@@ -36,14 +38,18 @@ export const TinyInput = (props) => {
     ...rest,
   });
 
+  const init = {
+    skin: (prefersDark ? 'oxide-dark' : ''),
+    content_css: (prefersDark ? 'dark' : ''),
+    width: '100%',
+  };
+
   return (
     <div style={{ marginBottom: '1em', width: '100%' }}>
       <FieldTitle label={label} source={source} resource={resource} />
       <Editor
         apiKey={process.env.REACT_APP_TINYMCE_KEY}
-        init={{
-          width: '100%',
-        }}
+        init={init}
         plugins={['code']}
         value={field.value}
         onEditorChange={(newValue) => field.onChange(newValue)}
