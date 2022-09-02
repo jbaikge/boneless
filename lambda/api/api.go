@@ -295,6 +295,15 @@ func (h Handlers) DocumentList(ctx context.Context, request events.APIGatewayV2H
 		filter.ClassId = classId
 	}
 
+	if param, ok := request.QueryStringParameters["sort"]; ok {
+		values := make([]string, 0, 2)
+		if err = json.Unmarshal([]byte(param), &values); err != nil {
+			return
+		}
+		filter.Sort.Field = values[0]
+		filter.Sort.Direction = values[1]
+	}
+
 	// simple rest data provider calls "getMany" by using ?filter={"id":[1, 2, 3]}
 	filterParam := new(FilterParam)
 	if param, ok := request.QueryStringParameters["filter"]; ok {
