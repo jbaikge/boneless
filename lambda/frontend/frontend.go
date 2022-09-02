@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -33,6 +34,7 @@ type Frontend struct {
 }
 
 func (frontend Frontend) HandleRequest(ctx context.Context, request events.APIGatewayV2HTTPRequest) (response events.APIGatewayV2HTTPResponse, err error) {
+	start := time.Now()
 	documentService := gocms.NewDocumentService(frontend.Repo)
 	document, byPathErr := documentService.ByPath(ctx, request.RawPath)
 	if byPathErr != nil {
@@ -52,7 +54,8 @@ func (frontend Frontend) HandleRequest(ctx context.Context, request events.APIGa
 
 	response.StatusCode = http.StatusOK
 	response.Headers = map[string]string{
-		"Content-Type": "text/html",
+		"Content-Type":   "text/html",
+		"X-Handler-Time": time.Since(start).String(),
 	}
 	response.Body = buffer.String()
 	return
