@@ -605,10 +605,22 @@ func (repo DynamoDBRepository) GetDocumentByPath(ctx context.Context, path strin
 func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter DocumentFilter) (list []Document, r Range, err error) {
 	tmp := make([]dynamoDocumentInterface, 0, 128)
 
+	var sortField string
+	if filter.ClassId != "" && filter.Sort.Field != "" {
+		class, err := repo.GetClassById(ctx, filter.ClassId)
+		if err != nil {
+			return list, r, fmt.Errorf("could not retrieve class [%s]: %w", filter.ClassId, err)
+		}
+		sortable := class.SortFields()
+		if i := sort.SearchStrings(sortable, filter.Sort.Field); i < len(sortable) && sortable[i] == filter.Sort.Field {
+			sortField = filter.Sort.Field
+		}
+	}
+
 	// Handle a class-field search, ordered by field values
 	switch {
-	case filter.ClassId != "" && filter.Sort.Field != "":
-		pk, err := attributevalue.Marshal(fmt.Sprintf(dynamoSortPartitionF, filter.ClassId, filter.Sort.Field))
+	case sortField != "":
+		pk, err := attributevalue.Marshal(fmt.Sprintf(dynamoSortPartitionF, filter.ClassId, sortField))
 		if err != nil {
 			return list, r, err
 		}
@@ -694,7 +706,7 @@ func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter Docum
 	// Sort results in memory if the field is a certain option
 	var sorter sort.Interface
 	switch strings.ToLower(filter.Sort.Field) {
-	case "created", "":
+	case "id", "created", "":
 		sorter = dynamoDocumentByCreated(tmp)
 	case "updated":
 		sorter = dynamoDocumentByUpdated(tmp)
