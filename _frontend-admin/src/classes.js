@@ -72,6 +72,9 @@ export const ClassEdit = (props) => {
     <Edit {...rest} mutationOptions={{ onSuccess }} mutationMode="pessimistic">
       <SimpleForm>
         <TextInput source="name" validate={[required()]} fullWidth />
+        <ReferenceInput source="parent_id" reference="classes" >
+          <SelectInput optionText="name" fullWidth />
+        </ReferenceInput>
         <ArrayInput source="fields">
           <SimpleFormIterator className="field-row">
             <TextInput source="label" />
