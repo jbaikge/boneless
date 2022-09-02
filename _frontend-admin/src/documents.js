@@ -25,7 +25,7 @@ export const DocumentCreate = (props) => (
     <SimpleForm>
       <TextInput source="path" fullWidth />
       <ReferenceInput source="template_id" reference="templates" perPage={100}>
-        <SelectInput />
+        <SelectInput fullWidth />
       </ReferenceInput>
       <DocumentInputs />
     </SimpleForm>
@@ -37,7 +37,7 @@ export const DocumentEdit = (props) => (
     <SimpleForm>
       <TextInput source="path" fullWidth />
       <ReferenceInput source="template_id" reference="templates" perPage={100}>
-        <SelectInput />
+        <SelectInput fullWidth />
       </ReferenceInput>
       <DocumentInputs />
     </SimpleForm>
@@ -61,8 +61,16 @@ export const DocumentInputs = () => {
         return <DateTimeInput key={field.name} source={source} label={field.label} inputProps={{ min: field.min, max: field.max, step: field.step }} />
       case 'richtext':
         return <RichTextInput key={field.name} source={source} label={field.label} fullWidth />
+      case 'select-class':
+        return (
+          <ReferenceInput reference={'/classes/' + field.class_id + '/documents'} source={source}>
+            <SelectInput optionText={'values.' + field.field} label={field.label} fullWidth />
+          </ReferenceInput>
+        );
       case 'text':
         return <TextInput key={field.name} source={source} label={field.label} fullWidth />
+      case 'time':
+        return <TextInput type="time" key={field.name} source={source} label={field.label} fullWidth />
       case 'tiny':
         return <TinyInput key={field.name} source={source} label={field.label} fullWidth />
       default:
