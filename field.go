@@ -11,4 +11,6 @@ type Field struct {
 	Step    string `json:"step"`
 	Format  string `json:"format"`
 	Options string `json:"options"`
+	ClassId string `json:"class_id"`
+	Field   string `json:"field"`
 }
