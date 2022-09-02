@@ -300,7 +300,7 @@ func (h Handlers) DocumentList(ctx context.Context, request events.APIGatewayV2H
 		if err = json.Unmarshal([]byte(param), &values); err != nil {
 			return
 		}
-		filter.Sort.Field = values[0]
+		filter.Sort.Field = strings.Replace(values[0], "values.", "", 1)
 		filter.Sort.Direction = values[1]
 	}
 
