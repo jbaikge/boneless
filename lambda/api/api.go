@@ -298,10 +298,25 @@ func (h Handlers) DocumentList(ctx context.Context, request events.APIGatewayV2H
 		filter.ClassId = classId
 	}
 
+	if param, ok := request.QueryStringParameters["range"]; ok {
+		values := make([]int, 0, 2)
+		if err = json.Unmarshal([]byte(param), &values); err != nil {
+			return nil, fmt.Errorf("unmarshalling range %s: %w", param, err)
+		}
+		if len(values) != 2 {
+			return nil, fmt.Errorf("not sure what to do with this range: %s", param)
+		}
+		filter.Range.Start = values[0]
+		filter.Range.End = values[1]
+	}
+
 	if param, ok := request.QueryStringParameters["sort"]; ok {
 		values := make([]string, 0, 2)
 		if err = json.Unmarshal([]byte(param), &values); err != nil {
-			return
+			return nil, fmt.Errorf("unmarshalling sort %s: %w", param, err)
+		}
+		if len(values) != 2 {
+			return nil, fmt.Errorf("not sure what to do with this sort: %s", param)
 		}
 		filter.Sort.Field = strings.Replace(values[0], "values.", "", 1)
 		filter.Sort.Direction = values[1]
