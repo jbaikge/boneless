@@ -375,23 +375,23 @@ func NewDynamoDBRepository(config aws.Config, resources DynamoDBResources) Repos
 	}
 }
 
-func (repo DynamoDBRepository) Stats() RepositoryStats {
+func (repo *DynamoDBRepository) Stats() RepositoryStats {
 	return repo.stats
 }
 
 // Class Methods
 
-func (repo DynamoDBRepository) CreateClass(ctx context.Context, class *Class) (err error) {
+func (repo *DynamoDBRepository) CreateClass(ctx context.Context, class *Class) (err error) {
 	dbClass := new(dynamoClass)
 	dbClass.FromClass(class)
 	return repo.putItem(ctx, dbClass)
 }
 
-func (repo DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err error) {
+func (repo *DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err error) {
 	return repo.deleteItem(ctx, dynamoClassPrefix+id, fmt.Sprintf(dynamoClassSortF, 0))
 }
 
-func (repo DynamoDBRepository) GetClassById(ctx context.Context, id string) (class Class, err error) {
+func (repo *DynamoDBRepository) GetClassById(ctx context.Context, id string) (class Class, err error) {
 	dbClass := new(dynamoClass)
 	if err = repo.getItem(ctx, dynamoClassPrefix+id, fmt.Sprintf(dynamoClassSortF, 0), dbClass); err != nil {
 		return
@@ -399,7 +399,7 @@ func (repo DynamoDBRepository) GetClassById(ctx context.Context, id string) (cla
 	return dbClass.ToClass(), nil
 }
 
-func (repo DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFilter) (list []Class, r Range, err error) {
+func (repo *DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFilter) (list []Class, r Range, err error) {
 	tmp := make([]*dynamoClass, 0, 128)
 
 	skId, err := attributevalue.Marshal(fmt.Sprintf(dynamoClassSortF, 0))
@@ -452,7 +452,7 @@ func (repo DynamoDBRepository) GetClassList(ctx context.Context, filter ClassFil
 	return
 }
 
-func (repo DynamoDBRepository) UpdateClass(ctx context.Context, class *Class) (err error) {
+func (repo *DynamoDBRepository) UpdateClass(ctx context.Context, class *Class) (err error) {
 	dbClass := new(dynamoClass)
 	dbClass.FromClass(class)
 	return repo.updateItem(ctx, dbClass)
@@ -462,7 +462,7 @@ func (repo DynamoDBRepository) UpdateClass(ctx context.Context, class *Class) (e
 
 // Document creation inserts two records: one with version zero and one with
 // version one
-func (repo DynamoDBRepository) CreateDocument(ctx context.Context, doc *Document) (err error) {
+func (repo *DynamoDBRepository) CreateDocument(ctx context.Context, doc *Document) (err error) {
 	if doc.ClassId == "" {
 		return fmt.Errorf("classId is required")
 	}
@@ -510,7 +510,7 @@ func (repo DynamoDBRepository) CreateDocument(ctx context.Context, doc *Document
 	return
 }
 
-func (repo DynamoDBRepository) DeleteDocument(ctx context.Context, id string) (err error) {
+func (repo *DynamoDBRepository) DeleteDocument(ctx context.Context, id string) (err error) {
 	dbDoc := new(dynamoDocument)
 	docId := dynamoDocPrefix + id
 	if err = repo.getItem(ctx, docId, fmt.Sprintf(dynamoDocSortF, 0), dbDoc); err != nil {
@@ -591,7 +591,7 @@ func (repo DynamoDBRepository) DeleteDocument(ctx context.Context, id string) (e
 }
 
 // Always fetches the latest version (v0) of the document with requested id
-func (repo DynamoDBRepository) GetDocumentById(ctx context.Context, id string) (doc Document, err error) {
+func (repo *DynamoDBRepository) GetDocumentById(ctx context.Context, id string) (doc Document, err error) {
 	dbDoc := new(dynamoDocument)
 	if err = repo.getItem(ctx, dynamoDocPrefix+id, fmt.Sprintf(dynamoDocSortF, 0), dbDoc); err != nil {
 		return
@@ -601,7 +601,7 @@ func (repo DynamoDBRepository) GetDocumentById(ctx context.Context, id string) (
 	return
 }
 
-func (repo DynamoDBRepository) GetDocumentByPath(ctx context.Context, path string) (doc Document, err error) {
+func (repo *DynamoDBRepository) GetDocumentByPath(ctx context.Context, path string) (doc Document, err error) {
 	dbPath := new(dynamoPath)
 	if err = repo.getItem(ctx, dynamoPathPrefix+path, dynamoPathSortKey, dbPath); err != nil {
 		return
@@ -611,7 +611,7 @@ func (repo DynamoDBRepository) GetDocumentByPath(ctx context.Context, path strin
 	return
 }
 
-func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter DocumentFilter) (list []Document, r Range, err error) {
+func (repo *DynamoDBRepository) GetDocumentList(ctx context.Context, filter DocumentFilter) (list []Document, r Range, err error) {
 	tmp := make([]dynamoDocumentInterface, 0, 128)
 
 	var sortField string
@@ -755,7 +755,7 @@ func (repo DynamoDBRepository) GetDocumentList(ctx context.Context, filter Docum
 }
 
 // Updates are pretty expensive as all the various copies need to be updated as well
-func (repo DynamoDBRepository) UpdateDocument(ctx context.Context, doc *Document) (err error) {
+func (repo *DynamoDBRepository) UpdateDocument(ctx context.Context, doc *Document) (err error) {
 	// Fetch the current document in the database
 	oldDoc, err := repo.GetDocumentById(ctx, doc.Id)
 	if err != nil {
@@ -792,7 +792,7 @@ func (repo DynamoDBRepository) UpdateDocument(ctx context.Context, doc *Document
 	return
 }
 
-func (repo DynamoDBRepository) updatePathDocument(ctx context.Context, oldDoc *Document, doc *Document) (err error) {
+func (repo *DynamoDBRepository) updatePathDocument(ctx context.Context, oldDoc *Document, doc *Document) (err error) {
 	oldPath := new(dynamoPath)
 
 	// Attempt to find old path using the old document's information
@@ -856,7 +856,7 @@ func (repo DynamoDBRepository) updatePathDocument(ctx context.Context, oldDoc *D
 	return
 }
 
-func (repo DynamoDBRepository) updateSortDocuments(ctx context.Context, doc *Document) (err error) {
+func (repo *DynamoDBRepository) updateSortDocuments(ctx context.Context, doc *Document) (err error) {
 	class, err := repo.GetClassById(ctx, doc.ClassId)
 	if err != nil {
 		return
@@ -914,11 +914,11 @@ func (repo DynamoDBRepository) updateSortDocuments(ctx context.Context, doc *Doc
 
 // S3 Document interaction
 
-func (repo DynamoDBRepository) valuesKey(doc *Document) string {
+func (repo *DynamoDBRepository) valuesKey(doc *Document) string {
 	return fmt.Sprintf("documents/%s/%s/v%04d.json", doc.ClassId, doc.Id, doc.Version)
 }
 
-func (repo DynamoDBRepository) getValues(ctx context.Context, doc *Document) (err error) {
+func (repo *DynamoDBRepository) getValues(ctx context.Context, doc *Document) (err error) {
 	params := &s3.GetObjectInput{
 		Bucket: &repo.resources.Bucket,
 		Key:    aws.String(repo.valuesKey(doc)),
@@ -933,7 +933,7 @@ func (repo DynamoDBRepository) getValues(ctx context.Context, doc *Document) (er
 	return json.NewDecoder(response.Body).Decode(&doc.Values)
 }
 
-func (repo DynamoDBRepository) putValues(ctx context.Context, doc *Document) (err error) {
+func (repo *DynamoDBRepository) putValues(ctx context.Context, doc *Document) (err error) {
 	buffer := new(bytes.Buffer)
 	if err = json.NewEncoder(buffer).Encode(doc.Values); err != nil {
 		return
@@ -951,7 +951,7 @@ func (repo DynamoDBRepository) putValues(ctx context.Context, doc *Document) (er
 
 // Template Methods
 
-func (repo DynamoDBRepository) CreateTemplate(ctx context.Context, template *Template) (err error) {
+func (repo *DynamoDBRepository) CreateTemplate(ctx context.Context, template *Template) (err error) {
 	dbTemplate := new(dynamoTemplate)
 	template.Version = 1
 	for _, version := range []int{0, 1} {
@@ -967,7 +967,7 @@ func (repo DynamoDBRepository) CreateTemplate(ctx context.Context, template *Tem
 	return
 }
 
-func (repo DynamoDBRepository) DeleteTemplate(ctx context.Context, id string) (err error) {
+func (repo *DynamoDBRepository) DeleteTemplate(ctx context.Context, id string) (err error) {
 	dbTemplate := new(dynamoTemplate)
 	if err = repo.getItem(ctx, dynamoTemplatePrefix+id, fmt.Sprintf(dynamoTemplateSortF, 0), dbTemplate); err != nil {
 		return
@@ -1000,7 +1000,7 @@ func (repo DynamoDBRepository) DeleteTemplate(ctx context.Context, id string) (e
 	return
 }
 
-func (repo DynamoDBRepository) GetTemplateById(ctx context.Context, id string) (template Template, err error) {
+func (repo *DynamoDBRepository) GetTemplateById(ctx context.Context, id string) (template Template, err error) {
 	dbTemplate := new(dynamoTemplate)
 	if err = repo.getItem(ctx, dynamoTemplatePrefix+id, fmt.Sprintf(dynamoTemplateSortF, 0), dbTemplate); err != nil {
 		return
@@ -1012,7 +1012,7 @@ func (repo DynamoDBRepository) GetTemplateById(ctx context.Context, id string) (
 	return
 }
 
-func (repo DynamoDBRepository) GetTemplateList(ctx context.Context, filter TemplateFilter) (list []Template, r Range, err error) {
+func (repo *DynamoDBRepository) GetTemplateList(ctx context.Context, filter TemplateFilter) (list []Template, r Range, err error) {
 	tmp := make([]dynamoTemplate, 0, 128)
 
 	// Filter out template-specific SortKeys
@@ -1076,7 +1076,7 @@ func (repo DynamoDBRepository) GetTemplateList(ctx context.Context, filter Templ
 	return
 }
 
-func (repo DynamoDBRepository) UpdateTemplate(ctx context.Context, template *Template) (err error) {
+func (repo *DynamoDBRepository) UpdateTemplate(ctx context.Context, template *Template) (err error) {
 	// Fetch old template to get latest version number
 	oldTemplate, err := repo.GetTemplateById(ctx, template.Id)
 	if err != nil {
@@ -1107,11 +1107,11 @@ func (repo DynamoDBRepository) UpdateTemplate(ctx context.Context, template *Tem
 
 // S3 Template interaction
 
-func (repo DynamoDBRepository) templateKey(template *Template) string {
+func (repo *DynamoDBRepository) templateKey(template *Template) string {
 	return fmt.Sprintf("templates/%s/v%04d.html", template.Id, template.Version)
 }
 
-func (repo DynamoDBRepository) getTemplateBody(ctx context.Context, template *Template) (err error) {
+func (repo *DynamoDBRepository) getTemplateBody(ctx context.Context, template *Template) (err error) {
 	params := &s3.GetObjectInput{
 		Bucket: &repo.resources.Bucket,
 		Key:    aws.String(repo.templateKey(template)),
@@ -1129,7 +1129,7 @@ func (repo DynamoDBRepository) getTemplateBody(ctx context.Context, template *Te
 	return
 }
 
-func (repo DynamoDBRepository) putTemplateBody(ctx context.Context, template *Template) (err error) {
+func (repo *DynamoDBRepository) putTemplateBody(ctx context.Context, template *Template) (err error) {
 	params := &s3.PutObjectInput{
 		Bucket:      &repo.resources.Bucket,
 		Key:         aws.String(repo.templateKey(template)),
@@ -1142,7 +1142,7 @@ func (repo DynamoDBRepository) putTemplateBody(ctx context.Context, template *Te
 
 // Abstracted API calls to handle generic operations
 
-func (repo DynamoDBRepository) deleteItem(ctx context.Context, pk string, sk string) (err error) {
+func (repo *DynamoDBRepository) deleteItem(ctx context.Context, pk string, sk string) (err error) {
 	pkId, err := attributevalue.Marshal(pk)
 	if err != nil {
 		return
@@ -1167,7 +1167,7 @@ func (repo DynamoDBRepository) deleteItem(ctx context.Context, pk string, sk str
 	return
 }
 
-func (repo DynamoDBRepository) getItem(ctx context.Context, pk string, sk string, dst interface{}) (err error) {
+func (repo *DynamoDBRepository) getItem(ctx context.Context, pk string, sk string, dst interface{}) (err error) {
 	pkId, err := attributevalue.Marshal(pk)
 	if err != nil {
 		return
@@ -1201,7 +1201,7 @@ func (repo DynamoDBRepository) getItem(ctx context.Context, pk string, sk string
 	return
 }
 
-func (repo DynamoDBRepository) putItem(ctx context.Context, item interface{}) (err error) {
+func (repo *DynamoDBRepository) putItem(ctx context.Context, item interface{}) (err error) {
 	inputItem, err := attributevalue.MarshalMap(item)
 	if err != nil {
 		return
@@ -1218,7 +1218,7 @@ func (repo DynamoDBRepository) putItem(ctx context.Context, item interface{}) (e
 	return
 }
 
-func (repo DynamoDBRepository) updateItem(ctx context.Context, item dynamoItem) (err error) {
+func (repo *DynamoDBRepository) updateItem(ctx context.Context, item dynamoItem) (err error) {
 	pkId, err := attributevalue.Marshal(item.PartitionKey())
 	if err != nil {
 		return
