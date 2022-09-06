@@ -7,6 +7,10 @@ import {
   DateTimeInput,
   Edit,
   EditButton,
+  FileField,
+  FileInput,
+  ImageField,
+  ImageInput,
   List,
   Loading,
   ReferenceInput,
@@ -94,6 +98,18 @@ export const DocumentForm = () => {
             return <TextInput type="time" key={field.name} source={source} label={field.label} fullWidth />
           case 'tiny':
             return <TinyInput key={field.name} source={source} label={field.label} fullWidth />
+          case 'any-upload':
+            return (
+              <FileInput key={field.name} source={source} label={field.label} fullWidth>
+                <FileField source="src" title="title" />
+              </FileInput>
+            );
+          case 'image-upload':
+            return (
+              <ImageInput key={field.name} source={source} label={field.label} fullWidth>
+                <ImageField source="src" title="title" />
+              </ImageInput>
+            );
           default:
             return <TextInput key={field.name} source={source} label={`Unknown type (${field.type}) - ${field.label}`} fullWidth />
         }
