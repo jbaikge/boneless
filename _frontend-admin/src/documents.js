@@ -1,5 +1,6 @@
 import { RichTextInput } from 'ra-input-rich-text';
 import {
+  ArrayInput,
   Create,
   Datagrid,
   DateField,
@@ -11,6 +12,7 @@ import {
   ReferenceInput,
   SelectInput,
   SimpleForm,
+  SimpleFormIterator,
   TextField,
   TextInput,
   useGetOne,
@@ -65,6 +67,17 @@ export const DocumentForm = () => {
         switch (field.type) {
           case 'datetime':
             return <DateTimeInput key={field.name} source={source} label={field.label} inputProps={{ min: field.min, max: field.max, step: field.step }} />
+          case 'multi-select-label':
+            return (
+              <ArrayInput source={source} label={field.label}>
+                <SimpleFormIterator>
+                  <ReferenceInput reference={'/classes/' + field.class_id + '/documents'} source='id'>
+                    <SelectInput optionText={'values.' + field.field} label={field.label} />
+                  </ReferenceInput>
+                  <TextInput source='label' />
+                </SimpleFormIterator>
+              </ArrayInput>
+            );
           case 'richtext':
             return <RichTextInput key={field.name} source={source} label={field.label} fullWidth />
           case 'select-class':
