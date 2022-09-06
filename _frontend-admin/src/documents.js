@@ -47,7 +47,7 @@ export const DocumentForm = () => {
   }
 
   let parentInput;
-  if (data.parent_id != "") {
+  if (data.parent_id !== "") {
     parentInput = <ReferenceInput source="parent_id" reference={'classes/' + data.parent_id + '/documents'} perPage={25}>
       <SelectInput optionText="values.title" fullWidth />
     </ReferenceInput>;
