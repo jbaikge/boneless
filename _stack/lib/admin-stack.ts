@@ -5,13 +5,14 @@ import * as s3Deployment from 'aws-cdk-lib/aws-s3-deployment';
 import * as path from 'path';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigins from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as asp from './admin-stack-props';
 
 
 // Admin frontend
 // Ref: https://aws-cdk.com/deploying-a-static-website-using-s3-and-cloudfront/
 // Ref: https://github.com/aws-samples/cdk-build-bundle-deploy-example/blob/main/cdk-bundle-static-site-example/lib/static-site-stack.ts
 export class AdminStack extends cdk.Stack {
-  constructor(scope: constructs.Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: constructs.Construct, id: string, props: asp.AdminStackProps) {
     super(scope, id, props);
 
     const bucket = new s3.Bucket(this, 'AdminBucket', {
