@@ -6,4 +6,5 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 export interface LambdaStackProps extends cdk.StackProps {
     bucket: s3.Bucket;
     db: dynamodb.Table;
+    static: s3.Bucket;
 }
