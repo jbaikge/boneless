@@ -7,6 +7,8 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as path from 'path';
 
 export class ApiStack extends cdk.Stack {
+  public readonly api: apigateway.HttpApi;
+
   constructor(scope: constructs.Construct, id: string, props: lsp.LambdaStackProps) {
     super(scope, id, props);
 
@@ -18,12 +20,14 @@ export class ApiStack extends cdk.Stack {
       environment: {
         'REPOSITORY_BUCKET': props.bucket.bucketName,
         'REPOSITORY_TABLE': props.db.tableName,
+        'STATIC_BUCKET': props.static.bucketName,
       },
     });
     props.bucket.grantReadWrite(apiLambda);
     props.db.grantReadWriteData(apiLambda);
+    props.static.grantReadWrite(apiLambda);
 
-    const api = new apigateway.HttpApi(this, 'API', {
+    this.api = new apigateway.HttpApi(this, 'API', {
       createDefaultStage: true,
       corsPreflight: {
         allowOrigins: [
@@ -119,10 +123,10 @@ export class ApiStack extends cdk.Stack {
         ],
       },
     ];
-    routes.forEach((route) => api.addRoutes(route));
+    routes.forEach((route) => this.api.addRoutes(route));
 
     new cdk.CfnOutput(this, 'ApiUrl', {
-      value: api.url!,
+      value: this.api.url!,
       description: 'API URL',
     });
   }
