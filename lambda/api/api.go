@@ -413,11 +413,57 @@ func (h Handlers) TemplateDelete(ctx context.Context, request events.APIGatewayV
 }
 
 func (h Handlers) TemplateList(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
+	templateService := gocms.NewTemplateService(h.Repo)
+
 	filter := gocms.TemplateFilter{
 		Range: gocms.Range{End: 9},
 	}
 
-	templates, r, err := gocms.NewTemplateService(h.Repo).List(ctx, filter)
+	if param, ok := request.QueryStringParameters["range"]; ok {
+		values := make([]int, 0, 2)
+		if err = json.Unmarshal([]byte(param), &values); err != nil {
+			return nil, fmt.Errorf("unmarshalling range %s: %w", param, err)
+		}
+		if len(values) != 2 {
+			return nil, fmt.Errorf("not sure what to do with this range: %s", param)
+		}
+		filter.Range.Start = values[0]
+		filter.Range.End = values[1]
+	}
+
+	if param, ok := request.QueryStringParameters["sort"]; ok {
+		values := make([]string, 0, 2)
+		if err = json.Unmarshal([]byte(param), &values); err != nil {
+			return nil, fmt.Errorf("unmarshalling sort %s: %w", param, err)
+		}
+		if len(values) != 2 {
+			return nil, fmt.Errorf("not sure what to do with this sort: %s", param)
+		}
+		filter.Sort.Field = strings.Replace(values[0], "values.", "", 1)
+		filter.Sort.Direction = values[1]
+	}
+
+	// simple rest data provider calls "getMany" by using ?filter={"id":[1, 2, 3]}
+	filterParam := new(FilterParam)
+	if param, ok := request.QueryStringParameters["filter"]; ok {
+		if err = json.Unmarshal([]byte(param), filterParam); err != nil {
+			return nil, fmt.Errorf("unmarshalling filter parameter: %w", err)
+		}
+	}
+
+	if len(filterParam.Ids) > 0 {
+		templates := make([]gocms.Template, 0, len(filterParam.Ids))
+		for _, id := range filterParam.Ids {
+			template, err := templateService.ById(ctx, id)
+			if err != nil {
+				return nil, fmt.Errorf("getting templates by id: %w", err)
+			}
+			templates = append(templates, template)
+		}
+		return templates, nil
+	}
+
+	templates, r, err := templateService.List(ctx, filter)
 	if err != nil {
 		return
 	}
