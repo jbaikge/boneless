@@ -1,10 +1,9 @@
 import * as React from 'react';
 import { AdminContext, defaultI18nProvider, localStorageStore } from 'react-admin';
-import simpleRestProvider from 'ra-data-simple-rest';
+import dataProvider from './dataProvider';
 import { darkTheme, lightTheme } from './theme';
 import { AsyncResources } from './resources';
 
-const API_URL = process.env.REACT_APP_API_URL;
 const store = localStorageStore();
 
 const App = () => {
@@ -12,7 +11,7 @@ const App = () => {
 
   return (
     <AdminContext
-      dataProvider={simpleRestProvider(API_URL)}
+      dataProvider={dataProvider}
       i18nProvider={defaultI18nProvider}
       store={store}
       theme={prefersDark ? darkTheme : lightTheme}
