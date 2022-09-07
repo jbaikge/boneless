@@ -1,4 +1,5 @@
 import { RichTextInput } from 'ra-input-rich-text';
+import React from 'react';
 import {
   ArrayInput,
   Create,
@@ -106,12 +107,12 @@ export const DocumentForm = () => {
             );
           case 'image-upload':
             return (
-              <>
-                <ImageInput key={field.name} source={source} label={field.label} fullWidth>
+              <React.Fragment key={field.name}>
+                <ImageInput source={source} label={field.label} fullWidth>
                     <ImageField source="url" title="title" />
                 </ImageInput>
-                <TextInput key={field.name + '_path'} source={source + '.path'} label={field.label + ' Path (start with a slash)'} fullWidth />
-              </>
+                <TextInput source={source + '.path'} label={field.label + ' Path (start with a slash)'} fullWidth />
+              </React.Fragment>
             );
           default:
             return <TextInput key={field.name} source={source} label={`Unknown type (${field.type}) - ${field.label}`} fullWidth />
