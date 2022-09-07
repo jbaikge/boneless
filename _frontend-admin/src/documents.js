@@ -106,12 +106,12 @@ export const DocumentForm = () => {
             );
           case 'image-upload':
             return (
-              <div style={{ width: '100%' }}>
+              <>
                 <ImageInput key={field.name} source={source} label={field.label} fullWidth>
-                  <ImageField source="url" title="title" />
+                    <ImageField source="url" title="title" />
                 </ImageInput>
-                <TextInput source={ source + '.path' } label={field.label + ' Path (start with a slash)'} fullWidth />
-              </div>
+                <TextInput key={field.name + '_path'} source={source + '.path'} label={field.label + ' Path (start with a slash)'} fullWidth />
+              </>
             );
           default:
             return <TextInput key={field.name} source={source} label={`Unknown type (${field.type}) - ${field.label}`} fullWidth />
