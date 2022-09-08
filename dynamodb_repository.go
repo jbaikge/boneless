@@ -350,14 +350,16 @@ func (arr dynamoTemplateByCreated) Less(i, j int) bool {
 // Repository
 
 type DynamoDBResources struct {
-	Bucket string
-	Static string
-	Table  string
+	Bucket       string
+	StaticBucket string
+	StaticDomain string
+	Table        string
 }
 
 func (res *DynamoDBResources) FromEnv() {
 	res.Bucket = os.Getenv("REPOSITORY_BUCKET")
-	res.Static = os.Getenv("STATIC_BUCKET")
+	res.StaticBucket = os.Getenv("STATIC_BUCKET")
+	res.StaticDomain = os.Getenv("STATIC_DOMAIN")
 	res.Table = os.Getenv("REPOSITORY_TABLE")
 }
 
@@ -956,9 +958,10 @@ func (repo *DynamoDBRepository) CreateFile(ctx context.Context, f *File) (err er
 }
 
 func (repo *DynamoDBRepository) CreateUploadUrl(ctx context.Context, request FileUploadRequest) (response FileUploadResponse, err error) {
+	key := strings.TrimLeft(request.Key, "/")
 	params := &s3.PutObjectInput{
-		Bucket:      &repo.resources.Static,
-		Key:         &request.Key,
+		Bucket:      &repo.resources.StaticBucket,
+		Key:         &key,
 		ContentType: &request.ContentType,
 	}
 	addDuration := func(po *s3.PresignOptions) {
@@ -972,6 +975,7 @@ func (repo *DynamoDBRepository) CreateUploadUrl(ctx context.Context, request Fil
 	response.URL = signed.URL
 	response.Method = signed.Method
 	response.Headers = signed.SignedHeader
+	response.Location = fmt.Sprintf("https://%s/%s", repo.resources.StaticDomain, key)
 
 	return
 }
