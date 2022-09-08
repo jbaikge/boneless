@@ -18,6 +18,21 @@ export class StaticStack extends cdk.Stack {
       accessControl: s3.BucketAccessControl.PUBLIC_READ,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
+      cors: [
+        {
+          allowedMethods: [
+            s3.HttpMethods.GET,
+            s3.HttpMethods.POST,
+            s3.HttpMethods.PUT,
+          ],
+          allowedOrigins: [
+            '*',
+          ],
+          allowedHeaders: [
+            '*',
+          ],
+        },
+      ],
     });
 
     const originAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'StaticOAI');
