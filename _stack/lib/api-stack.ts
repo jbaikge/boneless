@@ -106,6 +106,13 @@ export class ApiStack extends cdk.Stack {
         ],
       },
       {
+        path: '/files/url',
+        integration: apiIntegration,
+        methods: [
+          apigateway.HttpMethod.POST,
+        ],
+      },
+      {
         path: '/templates',
         integration: apiIntegration,
         methods: [
