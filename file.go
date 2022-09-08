@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"net/http"
-	"time"
 )
 
 type File struct {
@@ -14,9 +13,9 @@ type File struct {
 }
 
 type FileUploadRequest struct {
-	Key         string        `json:"key"`
-	ContentType string        `json:"content_type"`
-	Expires     time.Duration `json:"expires"`
+	Key         string `json:"key"`
+	ContentType string `json:"content_type"`
+	Expires     string `json:"expires"`
 }
 
 type FileUploadResponse struct {

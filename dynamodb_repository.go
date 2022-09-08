@@ -964,9 +964,16 @@ func (repo *DynamoDBRepository) CreateUploadUrl(ctx context.Context, request Fil
 		Key:         &key,
 		ContentType: &request.ContentType,
 	}
-	addDuration := func(po *s3.PresignOptions) {
-		po.Expires = request.Expires
+
+	expires, err := time.ParseDuration(request.Expires)
+	if err != nil {
+		err = fmt.Errorf("bad duration, %s: %w", request.Expires, err)
+		return
 	}
+	addDuration := func(po *s3.PresignOptions) {
+		po.Expires = expires
+	}
+
 	signed, err := s3.NewPresignClient(repo.s3).PresignPutObject(ctx, params, addDuration)
 	if err != nil {
 		return
