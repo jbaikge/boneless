@@ -14,9 +14,10 @@ const databaseStack = new DatabaseStack(app, 'DatabaseStack', {});
 const staticStack = new StaticStack(app, 'StaticStack', {});
 
 const apiStack = new ApiStack(app, 'ApiStack', {
-  db:     databaseStack.db,
-  bucket: databaseStack.bucket,
-  static: staticStack.bucket,
+  dbTable:     databaseStack.table,
+  dbBucket: databaseStack.bucket,
+  staticBucket: staticStack.bucket,
+  staticDistribution: staticStack.distribution,
 });
 
 new AdminStack(app, 'AdminStack', {
@@ -24,7 +25,8 @@ new AdminStack(app, 'AdminStack', {
 });
 
 new FrontendStack(app, 'FrontendStack', {
-    db:     databaseStack.db,
-    bucket: databaseStack.bucket,
-    static: staticStack.bucket,
-  });
+  dbTable:     databaseStack.table,
+  dbBucket: databaseStack.bucket,
+  staticBucket: staticStack.bucket,
+  staticDistribution: staticStack.distribution,
+});

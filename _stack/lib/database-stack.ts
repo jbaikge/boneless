@@ -5,14 +5,14 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 
 
 export class DatabaseStack extends cdk.Stack {
-  public readonly db: dynamodb.Table;
+  public readonly table: dynamodb.Table;
   public readonly bucket: s3.Bucket;
 
   constructor(scope: constructs.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     // DynamoDB table
-    this.db = new dynamodb.Table(this, 'Database', {
+    this.table = new dynamodb.Table(this, 'Database', {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       // Not used when billingMode is PAY_PER_REQUEST
       // readCapacity: 1,

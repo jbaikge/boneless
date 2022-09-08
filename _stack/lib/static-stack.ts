@@ -7,6 +7,7 @@ import * as cloudfrontOrigins from 'aws-cdk-lib/aws-cloudfront-origins';
 
 export class StaticStack extends cdk.Stack {
   public readonly bucket: s3.Bucket;
+  public readonly distribution: cloudfront.Distribution;
 
   constructor(scope: constructs.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -22,7 +23,7 @@ export class StaticStack extends cdk.Stack {
     const originAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'StaticOAI');
     this.bucket.grantRead(originAccessIdentity);
 
-    const distribution = new cloudfront.Distribution(this, 'StaticDistribution', {
+    this.distribution = new cloudfront.Distribution(this, 'StaticDistribution', {
       defaultBehavior: {
         origin: new cloudfrontOrigins.S3Origin(this.bucket, {
           originAccessIdentity: originAccessIdentity,
@@ -31,7 +32,7 @@ export class StaticStack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, 'StaticUrl', {
-      value: distribution.distributionDomainName,
+      value: this.distribution.distributionDomainName,
       description: 'CloudFront distribution domain',
     });
   }
