@@ -4,17 +4,16 @@ import { fetchUtils } from 'ra-core';
 const API_URL = process.env.REACT_APP_API_URL;
 const baseDataProvider = simpleRestProvider(API_URL);
 
-const uploadFile = (key, file) => {
-  let location = '';
-  return fetchUtils.fetchJson(`${API_URL}/files/url`, {
+const uploadFile = (fileInfo) =>
+  fetchUtils.fetchJson(`${API_URL}/files/url`, {
     method: 'POST',
     body: JSON.stringify({
-      key: key,
+      key: fileInfo.path,
       expires: '5m',
-      content_type: file.type,
+      content_type: fileInfo.file.type,
     }),
   }).then(({ json }) => new Promise((resolve, reject) => {
-    location = json.location;
+    fileInfo.location = json.location;
     const reader = new FileReader();
     reader.addEventListener('load', () => resolve({
       url: json.url,
@@ -22,13 +21,12 @@ const uploadFile = (key, file) => {
       body: reader.result
     }));
     reader.addEventListener('error', reject);
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(fileInfo.file);
   })).then(({ url, method, body }) => fetchUtils.fetchJson(url, {
     method: method,
-    headers: new Headers({ 'Content-Type': file.type }),
+    headers: new Headers({ 'Content-Type': fileInfo.file.type }),
     body: body,
-  })).then(() => location);
-}
+  })).then(() => fileInfo);
 
 const dataProvider = {
   ...baseDataProvider,
@@ -38,7 +36,7 @@ const dataProvider = {
       return baseDataProvider.update(resource, params);
     }
 
-    console.log(resource, params);
+    let files = [];
     for (const key in params.data.values) {
       const value = params.data.values[key];
       // Ignore scalars
@@ -62,13 +60,20 @@ const dataProvider = {
         // title is the file's basename
         path = value.title;
       }
-      params.data.values[key] = uploadFile(path, value.rawFile).then((location) => ({
-        url: location,
+
+      files.push({
+        key: key,
         path: path,
-      }));
+        file: value.rawFile,
+      });
     }
 
-    return baseDataProvider.update(resource, params);
+    return Promise.all(files.map(uploadFile)).then((infos) => infos.map((info) => {
+      params.data.values[info.key] = {
+        path: info.path,
+        url: info.location,
+      }
+    })).then(() => baseDataProvider.update(resource, params));
   },
 };
 
