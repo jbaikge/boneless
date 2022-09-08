@@ -88,6 +88,7 @@ func (h Handlers) GetHandler(request events.APIGatewayV2HTTPRequest) (f HandlerF
 		"GET /documents/{doc_id}":                       h.DocumentById,
 		"PUT /documents/{doc_id}":                       h.DocumentUpdate,
 		"DELETE /documents/{doc_id}":                    h.DocumentDelete,
+		"POST /files/url":                               h.FileUploadUrl,
 		"GET /templates":                                h.TemplateList,
 		"POST /templates":                               h.TemplateCreate,
 		"GET /templates/{template_id}":                  h.TemplateById,
@@ -375,6 +376,19 @@ func (h Handlers) DocumentUpdate(ctx context.Context, request events.APIGatewayV
 	}
 
 	return doc, nil
+}
+
+// This should handle file uploads for both documents and TinyMCE
+// The latter expects a JSON document like the following:
+// { "location": "folder/sub-folder/new-location.png" }
+func (h Handlers) FileUploadUrl(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
+	var uploadRequest gocms.FileUploadRequest
+	if err = json.NewDecoder(strings.NewReader(request.Body)).Decode(&uploadRequest); err != nil {
+		response.StatusCode = http.StatusBadRequest
+		return nil, fmt.Errorf("bad json: %w", err)
+	}
+
+	return gocms.NewFileService(h.Repo).UploadUrl(ctx, uploadRequest)
 }
 
 func (h Handlers) TemplateById(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
