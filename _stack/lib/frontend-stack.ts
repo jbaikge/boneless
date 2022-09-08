@@ -16,12 +16,12 @@ export class FrontendStack extends cdk.Stack {
       runtime: lambda.Runtime.GO_1_X,
       handler: 'handler',
       environment: {
-        'REPOSITORY_BUCKET': props.bucket.bucketName,
-        'REPOSITORY_TABLE': props.db.tableName,
+        'REPOSITORY_BUCKET': props.dbBucket.bucketName,
+        'REPOSITORY_TABLE': props.dbTable.tableName,
       },
     });
-    props.bucket.grantRead(frontendLambda);
-    props.db.grantReadData(frontendLambda);
+    props.dbBucket.grantRead(frontendLambda);
+    props.dbTable.grantReadData(frontendLambda);
 
     const frontendIntegration = new integration.HttpLambdaIntegration('FrontendIntegration', frontendLambda);
 

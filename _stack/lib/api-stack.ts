@@ -18,14 +18,15 @@ export class ApiStack extends cdk.Stack {
       runtime: lambda.Runtime.GO_1_X,
       handler: 'handler',
       environment: {
-        'REPOSITORY_BUCKET': props.bucket.bucketName,
-        'REPOSITORY_TABLE': props.db.tableName,
-        'STATIC_BUCKET': props.static.bucketName,
+        'REPOSITORY_BUCKET': props.dbBucket.bucketName,
+        'REPOSITORY_TABLE': props.dbTable.tableName,
+        'STATIC_BUCKET': props.staticBucket.bucketName,
+        'STATIC_DOMAIN': props.staticDistribution.distributionDomainName,
       },
     });
-    props.bucket.grantReadWrite(apiLambda);
-    props.db.grantReadWriteData(apiLambda);
-    props.static.grantReadWrite(apiLambda);
+    props.dbBucket.grantReadWrite(apiLambda);
+    props.dbTable.grantReadWriteData(apiLambda);
+    props.staticBucket.grantReadWrite(apiLambda);
 
     this.api = new apigateway.HttpApi(this, 'API', {
       createDefaultStage: true,
