@@ -29,3 +29,17 @@ type FileRepository interface {
 	CreateFile(context.Context, *File) error
 	CreateUploadUrl(context.Context, FileUploadRequest) (FileUploadResponse, error)
 }
+
+type FileService struct {
+	repo FileRepository
+}
+
+func NewFileService(repo FileRepository) FileService {
+	return FileService{
+		repo: repo,
+	}
+}
+
+func (s FileService) UploadUrl(ctx context.Context, request FileUploadRequest) (FileUploadResponse, error) {
+	return s.repo.CreateUploadUrl(ctx, request)
+}
