@@ -20,9 +20,10 @@ type FileUploadRequest struct {
 }
 
 type FileUploadResponse struct {
-	URL     string      `json:"url"`
-	Method  string      `json:"method"`
-	Headers http.Header `json:"headers"`
+	URL      string      `json:"url"`
+	Method   string      `json:"method"`
+	Headers  http.Header `json:"headers"`
+	Location string      `json:"location"`
 }
 
 type FileRepository interface {
