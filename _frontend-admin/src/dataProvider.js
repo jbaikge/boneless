@@ -69,7 +69,7 @@ const dataProvider = {
     }
 
     return Promise.all(files.map(uploadFile)).then((infos) => infos.map((info) => {
-      params.data.values[info.key] = {
+      return params.data.values[info.key] = {
         path: info.path,
         url: info.location,
       }
