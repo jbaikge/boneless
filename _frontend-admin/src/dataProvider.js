@@ -3,6 +3,7 @@ import { fetchUtils } from 'ra-core';
 
 const API_URL = process.env.REACT_APP_API_URL;
 const baseDataProvider = simpleRestProvider(API_URL);
+const documentRE = /documents/;
 
 const uploadFile = (fileInfo) =>
   fetchUtils.fetchJson(`${API_URL}/files/url`, {
@@ -30,17 +31,65 @@ const uploadFile = (fileInfo) =>
 
 const dataProvider = {
   ...baseDataProvider,
-  update: (resource, params) => {
+  create: (resource, params) => {
     // No additional processing required for non-documents
-    if (!/documents/.test(resource)) {
-      return baseDataProvider.update(resource, params);
+    if (!documentRE.test(resource)) {
+      return baseDataProvider.create(resource, params);
     }
 
     let files = [];
     for (const key in params.data.values) {
       const value = params.data.values[key];
+
       // Ignore scalars
       if (typeof value != 'object') {
+        continue;
+      }
+
+      // Ignore objects without files
+      if (!value.hasOwnProperty('rawFile')) {
+        continue;
+      }
+
+      let path = value.path;
+      if (path === '') {
+        path = value.title;
+      }
+
+      files.push({
+        key: key,
+        path: path,
+        file: value.rawFile,
+      });
+    }
+
+    return Promise.all(files.map(uploadFile))
+    .then((infos) => infos.map((info) => {
+      return params.data.values[info.key] = {
+        path: info.path,
+        url: info.location,
+      }
+    }))
+    .then(() => baseDataProvider.create(resource, params));
+  },
+  update: (resource, params) => {
+    // No additional processing required for non-documents
+    if (!documentRE.test(resource)) {
+      return baseDataProvider.update(resource, params);
+    }
+
+    let files = [];
+    console.log(params.data.values);
+    for (const key in params.data.values) {
+      const value = params.data.values[key];
+
+      // Ignore scalars
+      if (typeof value != 'object') {
+        continue;
+      }
+
+      // Ignore objects without files
+      if (!value.hasOwnProperty('rawFile')) {
         continue;
       }
 
@@ -68,12 +117,16 @@ const dataProvider = {
       });
     }
 
-    return Promise.all(files.map(uploadFile)).then((infos) => infos.map((info) => {
-      return params.data.values[info.key] = {
-        path: info.path,
-        url: info.location,
-      }
-    })).then(() => baseDataProvider.update(resource, params));
+    console.log(files);
+
+    return Promise.all(files.map(uploadFile))
+      .then((infos) => infos.map((info) => {
+        return params.data.values[info.key] = {
+          path: info.path,
+          url: info.location,
+        }
+      }))
+      .then(() => baseDataProvider.update(resource, params));
   },
 };
 
