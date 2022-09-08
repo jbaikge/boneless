@@ -351,11 +351,13 @@ func (arr dynamoTemplateByCreated) Less(i, j int) bool {
 
 type DynamoDBResources struct {
 	Bucket string
+	Static string
 	Table  string
 }
 
 func (res *DynamoDBResources) FromEnv() {
 	res.Bucket = os.Getenv("REPOSITORY_BUCKET")
+	res.Static = os.Getenv("STATIC_BUCKET")
 	res.Table = os.Getenv("REPOSITORY_TABLE")
 }
 
@@ -946,6 +948,31 @@ func (repo *DynamoDBRepository) putValues(ctx context.Context, doc *Document) (e
 		ContentType: aws.String("application/json"),
 	}
 	_, err = repo.s3.PutObject(ctx, params)
+	return
+}
+
+func (repo *DynamoDBRepository) CreateFile(ctx context.Context, f *File) (err error) {
+	return fmt.Errorf("not iplemented")
+}
+
+func (repo *DynamoDBRepository) CreateUploadUrl(ctx context.Context, request FileUploadRequest) (response FileUploadResponse, err error) {
+	params := &s3.PutObjectInput{
+		Bucket:      &repo.resources.Static,
+		Key:         &request.Key,
+		ContentType: &request.ContentType,
+	}
+	addDuration := func(po *s3.PresignOptions) {
+		po.Expires = request.Expires
+	}
+	signed, err := s3.NewPresignClient(repo.s3).PresignPutObject(ctx, params, addDuration)
+	if err != nil {
+		return
+	}
+
+	response.URL = signed.URL
+	response.Method = signed.Method
+	response.Headers = signed.SignedHeader
+
 	return
 }
 

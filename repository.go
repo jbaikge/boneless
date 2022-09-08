@@ -11,5 +11,6 @@ type Repository interface {
 	Stats() RepositoryStats
 	ClassRepository
 	DocumentRepository
+	FileRepository
 	TemplateRepository
 }
