@@ -51,6 +51,7 @@ const dataProvider = {
         continue;
       }
 
+      // Use the original filename if no path provided
       let path = value.path;
       if (path === '') {
         path = value.title;
@@ -79,7 +80,6 @@ const dataProvider = {
     }
 
     let files = [];
-    console.log(params.data.values);
     for (const key in params.data.values) {
       const value = params.data.values[key];
 
@@ -100,13 +100,12 @@ const dataProvider = {
 
       // Ignore already-uploaded files and unchanged paths
       if (!value.hasOwnProperty('rawFile') && previousPath === value.path) {
-        console.log('Already uploaded and %s == %s', previousPath, value.path);
         continue;
       }
 
+      // Use the original filename if no path provided
       let path = value.path;
       if (path === '') {
-        // title is the file's basename
         path = value.title;
       }
 
@@ -116,8 +115,6 @@ const dataProvider = {
         file: value.rawFile,
       });
     }
-
-    console.log(files);
 
     return Promise.all(files.map(uploadFile))
       .then((infos) => infos.map((info) => {
