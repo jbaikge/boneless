@@ -141,6 +141,8 @@ export const DocumentList = (props) => {
               return <DateField key={field.label} source={source} label={field.label} />
             case 'datetime':
               return <DateField key={field.label} source={source} label={field.label} showTime />
+            case 'image-upload':
+              return <ImageField key={field.label} source={source + '.url'} label={field.label} />
             default:
               return <TextField key={field.label} source={source} label={field.label} />
           }
