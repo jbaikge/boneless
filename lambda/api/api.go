@@ -88,6 +88,7 @@ func (h Handlers) GetHandler(request events.APIGatewayV2HTTPRequest) (f HandlerF
 		"GET /documents/{doc_id}":                       h.DocumentById,
 		"PUT /documents/{doc_id}":                       h.DocumentUpdate,
 		"DELETE /documents/{doc_id}":                    h.DocumentDelete,
+		"POST /files":                                   h.FileUpload,
 		"POST /files/url":                               h.FileUploadUrl,
 		"GET /templates":                                h.TemplateList,
 		"POST /templates":                               h.TemplateCreate,
@@ -381,6 +382,11 @@ func (h Handlers) DocumentUpdate(ctx context.Context, request events.APIGatewayV
 // This should handle file uploads for both documents and TinyMCE
 // The latter expects a JSON document like the following:
 // { "location": "folder/sub-folder/new-location.png" }
+func (h Handlers) FileUpload(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
+	return request, nil
+}
+
+// Returns a Signed S3 URL with PUT access for the requestor to then PUT data to
 func (h Handlers) FileUploadUrl(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
 	var uploadRequest gocms.FileUploadRequest
 	if err = json.NewDecoder(strings.NewReader(request.Body)).Decode(&uploadRequest); err != nil {
