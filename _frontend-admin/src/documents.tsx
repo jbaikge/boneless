@@ -43,7 +43,7 @@ interface FieldProps {
   field: string;
 }
 
-const resourceRE = /([^/]+)\/([^/]+)\/.*/;
+const resourceRE = /([^/]+)\/([^/]+)\/.*/g;
 
 export const DocumentCreate = (props: CreateProps) => {
   return (
