@@ -9,6 +9,7 @@ import (
 type File struct {
 	Location    string    `json:"location"`
 	ContentType string    `json:"content_type,omitempty"`
+	Filename    string    `json:"filename,omitempty"`
 	Data        io.Reader `json:"data,omitempty"`
 }
 
