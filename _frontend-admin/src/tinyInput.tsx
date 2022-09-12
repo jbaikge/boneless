@@ -1,6 +1,6 @@
 import { useInput, FieldTitle } from 'ra-core';
-import { Editor } from '@tinymce/tinymce-react';
 import { CommonInputProps } from 'react-admin';
+import { Editor } from '@tinymce/tinymce-react';
 
 // This implementation may change if there are complaints about performance
 // later on. There is a way to update the content when "dirty" instead of every
@@ -38,19 +38,20 @@ export const TinyInput = (props: CommonInputProps) => {
     ...rest,
   });
 
-  const init = {
-    skin: (prefersDark ? 'oxide-dark' : ''),
-    content_css: (prefersDark ? 'dark' : ''),
-    width: '100%',
-  };
-
   return (
     <div style={{ marginBottom: '1em', width: '100%' }}>
       <FieldTitle label={label} source={source} resource={resource} />
       <Editor
         apiKey={process.env.REACT_APP_TINYMCE_KEY}
-        init={init}
-        plugins={['code']}
+        init={{
+          content_css: (prefersDark ? 'dark' : ''),
+          skin: (prefersDark ? 'oxide-dark' : ''),
+          width: '100%',
+          automatic_uploads: true,
+          images_reuse_filename: true,
+          images_upload_url: process.env.REACT_APP_API_URL + '/files',
+        }}
+        plugins={[ 'code', 'image' ]}
         value={field.value}
         onEditorChange={(newValue) => field.onChange(newValue)}
       />
