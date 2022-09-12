@@ -954,7 +954,20 @@ func (repo *DynamoDBRepository) putValues(ctx context.Context, doc *Document) (e
 }
 
 func (repo *DynamoDBRepository) CreateFile(ctx context.Context, f *File) (err error) {
-	return fmt.Errorf("not iplemented")
+	path := fmt.Sprintf("%s/%s", time.Now().Format("2006/01/02"), f.Filename)
+	params := &s3.PutObjectInput{
+		Bucket:      &repo.resources.StaticBucket,
+		Key:         &path,
+		Body:        f.Data,
+		ContentType: &f.ContentType,
+	}
+	if _, err = repo.s3.PutObject(ctx, params); err != nil {
+		return
+	}
+
+	f.Location = fmt.Sprintf("https://%s/%s", repo.resources.StaticDomain, path)
+
+	return
 }
 
 func (repo *DynamoDBRepository) CreateUploadUrl(ctx context.Context, request FileUploadRequest) (response FileUploadResponse, err error) {
