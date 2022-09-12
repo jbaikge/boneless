@@ -3,9 +3,11 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -383,7 +385,33 @@ func (h Handlers) DocumentUpdate(ctx context.Context, request events.APIGatewayV
 // The latter expects a JSON document like the following:
 // { "location": "folder/sub-folder/new-location.png" }
 func (h Handlers) FileUpload(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
-	return request, nil
+	var reader io.Reader
+	reader = strings.NewReader(request.Body)
+	if request.IsBase64Encoded {
+		reader = base64.NewDecoder(base64.StdEncoding, reader)
+	}
+
+	r, err := http.NewRequest(request.RequestContext.HTTP.Method, request.RequestContext.HTTP.Path, reader)
+	if err != nil {
+		err = fmt.Errorf("creating request: %w", err)
+		return
+	}
+	for k, v := range request.Headers {
+		r.Header.Set(k, v)
+	}
+	file, fileHeader, err := r.FormFile("file")
+	if err != nil {
+		err = fmt.Errorf("getting form file: %w", err)
+		return
+	}
+	defer file.Close()
+
+	data := map[string]string{
+		"filename": fileHeader.Filename,
+		"filesize": fmt.Sprint(fileHeader.Size),
+		"isbase64": fmt.Sprint(request.IsBase64Encoded),
+	}
+	return data, nil
 }
 
 // Returns a Signed S3 URL with PUT access for the requestor to then PUT data to
