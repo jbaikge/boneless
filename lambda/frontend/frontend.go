@@ -30,7 +30,6 @@ type TemplateVars struct {
 
 type Frontend struct {
 	Repo gocms.Repository
-	vars TemplateVars
 }
 
 func (frontend Frontend) HandleRequest(ctx context.Context, request events.APIGatewayV2HTTPRequest) (response events.APIGatewayV2HTTPResponse, err error) {
@@ -43,10 +42,12 @@ func (frontend Frontend) HandleRequest(ctx context.Context, request events.APIGa
 		return
 	}
 
-	frontend.vars.Document = document
+	vars := TemplateVars{
+		Document: document,
+	}
 
 	buffer := new(bytes.Buffer)
-	if compileErr := frontend.compileTemplates(ctx, buffer); compileErr != nil {
+	if compileErr := frontend.compileTemplates(ctx, vars, buffer); compileErr != nil {
 		response.StatusCode = http.StatusInternalServerError
 		response.Body = fmt.Sprintf("template compilation error: %v", compileErr)
 		return
@@ -70,7 +71,7 @@ func (frontend Frontend) HandleRequest(ctx context.Context, request events.APIGa
 	return
 }
 
-func (frontend Frontend) compileTemplates(ctx context.Context, w io.Writer) (err error) {
+func (frontend Frontend) compileTemplates(ctx context.Context, vars TemplateVars, w io.Writer) (err error) {
 	templateService := gocms.NewTemplateService(frontend.Repo)
 	filter := gocms.TemplateFilter{Range: gocms.Range{End: 1000}}
 	templates, _, err := templateService.List(ctx, filter)
@@ -86,7 +87,7 @@ func (frontend Frontend) compileTemplates(ctx context.Context, w io.Writer) (err
 	t := template.New("").Funcs(funcs)
 	for _, tmpl := range templates {
 		name := tmpl.Name
-		if frontend.vars.Document.TemplateId == tmpl.Id {
+		if vars.Document.TemplateId == tmpl.Id {
 			name = tmpl.Id
 		}
 		if _, err = t.New(name).Parse(tmpl.Body); err != nil {
@@ -94,7 +95,7 @@ func (frontend Frontend) compileTemplates(ctx context.Context, w io.Writer) (err
 		}
 	}
 
-	return t.ExecuteTemplate(w, frontend.vars.Document.TemplateId, frontend.vars)
+	return t.ExecuteTemplate(w, vars.Document.TemplateId, vars)
 }
 
 func (frontend Frontend) decodeFilter(s string) (filter gocms.DocumentFilter, err error) {
