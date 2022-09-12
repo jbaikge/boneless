@@ -90,7 +90,7 @@ func (h Handlers) GetHandler(request events.APIGatewayV2HTTPRequest) (f HandlerF
 		"GET /documents/{doc_id}":                       h.DocumentById,
 		"PUT /documents/{doc_id}":                       h.DocumentUpdate,
 		"DELETE /documents/{doc_id}":                    h.DocumentDelete,
-		"POST /files":                                   h.FileUpload,
+		"POST /files":                                   h.FileCreate,
 		"POST /files/url":                               h.FileUploadUrl,
 		"GET /templates":                                h.TemplateList,
 		"POST /templates":                               h.TemplateCreate,
@@ -384,7 +384,7 @@ func (h Handlers) DocumentUpdate(ctx context.Context, request events.APIGatewayV
 // This should handle file uploads for both documents and TinyMCE
 // The latter expects a JSON document like the following:
 // { "location": "folder/sub-folder/new-location.png" }
-func (h Handlers) FileUpload(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
+func (h Handlers) FileCreate(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
 	var reader io.Reader
 	reader = strings.NewReader(request.Body)
 	if request.IsBase64Encoded {
@@ -406,11 +406,33 @@ func (h Handlers) FileUpload(ctx context.Context, request events.APIGatewayV2HTT
 	}
 	defer file.Close()
 
-	data := map[string]string{
-		"filename": fileHeader.Filename,
-		"filesize": fmt.Sprint(fileHeader.Size),
-		"isbase64": fmt.Sprint(request.IsBase64Encoded),
+	uploadFile := &gocms.File{
+		Filename: fileHeader.Filename,
+		Data:     file,
 	}
+
+	contentTypeBuffer := make([]byte, 512)
+	if _, err = file.Read(contentTypeBuffer); err != nil {
+		err = fmt.Errorf("reading first 512 bytes: %w", err)
+		return
+	}
+	if _, err = file.Seek(0, io.SeekStart); err != nil {
+		err = fmt.Errorf("seeking to beginning of file: %w", err)
+	}
+
+	uploadFile.ContentType = http.DetectContentType(contentTypeBuffer)
+
+	if err = h.Repo.CreateFile(ctx, uploadFile); err != nil {
+		err = fmt.Errorf("creating file: %w", err)
+		return
+	}
+
+	data := struct {
+		Location string `json:"location"`
+	}{
+		Location: uploadFile.Location,
+	}
+
 	return data, nil
 }
 
