@@ -3,16 +3,19 @@ import React from 'react';
 import {
   ArrayInput,
   Create,
+  CreateProps,
   Datagrid,
   DateField,
   DateTimeInput,
   Edit,
   EditButton,
+  EditProps,
   FileField,
   FileInput,
   ImageField,
   ImageInput,
   List,
+  ListProps,
   Loading,
   ReferenceInput,
   SelectInput,
@@ -25,9 +28,24 @@ import {
 } from 'react-admin';
 import { TinyInput } from './tinyInput';
 
+interface FieldProps {
+  type: string;
+  name: string;
+  label: string;
+  sort: boolean;
+  column: number;
+  min: string;
+  max: string;
+  step: string;
+  format: string;
+  options: string;
+  class_id: string;
+  field: string;
+}
+
 const resourceRE = /([^/]+)\/([^/]+)\/.*/;
 
-export const DocumentCreate = (props) => {
+export const DocumentCreate = (props: CreateProps) => {
   return (
     <Create {...props}>
       <DocumentForm />
@@ -35,7 +53,7 @@ export const DocumentCreate = (props) => {
   );
 };
 
-export const DocumentEdit = (props) => {
+export const DocumentEdit = (props: EditProps) => {
   return (
     <Edit {...props}>
       <DocumentForm />
@@ -46,7 +64,7 @@ export const DocumentEdit = (props) => {
 export const DocumentForm = () => {
   const resourceContext = useResourceContext();
   // resourceContext should be "classes/<id>/documents"
-  const [ , resource, id ] = resourceRE.exec(resourceContext);
+  const [[ , resource, id ]] = [...resourceContext.matchAll(resourceRE)];
   const { data, isLoading } = useGetOne(resource, { id });
 
   if (isLoading) {
@@ -67,7 +85,7 @@ export const DocumentForm = () => {
       <ReferenceInput source="template_id" reference="templates" perPage={100}>
         <SelectInput fullWidth />
       </ReferenceInput>
-      {data.fields.map(field => {
+      {data.fields.map((field: FieldProps) => {
         const source = `values.${field.name}`;
         switch (field.type) {
           case 'datetime':
@@ -122,9 +140,9 @@ export const DocumentForm = () => {
   );
 };
 
-export const DocumentList = (props) => {
+export const DocumentList = (props: ListProps) => {
   const resourceContext = useResourceContext();
-  const [ , resource, id ] = resourceRE.exec(resourceContext);
+  const [[ , resource, id ]] = [...resourceContext.matchAll(resourceRE)];
   const { data, isLoading } = useGetOne(resource, { id });
 
   if (isLoading) {
@@ -134,7 +152,7 @@ export const DocumentList = (props) => {
   return (
     <List {...props}>
       <Datagrid>
-        {data.fields.filter(field => field.column > 0).sort((a, b) => a.column - b.column).map(field => {
+        {data.fields.filter((field: FieldProps) => field.column > 0).sort((a: FieldProps, b: FieldProps) => a.column - b.column).map((field: FieldProps) => {
           const source = `values.${field.name}`;
           switch (field.type) {
             case 'date':

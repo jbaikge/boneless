@@ -1,12 +1,12 @@
-import React from 'react';
 import { useInput, FieldTitle } from 'ra-core';
 import { Editor } from '@tinymce/tinymce-react';
+import { CommonInputProps } from 'react-admin';
 
 // This implementation may change if there are complaints about performance
 // later on. There is a way to update the content when "dirty" instead of every
 // keystroke as the current implementation does.
 // See: https://www.tiny.cloud/docs/tinymce/6/react-ref/#using-the-tinymce-react-component-as-a-uncontrolled-component
-export const TinyInput = (props) => {
+export const TinyInput = (props: CommonInputProps) => {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
   const {

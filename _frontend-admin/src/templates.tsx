@@ -1,18 +1,21 @@
 import React from 'react';
 import {
   Create,
+  CreateProps,
   Datagrid,
   DateField,
   Edit,
   EditButton,
+  EditProps,
   List,
+  ListProps,
   SimpleForm,
   TextField,
   TextInput,
 } from 'react-admin';
 import { CodeInput } from './codeInput';
 
-export const TemplateCreate = (props) => (
+export const TemplateCreate = (props: CreateProps) => (
   <Create {...props}>
     <SimpleForm>
       <TextInput source="name" fullWidth />
@@ -21,7 +24,7 @@ export const TemplateCreate = (props) => (
   </Create>
 );
 
-export const TemplateEdit = (props) => (
+export const TemplateEdit = (props: EditProps) => (
   <Edit {...props}>
     <SimpleForm>
       <TextInput source="name" fullWidth />
@@ -30,7 +33,7 @@ export const TemplateEdit = (props) => (
   </Edit>
 );
 
-export const TemplateList = (props) => (
+export const TemplateList = (props: ListProps) => (
   <List {...props}>
     <Datagrid rowClick="edit">
       <TextField source="name" />

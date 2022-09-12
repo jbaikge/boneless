@@ -1,15 +1,20 @@
+import React from 'react';
 import {
   ArrayInput,
   BooleanInput,
   Create,
+  CreateProps,
   Datagrid,
   DateField,
   DateInput,
   DateTimeInput,
   Edit,
   EditButton,
+  EditProps,
   FormDataConsumer,
+  FormDataConsumerRenderParams,
   List,
+  ListProps,
   NumberInput,
   ReferenceInput,
   SelectInput,
@@ -17,10 +22,19 @@ import {
   SimpleFormIterator,
   TextField,
   TextInput,
+  TransformData,
   required,
   useRedirect,
 } from 'react-admin';
 import './App.css';
+
+interface UpdateProps {
+  update: React.Dispatch<React.SetStateAction<number>>;
+}
+
+interface CreateUpdateProps extends CreateProps, UpdateProps {};
+
+interface EditUpdateProps extends EditProps, UpdateProps {};
 
 const fieldChoices = [
   { id: 'date',               name: 'Date' },
@@ -39,7 +53,7 @@ const fieldChoices = [
   { id: 'image-upload',       name: 'Upload (Image)' },
 ];
 
-export const ClassCreate = (props) => {
+export const ClassCreate = (props: CreateUpdateProps) => {
   const { update, ...rest } = props;
   const redirect = useRedirect();
   const onSuccess = () => {
@@ -47,7 +61,7 @@ export const ClassCreate = (props) => {
     redirect('list', 'classes');
   };
 
-  const ensureFields = data => ({
+  const ensureFields = (data: TransformData) => ({
     ...data,
     fields: [],
   });
@@ -61,7 +75,7 @@ export const ClassCreate = (props) => {
   );
 };
 
-export const ClassEdit = (props) => {
+export const ClassEdit = (props: EditUpdateProps) => {
   const { update, ...rest } = props;
   const redirect = useRedirect();
   const onSuccess = () => {
@@ -85,48 +99,47 @@ export const ClassEdit = (props) => {
             <SelectInput source="type" choices={fieldChoices} defaultValue="text" />
             <FormDataConsumer>
               {({
-                formData,
                 scopedFormData,
                 getSource,
-                ...rest
-              }) => {
+              }: FormDataConsumerRenderParams) => {
+                const getSrc = getSource || ((s: string) => s);
                 switch (scopedFormData.type) {
                 case 'date':
                   return (
                     <>
-                      <DateInput source={getSource('min')} {...rest} />
-                      <DateInput source={getSource('max')} {...rest} />
-                      <TextInput source={getSource('step')} label="Step (days)" {...rest} />
-                      <TextInput source={getSource('format')} label="Format (Jan 2, 2006 3:04pm)" {...rest} />
+                      <DateInput source={getSrc('min')} />
+                      <DateInput source={getSrc('max')} />
+                      <TextInput source={getSrc('step')} label="Step (days)" />
+                      <TextInput source={getSrc('format')} label="Format (Jan 2, 2006 3:04pm)" />
                     </>
                   );
                 case 'datetime':
                   return (
                     <>
-                      <DateTimeInput source={getSource('min')} {...rest} />
-                      <DateTimeInput source={getSource('max')} {...rest} />
-                      <TextInput source={getSource('step')} label="Step (days)" {...rest} />
-                      <TextInput source={getSource('format')} label="Format (Jan 2, 2006 3:04pm)" {...rest} />
+                      <DateTimeInput source={getSrc('min')} />
+                      <DateTimeInput source={getSrc('max')} />
+                      <TextInput source={getSrc('step')} label="Step (days)" />
+                      <TextInput source={getSrc('format')} label="Format (Jan 2, 2006 3:04pm)" />
                     </>
                   );
                 case 'time':
                   return (
                     <>
-                      <TextInput source={getSource('format')} label="Format (3:04pm)" {...rest} />
+                      <TextInput source={getSrc('format')} label="Format (3:04pm)" />
                     </>
                   );
                 case 'number':
                   return (
                     <>
-                      <TextInput source={getSource('min')} {...rest} />
-                      <TextInput source={getSource('max')} {...rest} />
-                      <TextInput source={getSource('step')} {...rest} />
+                      <TextInput source={getSrc('min')} />
+                      <TextInput source={getSrc('max')} />
+                      <TextInput source={getSrc('step')} />
                     </>
                   );
                 case 'select-static':
                   return (
                     <>
-                      <TextInput source={getSource('options')} label="Options (one per line, key | value or just value" multiline {...rest} />
+                      <TextInput source={getSrc('options')} label="Options (one per line, key | value or just value" multiline />
                     </>
                   );
                 case 'select-class':
@@ -134,10 +147,10 @@ export const ClassEdit = (props) => {
                 case 'multi-select-label':
                   return (
                     <>
-                      <ReferenceInput source={getSource('class_id')} reference="classes">
+                      <ReferenceInput source={getSrc('class_id')} reference="classes">
                         <SelectInput optionText="name" />
                       </ReferenceInput>
-                      <TextInput source={getSource('field')} />
+                      <TextInput source={getSrc('field')} />
                     </>
                   );
                 default:
@@ -152,8 +165,8 @@ export const ClassEdit = (props) => {
   );
 };
 
-export const ClassList = () => (
-  <List>
+export const ClassList = (props: ListProps) => (
+  <List {...props}>
     <Datagrid rowClick="edit">
       <TextField source="name" />
       <DateField source="created" />

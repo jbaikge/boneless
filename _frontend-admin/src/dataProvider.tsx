@@ -1,11 +1,28 @@
 import simpleRestProvider from 'ra-data-simple-rest';
-import { fetchUtils } from 'ra-core';
+import {
+  CreateParams,
+  UpdateParams,
+  fetchUtils
+} from 'ra-core';
 
-const API_URL = process.env.REACT_APP_API_URL;
+interface FileProps {
+  key: string;
+  path: string;
+  file: File;
+  location?: string;
+};
+
+interface FileReaderResult {
+  url: string;
+  method: string;
+  body: string | ArrayBuffer | null;
+}
+
+const API_URL: string = process.env.REACT_APP_API_URL || '';
 const baseDataProvider = simpleRestProvider(API_URL);
 const documentRE = /documents/;
 
-const uploadFile = (fileInfo) =>
+const uploadFile = (fileInfo: FileProps) =>
   fetchUtils.fetchJson(`${API_URL}/files/url`, {
     method: 'POST',
     body: JSON.stringify({
@@ -13,7 +30,7 @@ const uploadFile = (fileInfo) =>
       expires: '5m',
       content_type: fileInfo.file.type,
     }),
-  }).then(({ json }) => new Promise((resolve, reject) => {
+  }).then(({ json }): Promise<FileReaderResult> => new Promise((resolve, reject) => {
     fileInfo.location = json.location;
     const reader = new FileReader();
     reader.addEventListener('load', () => resolve({
@@ -31,7 +48,7 @@ const uploadFile = (fileInfo) =>
 
 const dataProvider = {
   ...baseDataProvider,
-  create: (resource, params) => {
+  create: (resource: string, params: CreateParams) => {
     // No additional processing required for non-documents
     if (!documentRE.test(resource)) {
       return baseDataProvider.create(resource, params);
@@ -73,13 +90,13 @@ const dataProvider = {
     }))
     .then(() => baseDataProvider.create(resource, params));
   },
-  update: (resource, params) => {
+  update: (resource: string, params: UpdateParams) => {
     // No additional processing required for non-documents
     if (!documentRE.test(resource)) {
       return baseDataProvider.update(resource, params);
     }
 
-    let files = [];
+    let files: Array<FileProps> = [];
     for (const key in params.data.values) {
       const value = params.data.values[key];
 
