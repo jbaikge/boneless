@@ -13,13 +13,7 @@ clean:
 	$(MAKE) -C _frontend-admin $@
 	$(MAKE) -C _stack $@
 
-deploy: lambdas
-	$(MAKE) -C _stack $@
-
-deploy-admin:
-	$(MAKE) -C _stack $@
-
-deploy-repository: lambdas
+deploy: lambdas admin
 	$(MAKE) -C _stack $@
 
 lambdas: $(HANDLERS)
