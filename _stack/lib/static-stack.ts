@@ -15,7 +15,8 @@ export class StaticStack extends cdk.Stack {
     this.bucket = new s3.Bucket(this, 'StaticBucket', {
       bucketName: cdk.PhysicalName.GENERATE_IF_NEEDED,
       encryption: s3.BucketEncryption.S3_MANAGED,
-      accessControl: s3.BucketAccessControl.PUBLIC_READ,
+      accessControl: s3.BucketAccessControl.PRIVATE,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       cors: [
