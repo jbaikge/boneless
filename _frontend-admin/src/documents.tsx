@@ -160,23 +160,30 @@ export const DocumentList = (props: ListProps) => {
     return <Loading />;
   }
 
+  let parentField = null;
+  if (data.parent_id !== '') {
+    parentField = (
+      <ReferenceField reference={'classes/' + data.parent_id + '/documents'} source="parent_id" label="Parent" sortable={false}>
+        <TextField source="values.title" />
+      </ReferenceField>
+    );
+  }
+
   return (
     <List {...props}>
       <Datagrid>
-        {data.parent_id != '' && <ReferenceField reference={'classes/' + data.parent_id + '/documents'} source="parent_id" label="Parent">
-          <TextField source="values.title" />
-        </ReferenceField>}
+        {parentField}
         {data.fields.filter((field: FieldProps) => field.column > 0).sort((a: FieldProps, b: FieldProps) => a.column - b.column).map((field: FieldProps) => {
           const source = `values.${field.name}`;
           switch (field.type) {
             case 'date':
-              return <DateField key={field.label} source={source} label={field.label} />
+              return <DateField key={field.label} source={source} label={field.label} sortable={field.sort} />
             case 'datetime':
-              return <DateField key={field.label} source={source} label={field.label} showTime />
+              return <DateField key={field.label} source={source} label={field.label} sortable={field.sort} showTime />
             case 'image-upload':
-              return <ImageField key={field.label} source={source + '.url'} label={field.label} />
+              return <ImageField key={field.label} source={source + '.url'} label={field.label} sortable={field.sort} />
             default:
-              return <TextField key={field.label} source={source} label={field.label} />
+              return <TextField key={field.label} source={source} label={field.label} sortable={field.sort} />
           }
         })}
         <EditButton />
