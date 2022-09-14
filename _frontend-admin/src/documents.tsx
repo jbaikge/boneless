@@ -17,6 +17,7 @@ import {
   List,
   ListProps,
   Loading,
+  ReferenceField,
   ReferenceInput,
   SelectInput,
   SimpleForm,
@@ -162,6 +163,9 @@ export const DocumentList = (props: ListProps) => {
   return (
     <List {...props}>
       <Datagrid>
+        {data.parent_id != '' && <ReferenceField reference={'classes/' + data.parent_id + '/documents'} source="parent_id" label="Parent">
+          <TextField source="values.title" />
+        </ReferenceField>}
         {data.fields.filter((field: FieldProps) => field.column > 0).sort((a: FieldProps, b: FieldProps) => a.column - b.column).map((field: FieldProps) => {
           const source = `values.${field.name}`;
           switch (field.type) {
