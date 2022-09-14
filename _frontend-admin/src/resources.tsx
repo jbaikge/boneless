@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { AdminUI, Loading, Resource, useDataProvider } from 'react-admin';
 import { ClassCreate, ClassEdit, ClassList } from './classes';
-import { DocumentCreate, DocumentEdit, DocumentList } from './documents';
+import { DocumentCreate, DocumentEdit, DocumentList, DocumentShow } from './documents';
 import { TemplateCreate, TemplateEdit, TemplateList } from './templates';
 
 interface ClassData {
@@ -36,6 +36,7 @@ export const AsyncResources = () => {
             create={DocumentCreate}
             edit={DocumentEdit}
             list={DocumentList}
+            show={DocumentShow}
           />
         ))}
         <Resource

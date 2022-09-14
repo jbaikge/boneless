@@ -20,8 +20,12 @@ import {
   ReferenceField,
   ReferenceInput,
   SelectInput,
+  Show,
+  ShowButton,
+  ShowProps,
   SimpleForm,
   SimpleFormIterator,
+  SimpleShowLayout,
   TextField,
   TextInput,
   useGetOne,
@@ -187,7 +191,42 @@ export const DocumentList = (props: ListProps) => {
           }
         })}
         <EditButton />
+        <ShowButton />
       </Datagrid>
     </List>
   );
 };
+
+export const DocumentShow = (props: ShowProps) => {
+  const resourceContext = useResourceContext();
+  const [[ , resource, id ]] = [...resourceContext.matchAll(resourceRE)];
+  const { data, isLoading } = useGetOne(resource, { id });
+
+  if (isLoading) {
+    return <Loading />;
+  }
+
+  let parentField = null;
+  if (data.parent_id !== '') {
+    parentField = (
+      <ReferenceField reference={'classes/' + data.parent_id + '/documents'} source="parent_id" label="Parent" sortable={false}>
+        <TextField source="values.title" />
+      </ReferenceField>
+    );
+  }
+
+  return (
+    <Show {...props}>
+      <SimpleShowLayout>
+        {parentField}
+        {data.fields.map((field: FieldProps) => {
+          const source = `values.${field.name}`;
+          switch (field.type) {
+            default:
+              return <TextField key={field.label} source={source} label={field.label} />
+          }
+        })}
+      </SimpleShowLayout>
+    </Show>
+  )
+}
