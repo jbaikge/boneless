@@ -25,6 +25,7 @@ import {
   TransformData,
   required,
   useRedirect,
+  regex,
 } from 'react-admin';
 import './App.css';
 
@@ -92,11 +93,11 @@ export const ClassEdit = (props: EditUpdateProps) => {
         </ReferenceInput>
         <ArrayInput source="fields">
           <SimpleFormIterator className="field-row">
-            <TextInput source="label" />
-            <TextInput source="name" />
+            <TextInput source="label" validate={[ required('A label is required') ]} />
+            <TextInput source="name" validate={[ required('A field name is required'), regex(/^[a-z0-9_]+$/, 'Names can only contain lowercase letters, numbers and underscores') ]} />
             <BooleanInput source="sort" />
             <NumberInput source="column" />
-            <SelectInput source="type" choices={fieldChoices} defaultValue="text" />
+            <SelectInput source="type" choices={fieldChoices} defaultValue="text" validate={[ required('A type is required') ]} />
             <FormDataConsumer>
               {({
                 scopedFormData,
