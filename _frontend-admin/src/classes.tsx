@@ -49,9 +49,8 @@ interface ClassProps {
 
 const exporter = (classes: Array<ClassProps>) => {
   const blob = new Blob([JSON.stringify(classes, null, 2)], { type: 'application/json' });
-  const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
-  link.href = url;
+  link.href = window.URL.createObjectURL(blob);
   link.download = 'classes.json';
   link.click();
 };
