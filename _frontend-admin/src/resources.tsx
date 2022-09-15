@@ -1,6 +1,7 @@
 import * as React from 'react';
-import { AdminUI, Loading, Resource, useDataProvider } from 'react-admin';
-import { ClassCreate, ClassEdit, ClassList } from './classes';
+import { Route } from 'react-router-dom';
+import { AdminUI, CustomRoutes, Loading, Resource, useDataProvider } from 'react-admin';
+import { ClassCreate, ClassEdit, ClassImport, ClassList } from './classes';
 import { DocumentCreate, DocumentEdit, DocumentList, DocumentShow } from './documents';
 import { TemplateCreate, TemplateEdit, TemplateList } from './templates';
 
@@ -52,6 +53,9 @@ export const AsyncResources = () => {
           edit={TemplateEdit}
           list={TemplateList}
         />
+        <CustomRoutes>
+          <Route path="/class-import" element={<ClassImport update={setUpdateResources} />} />
+        </CustomRoutes>
       </AdminUI>
     )
   }
