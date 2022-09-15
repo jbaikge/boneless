@@ -32,7 +32,7 @@ export const AsyncResources = () => {
           <Resource
             options={{ label: resource.name }}
             key={resource.id}
-            name={"classes/" + resource.id + "/documents"}
+            name={`classes/${resource.id}/documents`}
             create={DocumentCreate}
             edit={DocumentEdit}
             list={DocumentList}
