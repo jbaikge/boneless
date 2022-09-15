@@ -167,7 +167,7 @@ export const DocumentList = (props: ListProps) => {
   let parentField = null;
   if (data.parent_id !== '') {
     parentField = (
-      <ReferenceField reference={'classes/' + data.parent_id + '/documents'} source="parent_id" label="Parent" sortable={false}>
+      <ReferenceField reference={`classes/${data.parent_id}/documents`} source="parent_id" label="Parent" sortable={false}>
         <TextField source="values.title" />
       </ReferenceField>
     );
@@ -185,7 +185,7 @@ export const DocumentList = (props: ListProps) => {
             case 'datetime':
               return <DateField key={field.label} source={source} label={field.label} sortable={field.sort} showTime />
             case 'image-upload':
-              return <ImageField key={field.label} source={source + '.url'} label={field.label} sortable={field.sort} />
+              return <ImageField key={field.label} source={`${source}.url`} label={field.label} sortable={field.sort} />
             default:
               return <TextField key={field.label} source={source} label={field.label} sortable={field.sort} />
           }
@@ -209,7 +209,7 @@ export const DocumentShow = (props: ShowProps) => {
   let parentField = null;
   if (data.parent_id !== '') {
     parentField = (
-      <ReferenceField reference={'classes/' + data.parent_id + '/documents'} source="parent_id" label="Parent" sortable={false}>
+      <ReferenceField reference={`classes/${data.parent_id}/documents`} source="parent_id" label="Parent" sortable={false}>
         <TextField source="values.title" />
       </ReferenceField>
     );
