@@ -27,6 +27,7 @@ import {
   useRedirect,
   regex,
 } from 'react-admin';
+import { FieldChoices, FieldProps } from './field';
 import './App.css';
 
 interface UpdateProps {
@@ -37,22 +38,23 @@ interface CreateUpdateProps extends CreateProps, UpdateProps {};
 
 interface EditUpdateProps extends EditProps, UpdateProps {};
 
-const fieldChoices = [
-  { id: 'date',               name: 'Date' },
-  { id: 'datetime',           name: 'Date & Time' },
-  { id: 'tiny',               name: 'Editor' },
-  { id: 'email',              name: 'Email' },
-  { id: 'number',             name: 'Number' },
-  { id: 'select-class',       name: 'Select (Class)' },
-  { id: 'multi-class',        name: 'Mutli-Select (Class)' },
-  { id: 'multi-select-label', name: 'Multi-Select w/ Label' },
-  { id: 'select-static',      name: 'Select (Static)' },
-  { id: 'text',               name: 'Text' },
-  { id: 'textarea',           name: 'Textarea' },
-  { id: 'time',               name: 'Time' },
-  { id: 'any-upload',         name: 'Upload (Any)' },
-  { id: 'image-upload',       name: 'Upload (Image)' },
-];
+interface ClassProps {
+  id: string;
+  parent_id: string;
+  name: string;
+  created: string;
+  updated: string;
+  fields: Array<FieldProps>;
+};
+
+const exporter = (classes: Array<ClassProps>) => {
+  const blob = new Blob([JSON.stringify(classes, null, 2)], { type: 'application/json' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'classes.json';
+  link.click();
+};
 
 export const ClassCreate = (props: CreateUpdateProps) => {
   const { update, ...rest } = props;
@@ -97,7 +99,7 @@ export const ClassEdit = (props: EditUpdateProps) => {
             <TextInput source="name" validate={[ required('A field name is required'), regex(/^[a-z0-9_]+$/, 'Names can only contain lowercase letters, numbers and underscores') ]} />
             <BooleanInput source="sort" />
             <NumberInput source="column" />
-            <SelectInput source="type" choices={fieldChoices} defaultValue="text" validate={[ required('A type is required') ]} />
+            <SelectInput source="type" choices={FieldChoices} defaultValue="text" validate={[ required('A type is required') ]} />
             <FormDataConsumer>
               {({
                 scopedFormData,
@@ -167,7 +169,7 @@ export const ClassEdit = (props: EditUpdateProps) => {
 };
 
 export const ClassList = (props: ListProps) => (
-  <List {...props}>
+  <List {...props} exporter={exporter}>
     <Datagrid>
       <TextField source="name" />
       <DateField source="created" />
