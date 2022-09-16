@@ -1,4 +1,4 @@
-package gocms
+package boneless
 
 type Field struct {
 	Type    string `json:"type"`

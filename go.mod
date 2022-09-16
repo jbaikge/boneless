@@ -1,4 +1,4 @@
-module github.com/jbaikge/gocms
+module github.com/jbaikge/boneless
 
 go 1.18
 

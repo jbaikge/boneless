@@ -1,4 +1,4 @@
-package gocms
+package boneless
 
 type RepositoryStats struct {
 	Fetches int

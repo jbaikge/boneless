@@ -18,7 +18,7 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/jbaikge/gocms"
+	"github.com/jbaikge/boneless"
 )
 
 type Error struct {
@@ -64,13 +64,13 @@ const (
 
 var (
 	awsConfig aws.Config
-	resources gocms.DynamoDBResources
+	resources boneless.DynamoDBResources
 )
 
 type HandlerFunc func(context.Context, events.APIGatewayV2HTTPRequest, *events.APIGatewayV2HTTPResponse) (interface{}, error)
 
 type Handlers struct {
-	Repo gocms.Repository
+	Repo boneless.Repository
 }
 
 func (h Handlers) GetHandler(request events.APIGatewayV2HTTPRequest) (f HandlerFunc, found bool) {
@@ -161,7 +161,7 @@ func main() {
 	resources.FromEnv()
 
 	handlers := Handlers{
-		Repo: gocms.NewDynamoDBRepository(awsConfig, resources),
+		Repo: boneless.NewDynamoDBRepository(awsConfig, resources),
 	}
 	lambda.Start(handlers.HandleRequest)
 }
@@ -177,17 +177,17 @@ func (h Handlers) ClassById(ctx context.Context, request events.APIGatewayV2HTTP
 		return nil, errors.New("no class_id specified")
 	}
 
-	return gocms.NewClassService(h.Repo).ById(ctx, id)
+	return boneless.NewClassService(h.Repo).ById(ctx, id)
 }
 
 func (h Handlers) ClassCreate(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
-	var class gocms.Class
+	var class boneless.Class
 	reader := strings.NewReader(request.Body)
 	if err = json.NewDecoder(reader).Decode(&class); err != nil {
 		return
 	}
 
-	if err = gocms.NewClassService(h.Repo).Create(ctx, &class); err != nil {
+	if err = boneless.NewClassService(h.Repo).Create(ctx, &class); err != nil {
 		return
 	}
 
@@ -201,15 +201,15 @@ func (h Handlers) ClassDelete(ctx context.Context, request events.APIGatewayV2HT
 		return nil, errors.New("no class_id specified")
 	}
 
-	err = gocms.NewClassService(h.Repo).Delete(ctx, id)
+	err = boneless.NewClassService(h.Repo).Delete(ctx, id)
 	return
 }
 
 func (h Handlers) ClassList(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
-	filter := gocms.ClassFilter{
-		Range: gocms.Range{End: 9},
+	filter := boneless.ClassFilter{
+		Range: boneless.Range{End: 9},
 	}
-	classes, r, err := gocms.NewClassService(h.Repo).List(ctx, filter)
+	classes, r, err := boneless.NewClassService(h.Repo).List(ctx, filter)
 	if err != nil {
 		return
 	}
@@ -226,7 +226,7 @@ func (h Handlers) ClassUpdate(ctx context.Context, request events.APIGatewayV2HT
 		return nil, errors.New("no class_id specified")
 	}
 
-	var class gocms.Class
+	var class boneless.Class
 	if err = json.NewDecoder(strings.NewReader(request.Body)).Decode(&class); err != nil {
 		response.StatusCode = http.StatusBadRequest
 		return nil, fmt.Errorf("bad json: %w", err)
@@ -235,7 +235,7 @@ func (h Handlers) ClassUpdate(ctx context.Context, request events.APIGatewayV2HT
 	// Force ID to be what is in the URL. Not sure if necessary? Should prevent
 	// changing a class ID.
 	class.Id = id
-	if err = gocms.NewClassService(h.Repo).Update(ctx, &class); err != nil {
+	if err = boneless.NewClassService(h.Repo).Update(ctx, &class); err != nil {
 		response.StatusCode = http.StatusInternalServerError
 		return nil, err
 	}
@@ -250,11 +250,11 @@ func (h Handlers) DocumentById(ctx context.Context, request events.APIGatewayV2H
 		return nil, fmt.Errorf("no doc_id specified")
 	}
 
-	return gocms.NewDocumentService(h.Repo).ById(ctx, id)
+	return boneless.NewDocumentService(h.Repo).ById(ctx, id)
 }
 
 func (h Handlers) DocumentCreate(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
-	var doc gocms.Document
+	var doc boneless.Document
 	reader := strings.NewReader(request.Body)
 	if err = json.NewDecoder(reader).Decode(&doc); err != nil {
 		return
@@ -270,7 +270,7 @@ func (h Handlers) DocumentCreate(ctx context.Context, request events.APIGatewayV
 		doc.ClassId = classId
 	}
 
-	if err = gocms.NewDocumentService(h.Repo).Create(ctx, &doc); err != nil {
+	if err = boneless.NewDocumentService(h.Repo).Create(ctx, &doc); err != nil {
 		return
 	}
 
@@ -284,7 +284,7 @@ func (h Handlers) DocumentDelete(ctx context.Context, request events.APIGatewayV
 		return nil, fmt.Errorf("no doc_id specified")
 	}
 
-	err = gocms.NewDocumentService(h.Repo).Delete(ctx, id)
+	err = boneless.NewDocumentService(h.Repo).Delete(ctx, id)
 	return
 }
 
@@ -292,10 +292,10 @@ func (h Handlers) DocumentDelete(ctx context.Context, request events.APIGatewayV
 // range: [0,9]
 // sort: ["id","ASC"]
 func (h Handlers) DocumentList(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
-	documentService := gocms.NewDocumentService(h.Repo)
+	documentService := boneless.NewDocumentService(h.Repo)
 
-	filter := gocms.DocumentFilter{
-		Range: gocms.Range{End: 9},
+	filter := boneless.DocumentFilter{
+		Range: boneless.Range{End: 9},
 	}
 
 	if classId, ok := request.PathParameters["class_id"]; ok {
@@ -335,7 +335,7 @@ func (h Handlers) DocumentList(ctx context.Context, request events.APIGatewayV2H
 	}
 
 	if len(filterParam.Ids) > 0 {
-		docs := make([]gocms.Document, 0, len(filterParam.Ids))
+		docs := make([]boneless.Document, 0, len(filterParam.Ids))
 		for _, id := range filterParam.Ids {
 			doc, err := documentService.ById(ctx, id)
 			if err != nil {
@@ -365,7 +365,7 @@ func (h Handlers) DocumentUpdate(ctx context.Context, request events.APIGatewayV
 		return nil, fmt.Errorf("no doc_id specified")
 	}
 
-	var doc gocms.Document
+	var doc boneless.Document
 	if err = json.NewDecoder(strings.NewReader(request.Body)).Decode(&doc); err != nil {
 		response.StatusCode = http.StatusBadRequest
 		return nil, fmt.Errorf("bad json: %w", err)
@@ -373,7 +373,7 @@ func (h Handlers) DocumentUpdate(ctx context.Context, request events.APIGatewayV
 
 	// Force ID to be what it is in the URL.
 	doc.Id = id
-	if err = gocms.NewDocumentService(h.Repo).Update(ctx, &doc); err != nil {
+	if err = boneless.NewDocumentService(h.Repo).Update(ctx, &doc); err != nil {
 		response.StatusCode = http.StatusInternalServerError
 		return nil, err
 	}
@@ -406,7 +406,7 @@ func (h Handlers) FileCreate(ctx context.Context, request events.APIGatewayV2HTT
 	}
 	defer file.Close()
 
-	uploadFile := &gocms.File{
+	uploadFile := &boneless.File{
 		Filename: fileHeader.Filename,
 		Data:     file,
 	}
@@ -438,13 +438,13 @@ func (h Handlers) FileCreate(ctx context.Context, request events.APIGatewayV2HTT
 
 // Returns a Signed S3 URL with PUT access for the requestor to then PUT data to
 func (h Handlers) FileUploadUrl(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
-	var uploadRequest gocms.FileUploadRequest
+	var uploadRequest boneless.FileUploadRequest
 	if err = json.NewDecoder(strings.NewReader(request.Body)).Decode(&uploadRequest); err != nil {
 		response.StatusCode = http.StatusBadRequest
 		return nil, fmt.Errorf("bad json: %w", err)
 	}
 
-	return gocms.NewFileService(h.Repo).UploadUrl(ctx, uploadRequest)
+	return boneless.NewFileService(h.Repo).UploadUrl(ctx, uploadRequest)
 }
 
 func (h Handlers) TemplateById(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
@@ -454,17 +454,17 @@ func (h Handlers) TemplateById(ctx context.Context, request events.APIGatewayV2H
 		return nil, fmt.Errorf("no template_id specified")
 	}
 
-	return gocms.NewTemplateService(h.Repo).ById(ctx, id)
+	return boneless.NewTemplateService(h.Repo).ById(ctx, id)
 }
 
 func (h Handlers) TemplateCreate(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
-	template := new(gocms.Template)
+	template := new(boneless.Template)
 	reader := strings.NewReader(request.Body)
 	if err = json.NewDecoder(reader).Decode(template); err != nil {
 		return
 	}
 
-	if err = gocms.NewTemplateService(h.Repo).Create(ctx, template); err != nil {
+	if err = boneless.NewTemplateService(h.Repo).Create(ctx, template); err != nil {
 		return
 	}
 
@@ -478,15 +478,15 @@ func (h Handlers) TemplateDelete(ctx context.Context, request events.APIGatewayV
 		return nil, fmt.Errorf("no template_id specified")
 	}
 
-	err = gocms.NewTemplateService(h.Repo).Delete(ctx, id)
+	err = boneless.NewTemplateService(h.Repo).Delete(ctx, id)
 	return
 }
 
 func (h Handlers) TemplateList(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
-	templateService := gocms.NewTemplateService(h.Repo)
+	templateService := boneless.NewTemplateService(h.Repo)
 
-	filter := gocms.TemplateFilter{
-		Range: gocms.Range{End: 9},
+	filter := boneless.TemplateFilter{
+		Range: boneless.Range{End: 9},
 	}
 
 	if param, ok := request.QueryStringParameters["range"]; ok {
@@ -510,7 +510,7 @@ func (h Handlers) TemplateList(ctx context.Context, request events.APIGatewayV2H
 	}
 
 	if len(filterParam.Ids) > 0 {
-		templates := make([]gocms.Template, 0, len(filterParam.Ids))
+		templates := make([]boneless.Template, 0, len(filterParam.Ids))
 		for _, id := range filterParam.Ids {
 			template, err := templateService.ById(ctx, id)
 			if err != nil {
@@ -538,7 +538,7 @@ func (h Handlers) TemplateUpdate(ctx context.Context, request events.APIGatewayV
 		return nil, fmt.Errorf("no template_id specified")
 	}
 
-	template := new(gocms.Template)
+	template := new(boneless.Template)
 	if err = json.NewDecoder(strings.NewReader(request.Body)).Decode(template); err != nil {
 		response.StatusCode = http.StatusBadRequest
 		return nil, fmt.Errorf("bad json: %w", err)
@@ -546,7 +546,7 @@ func (h Handlers) TemplateUpdate(ctx context.Context, request events.APIGatewayV
 
 	// Force ID to be what it is in the URL
 	template.Id = id
-	if err = gocms.NewTemplateService(h.Repo).Update(ctx, template); err != nil {
+	if err = boneless.NewTemplateService(h.Repo).Update(ctx, template); err != nil {
 		response.StatusCode = http.StatusInternalServerError
 		return nil, fmt.Errorf("update error: %w", err)
 	}

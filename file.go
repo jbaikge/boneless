@@ -1,4 +1,4 @@
-package gocms
+package boneless
 
 import (
 	"context"
