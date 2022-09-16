@@ -34,6 +34,7 @@ import {
 } from 'react-admin';
 import { FieldValues } from 'react-hook-form';
 import { Card, CardContent } from '@mui/material';
+import { jsonExporter } from './exporter';
 import { FieldChoices, FieldProps } from './field';
 import { GlobalPagination } from './pagination';
 import './App.css';
@@ -53,14 +54,6 @@ interface ClassProps {
   created: string;
   updated: string;
   fields: Array<FieldProps>;
-};
-
-const exporter = (classes: Array<ClassProps>) => {
-  const blob = new Blob([JSON.stringify(classes, null, 2)], { type: 'application/json' });
-  const link = document.createElement('a');
-  link.href = window.URL.createObjectURL(blob);
-  link.download = 'classes.json';
-  link.click();
 };
 
 export const ClassCreate = (props: CreateUpdateProps) => {
@@ -176,7 +169,7 @@ export const ClassEdit = (props: EditUpdateProps) => {
 };
 
 export const ClassList = (props: ListProps) => (
-  <List {...props} exporter={exporter} pagination={<GlobalPagination />}>
+  <List {...props} exporter={jsonExporter('classes')} pagination={<GlobalPagination />}>
     <Datagrid>
       <TextField source="name" />
       <DateField source="created" />

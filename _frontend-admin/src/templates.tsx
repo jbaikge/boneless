@@ -13,6 +13,7 @@ import {
   TextInput,
 } from 'react-admin';
 import { CodeInput } from './codeInput';
+import { jsonExporter } from './exporter';
 import { GlobalPagination } from './pagination';
 
 export const TemplateCreate = (props: CreateProps) => (
@@ -34,7 +35,7 @@ export const TemplateEdit = (props: EditProps) => (
 );
 
 export const TemplateList = (props: ListProps) => (
-  <List {...props} pagination={<GlobalPagination />}>
+  <List {...props} exporter={jsonExporter('templates')} pagination={<GlobalPagination />}>
     <Datagrid>
       <TextField source="name" />
       <DateField source="created" />
