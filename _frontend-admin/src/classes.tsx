@@ -35,6 +35,7 @@ import {
 import { FieldValues } from 'react-hook-form';
 import { Card, CardContent } from '@mui/material';
 import { FieldChoices, FieldProps } from './field';
+import { GlobalPagination } from './pagination';
 import './App.css';
 
 interface UpdateProps {
@@ -175,7 +176,7 @@ export const ClassEdit = (props: EditUpdateProps) => {
 };
 
 export const ClassList = (props: ListProps) => (
-  <List {...props} exporter={exporter}>
+  <List {...props} exporter={exporter} pagination={<GlobalPagination />}>
     <Datagrid>
       <TextField source="name" />
       <DateField source="created" />

@@ -32,6 +32,7 @@ import {
   useResourceContext,
 } from 'react-admin';
 import { FieldProps } from './field';
+import { GlobalPagination } from './pagination';
 import { TinyInput } from './tinyInput';
 
 const resourceRE = /([^/]+)\/([^/]+)\/.*/g;
@@ -160,7 +161,7 @@ export const DocumentList = (props: ListProps) => {
   }
 
   return (
-    <List {...props}>
+    <List {...props} pagination={<GlobalPagination />}>
       <Datagrid>
         {parentField}
         {data.fields.filter((field: FieldProps) => field.column > 0).sort((a: FieldProps, b: FieldProps) => a.column - b.column).map((field: FieldProps) => {
