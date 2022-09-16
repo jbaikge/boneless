@@ -1,5 +1,7 @@
 import {
+  Button,
   Create,
+  CreateButton,
   CreateProps,
   CreateResult,
   Datagrid,
@@ -7,6 +9,7 @@ import {
   Edit,
   EditButton,
   EditProps,
+  ExportButton,
   FileField,
   FileInput,
   List,
@@ -15,10 +18,13 @@ import {
   TextField,
   TextInput,
   Title,
+  TopToolbar,
   useDataProvider,
   useRedirect,
 } from 'react-admin';
 import { FieldValues } from 'react-hook-form';
+import { Link } from 'react-router-dom';
+import IconFileUpload from '@mui/icons-material/FileUpload';
 import { Card, CardContent } from '@mui/material';
 import { CodeInput } from './codeInput';
 import { jsonExporter } from './exporter';
@@ -51,8 +57,18 @@ export const TemplateEdit = (props: EditProps) => (
   </Edit>
 );
 
+const ListActions = () => (
+  <TopToolbar>
+    <CreateButton />
+    <ExportButton />
+    <Button label="Import" component={Link} to="/template-import">
+      <IconFileUpload />
+    </Button>
+  </TopToolbar>
+);
+
 export const TemplateList = (props: ListProps) => (
-  <List {...props} exporter={jsonExporter('templates')} pagination={<GlobalPagination />}>
+  <List {...props} actions={<ListActions />} exporter={jsonExporter('templates')} pagination={<GlobalPagination />}>
     <Datagrid>
       <TextField source="name" />
       <DateField source="created" />
@@ -92,7 +108,7 @@ export const TemplateImport = () => {
 
   return (
     <Card sx={{ marginTop: '1em' }}>
-      <Title title="Class Import" />
+      <Title title="Template Import" />
       <CardContent>
         <SimpleForm onSubmit={onSubmit}>
           <FileInput source="file" accept="application/json">

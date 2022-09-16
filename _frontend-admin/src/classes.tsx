@@ -2,8 +2,11 @@ import React from 'react';
 import {
   ArrayInput,
   BooleanInput,
+  Button,
   Create,
+  CreateButton,
   CreateProps,
+  CreateResult,
   Datagrid,
   DateField,
   DateInput,
@@ -11,6 +14,9 @@ import {
   Edit,
   EditButton,
   EditProps,
+  ExportButton,
+  FileField,
+  FileInput,
   FormDataConsumer,
   FormDataConsumerRenderParams,
   List,
@@ -22,17 +28,17 @@ import {
   SimpleFormIterator,
   TextField,
   TextInput,
+  Title,
+  TopToolbar,
   TransformData,
+  regex,
   required,
   useRedirect,
-  regex,
-  Title,
-  FileInput,
-  FileField,
   useDataProvider,
-  CreateResult,
 } from 'react-admin';
 import { FieldValues } from 'react-hook-form';
+import { Link } from 'react-router-dom';
+import IconFileUpload from '@mui/icons-material/FileUpload';
 import { Card, CardContent } from '@mui/material';
 import { jsonExporter } from './exporter';
 import { FieldChoices, FieldProps } from './field';
@@ -168,8 +174,18 @@ export const ClassEdit = (props: EditUpdateProps) => {
   );
 };
 
+const ListActions = () => (
+  <TopToolbar>
+    <CreateButton />
+    <ExportButton />
+    <Button label="Import" component={Link} to="/class-import">
+      <IconFileUpload />
+    </Button>
+  </TopToolbar>
+);
+
 export const ClassList = (props: ListProps) => (
-  <List {...props} exporter={jsonExporter('classes')} pagination={<GlobalPagination />}>
+  <List {...props} actions={<ListActions />} exporter={jsonExporter('classes')} pagination={<GlobalPagination />}>
     <Datagrid>
       <TextField source="name" />
       <DateField source="created" />
