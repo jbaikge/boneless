@@ -76,6 +76,7 @@ func (s DocumentService) Create(ctx context.Context, doc *Document) (err error) 
 
 	now := time.Now()
 	doc.Id = idProvider.NewWithTime(now)
+	doc.Version = 1
 	doc.Created = now
 	doc.Updated = now
 
