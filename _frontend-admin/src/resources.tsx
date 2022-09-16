@@ -3,7 +3,7 @@ import { Route } from 'react-router-dom';
 import { AdminUI, CustomRoutes, Loading, Resource, useDataProvider } from 'react-admin';
 import { ClassCreate, ClassEdit, ClassImport, ClassList } from './classes';
 import { DocumentCreate, DocumentEdit, DocumentList, DocumentShow } from './documents';
-import { TemplateCreate, TemplateEdit, TemplateList } from './templates';
+import { TemplateCreate, TemplateEdit, TemplateImport, TemplateList } from './templates';
 
 interface ClassData {
   id: string;
@@ -55,6 +55,7 @@ export const AsyncResources = () => {
         />
         <CustomRoutes>
           <Route path="/class-import" element={<ClassImport update={setUpdateResources} />} />
+          <Route path="/template-import" element={<TemplateImport />} />
         </CustomRoutes>
       </AdminUI>
     )
