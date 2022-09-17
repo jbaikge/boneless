@@ -186,7 +186,9 @@ const ListActions = () => (
 
 export const ClassList = (props: ListProps) => (
   <List {...props} actions={<ListActions />} exporter={jsonExporter('classes')} pagination={<GlobalPagination />}>
-    <Datagrid>
+    <Datagrid sx={{
+      '& td:last-child': { width: '5em' },
+    }}>
       <TextField source="name" />
       <DateField source="created" />
       <DateField source="updated" />

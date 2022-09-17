@@ -162,7 +162,10 @@ export const DocumentList = (props: ListProps) => {
 
   return (
     <List {...props} pagination={<GlobalPagination />}>
-      <Datagrid>
+      <Datagrid sx={{
+      '& td:last-child': { width: '5em' },
+      '& td:nth-last-child(2)': { width: '5em' },
+    }}>
         {parentField}
         {data.fields.filter((field: FieldProps) => field.column > 0).sort((a: FieldProps, b: FieldProps) => a.column - b.column).map((field: FieldProps) => {
           const source = `values.${field.name}`;
@@ -177,8 +180,8 @@ export const DocumentList = (props: ListProps) => {
               return <TextField key={field.label} source={source} label={field.label} sortable={field.sort} />
           }
         })}
-        <EditButton />
         <ShowButton />
+        <EditButton />
       </Datagrid>
     </List>
   );
