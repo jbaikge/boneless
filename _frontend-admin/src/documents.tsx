@@ -213,19 +213,22 @@ export const DocumentShow = (props: ShowProps) => {
         {parentField}
         {data.fields.map((field: FieldProps) => {
           const source = `values.${field.name}`;
+          const label = `${field.label} (.Document.Values.${field.name})`
           switch (field.type) {
+            case 'image-upload':
+              return <ImageField source={`${source}.url`} label={label} />
             case 'multi-class':
               return <ArrayField source={source} label={false}>
                 <Datagrid bulkActionButtons={false}>
-                  <ReferenceField reference={`classes/${field.class_id}/documents`} source="id" label={field.label}>
+                  <ReferenceField reference={`classes/${field.class_id}/documents`} source="id" label={label}>
                     <TextField source={`values.${field.field}`} />
                   </ReferenceField>
                 </Datagrid>
               </ArrayField>
             case 'tiny':
-              return <RichTextField key={field.label} source={source} label={field.label} />
+              return <RichTextField source={source} label={label} />
             default:
-              return <TextField key={field.label} source={source} label={field.label} />
+              return <TextField source={source} label={label} />
           }
         })}
       </SimpleShowLayout>
