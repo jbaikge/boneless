@@ -75,7 +75,7 @@ export const DocumentForm = () => {
       <TextInput source="path" fullWidth />
       {parentInput}
       <ReferenceInput source="template_id" reference="templates" perPage={100}>
-        <SelectInput fullWidth />
+        <SelectInput optionText="name" fullWidth />
       </ReferenceInput>
       {data.fields.map((field: FieldProps) => {
         const source = `values.${field.name}`;
