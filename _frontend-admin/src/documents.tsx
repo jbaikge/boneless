@@ -1,6 +1,7 @@
 import { RichTextInput } from 'ra-input-rich-text';
 import React from 'react';
 import {
+  ArrayField,
   ArrayInput,
   Create,
   CreateProps,
@@ -19,6 +20,7 @@ import {
   Loading,
   ReferenceField,
   ReferenceInput,
+  RichTextField,
   SelectInput,
   Show,
   ShowButton,
@@ -86,7 +88,7 @@ export const DocumentForm = () => {
             return (
               <ArrayInput source={source} label={field.label}>
                 <SimpleFormIterator>
-                  <ReferenceInput reference={'/classes/' + field.class_id + '/documents'} source="id">
+                  <ReferenceInput reference={'/classes/' + field.class_id + '/documents'} source="id" perPage={1000} sort={{ field: field.field, order: 'ASC' }}>
                     <SelectInput optionText={'values.' + field.field} label={field.label} />
                   </ReferenceInput>
                 </SimpleFormIterator>
@@ -96,7 +98,7 @@ export const DocumentForm = () => {
             return (
               <ArrayInput source={source} label={field.label}>
                 <SimpleFormIterator>
-                  <ReferenceInput reference={'/classes/' + field.class_id + '/documents'} source='id'>
+                  <ReferenceInput reference={'/classes/' + field.class_id + '/documents'} source='id' perPage={1000} sort={{ field: field.field, order: 'ASC' }}>
                     <SelectInput optionText={'values.' + field.field} label={field.label} />
                   </ReferenceInput>
                   <TextInput source='label' />
@@ -107,7 +109,7 @@ export const DocumentForm = () => {
             return <RichTextInput key={field.name} source={source} label={field.label} fullWidth />
           case 'select-class':
             return (
-              <ReferenceInput reference={'/classes/' + field.class_id + '/documents'} source={source}>
+              <ReferenceInput reference={'/classes/' + field.class_id + '/documents'} source={source} perPage={1000} sort={{ field: field.field, order: 'ASC' }}>
                 <SelectInput optionText={'values.' + field.field} label={field.label} fullWidth />
               </ReferenceInput>
             );
@@ -212,6 +214,16 @@ export const DocumentShow = (props: ShowProps) => {
         {data.fields.map((field: FieldProps) => {
           const source = `values.${field.name}`;
           switch (field.type) {
+            case 'multi-class':
+              return <ArrayField source={source} label={false}>
+                <Datagrid bulkActionButtons={false}>
+                  <ReferenceField reference={`classes/${field.class_id}/documents`} source="id" label={field.label}>
+                    <TextField source={`values.${field.field}`} />
+                  </ReferenceField>
+                </Datagrid>
+              </ArrayField>
+            case 'tiny':
+              return <RichTextField key={field.label} source={source} label={field.label} />
             default:
               return <TextField key={field.label} source={source} label={field.label} />
           }
