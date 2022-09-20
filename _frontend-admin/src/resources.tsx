@@ -48,6 +48,10 @@ export const AsyncResources = () => {
           list={ClassList}
         />
         <Resource
+          name="forms"
+          options={{ label: 'Manage Forms' }}
+        />
+        <Resource
           name="templates"
           create={TemplateCreate}
           edit={TemplateEdit}
