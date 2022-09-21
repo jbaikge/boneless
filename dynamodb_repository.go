@@ -24,6 +24,8 @@ const (
 	dynamoClassSortF      = dynamoClassPrefix + "v%04d"
 	dynamoDocPrefix       = "doc#"
 	dynamoDocSortF        = dynamoDocPrefix + "v%04d"
+	dynamoFormPrefix      = "form#"
+	dynamoFormSortF       = dynamoFormPrefix + "v%04d"
 	dynamoPathPrefix      = "path#"
 	dynamoPathSortKey     = "path"
 	dynamoSortPartitionF  = "sort#%s#%s"
@@ -140,7 +142,6 @@ type dynamoDocument struct {
 }
 
 func (dyn *dynamoDocument) FromDocument(doc *Document) {
-	dyn.SetSK(doc.Version)
 	dyn.PK = dynamoDocPrefix + doc.Id
 	dyn.ClassId = doc.ClassId
 	dyn.ParentId = doc.ParentId
@@ -149,6 +150,7 @@ func (dyn *dynamoDocument) FromDocument(doc *Document) {
 	dyn.Path = doc.Path
 	dyn.Created = doc.Created
 	dyn.Updated = doc.Updated
+	dyn.SetSK(doc.Version)
 }
 
 func (dyn dynamoDocument) ToDocument() (doc Document) {
@@ -188,6 +190,57 @@ func (dyn dynamoDocument) UpdateValues() map[string]interface{} {
 
 func (dyn dynamoDocument) GetCreated() time.Time { return dyn.Created }
 func (dyn dynamoDocument) GetUpdated() time.Time { return dyn.Updated }
+
+// Form Type
+
+type dynamoForm struct {
+	PK      string
+	SK      string
+	Name    string
+	Created time.Time
+	Updated time.Time
+}
+
+func (dyn *dynamoForm) FromForm(form *Form) {
+	dyn.PK = dynamoFormPrefix + form.Id
+	dyn.Name = form.Name
+	dyn.Created = form.Created
+	dyn.Updated = form.Updated
+	dyn.SetSK(0)
+}
+
+func (dyn dynamoForm) PartitionKey() string {
+	return dyn.PK
+}
+
+func (dyn *dynamoForm) SetSK(version int) {
+	dyn.SK = fmt.Sprintf(dynamoFormSortF, version)
+}
+
+func (dyn dynamoForm) SortKey() string {
+	return dyn.SK
+}
+
+func (dyn dynamoForm) ToForm() (form Form) {
+	form.Id = dyn.PK[len(dynamoFormPrefix):]
+	form.Name = dyn.Name
+	form.Created = dyn.Created
+	form.Updated = dyn.Updated
+	return
+}
+
+func (dyn dynamoForm) UpdateValues() map[string]interface{} {
+	return map[string]interface{}{
+		"Name":    dyn.Name,
+		"Updated": dyn.Updated,
+	}
+}
+
+type dynamoFormByName []*dynamoForm
+
+func (arr dynamoFormByName) Len() int           { return len(arr) }
+func (arr dynamoFormByName) Swap(i, j int)      { arr[i], arr[j] = arr[j], arr[i] }
+func (arr dynamoFormByName) Less(i, j int) bool { return arr[i].Name < arr[j].Name }
 
 // Path Type
 
@@ -992,6 +1045,126 @@ func (repo *DynamoDBRepository) CreateUploadUrl(ctx context.Context, request Fil
 	response.Headers = signed.SignedHeader
 	response.Location = fmt.Sprintf("https://%s/%s", repo.resources.StaticDomain, key)
 
+	return
+}
+
+// Form Methods
+
+func (repo *DynamoDBRepository) CreateForm(ctx context.Context, form *Form) (err error) {
+	dbForm := new(dynamoForm)
+	dbForm.FromForm(form)
+	if err = repo.putItem(ctx, dbForm); err != nil {
+		return
+	}
+	if err = repo.putFormSchema(ctx, form); err != nil {
+		return
+	}
+	return
+}
+
+func (repo *DynamoDBRepository) DeleteForm(ctx context.Context, id string) (err error) {
+	return repo.deleteItem(ctx, dynamoFormPrefix+id, fmt.Sprintf(dynamoFormSortF, 0))
+}
+
+func (repo *DynamoDBRepository) GetFormById(ctx context.Context, id string) (form Form, err error) {
+	dbForm := new(dynamoForm)
+	if err = repo.getItem(ctx, dynamoFormPrefix+id, fmt.Sprintf(dynamoFormSortF, 0), dbForm); err != nil {
+		return
+	}
+	return dbForm.ToForm(), nil
+}
+
+func (repo *DynamoDBRepository) GetFormList(ctx context.Context, filter FormFilter) (list []Form, r Range, err error) {
+	tmp := make([]*dynamoForm, 0, 128)
+	skId, err := attributevalue.Marshal(fmt.Sprintf(dynamoFormSortF, 0))
+	if err != nil {
+		return
+	}
+	params := &dynamodb.ScanInput{
+		TableName:        &repo.resources.Table,
+		FilterExpression: aws.String("SK = :sk"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":sk": skId,
+		},
+	}
+	paginator := dynamodb.NewScanPaginator(repo.db, params)
+	for paginator.HasMorePages() {
+		response, err := paginator.NextPage(ctx)
+		if err != nil {
+			return list, r, err
+		}
+
+		dbForms := make([]*dynamoForm, 0, len(response.Items))
+		if err = attributevalue.UnmarshalListOfMaps(response.Items, &dbForms); err != nil {
+			return list, r, err
+		}
+		tmp = append(tmp, dbForms...)
+	}
+
+	sort.Sort(dynamoFormByName(tmp))
+
+	r.Size = len(tmp)
+	list = make([]Form, 0, filter.Range.End-filter.Range.Start+1)
+	for i := filter.Range.Start; i < len(tmp) && i <= filter.Range.End; i++ {
+		form := tmp[i].ToForm()
+		if err = repo.getFormSchema(ctx, &form); err != nil {
+			return
+		}
+		list = append(list, form)
+	}
+
+	// if start = 0 and list is empty, then there just aren't any records
+	if filter.Range.Start > 0 && len(list) == 0 {
+		return list, r, ErrBadRange
+	}
+
+	// Equal start and end signify one item, but size can be zero
+	r.Start = filter.Range.Start
+	r.End = r.Start
+	if len(list) > 0 {
+		r.End += len(list) - 1
+	}
+
+	return
+}
+
+func (repo *DynamoDBRepository) UpdateForm(ctx context.Context, form *Form) (err error) {
+	dbForm := new(dynamoForm)
+	dbForm.FromForm(form)
+	return repo.updateItem(ctx, dbForm)
+}
+
+// S3 Form interaction
+
+func (repo *DynamoDBRepository) formKey(form *Form) string {
+	return fmt.Sprintf("forms/%s/v%04d.json", form.Id, 0)
+}
+
+func (repo *DynamoDBRepository) getFormSchema(ctx context.Context, form *Form) (err error) {
+	params := &s3.GetObjectInput{
+		Bucket: &repo.resources.Bucket,
+		Key:    aws.String(repo.formKey(form)),
+	}
+	response, err := repo.s3.GetObject(ctx, params)
+	if err != nil {
+		return
+	}
+	defer response.Body.Close()
+	return json.NewDecoder(response.Body).Decode(&form.Schema)
+}
+
+func (repo *DynamoDBRepository) putFormSchema(ctx context.Context, form *Form) (err error) {
+	buffer := new(bytes.Buffer)
+	if err = json.NewEncoder(buffer).Encode(form.Schema); err != nil {
+		return
+	}
+	params := &s3.PutObjectInput{
+		Bucket:      &repo.resources.Bucket,
+		Key:         aws.String(repo.formKey(form)),
+		Body:        bytes.NewReader(buffer.Bytes()),
+		ContentType: aws.String("application/json"),
+	}
+	_, err = repo.s3.PutObject(ctx, params)
 	return
 }
 
