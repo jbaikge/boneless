@@ -59,6 +59,7 @@ func (f *FilterParam) UnmarshalJSON(data []byte) (err error) {
 const (
 	ClassRangeUnit    = "classes"
 	DocumentRangeUnit = "documents"
+	FormRangeUnit     = "forms"
 	TemplateRangeUnit = "templates"
 )
 
@@ -92,6 +93,11 @@ func (h Handlers) GetHandler(request events.APIGatewayV2HTTPRequest) (f HandlerF
 		"DELETE /documents/{doc_id}":                    h.DocumentDelete,
 		"POST /files":                                   h.FileCreate,
 		"POST /files/url":                               h.FileUploadUrl,
+		"GET /forms":                                    h.FormList,
+		"POST /forms":                                   h.FormCreate,
+		"GET /forms/{form_id}":                          h.FormById,
+		"PUT /forms/{form_id}":                          h.FormUpdate,
+		"DELETE /forms/{form_id}":                       h.FormDelete,
 		"GET /templates":                                h.TemplateList,
 		"POST /templates":                               h.TemplateCreate,
 		"GET /templates/{template_id}":                  h.TemplateById,
@@ -207,7 +213,7 @@ func (h Handlers) ClassDelete(ctx context.Context, request events.APIGatewayV2HT
 
 func (h Handlers) ClassList(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
 	filter := boneless.ClassFilter{
-		Range: boneless.Range{End: 9},
+		Range: boneless.Range{End: 999},
 	}
 	classes, r, err := boneless.NewClassService(h.Repo).List(ctx, filter)
 	if err != nil {
@@ -445,6 +451,76 @@ func (h Handlers) FileUploadUrl(ctx context.Context, request events.APIGatewayV2
 	}
 
 	return boneless.NewFileService(h.Repo).UploadUrl(ctx, uploadRequest)
+}
+
+func (h Handlers) FormById(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
+	id, ok := request.PathParameters["form_id"]
+	if !ok {
+		response.StatusCode = http.StatusBadRequest
+		return nil, fmt.Errorf("no form_id specified")
+	}
+
+	return boneless.NewFormService(h.Repo).ById(ctx, id)
+}
+
+func (h Handlers) FormCreate(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
+	var form boneless.Form
+	reader := strings.NewReader(request.Body)
+	if err = json.NewDecoder(reader).Decode(&form); err != nil {
+		return
+	}
+
+	if err = boneless.NewFormService(h.Repo).Create(ctx, &form); err != nil {
+		return
+	}
+
+	return form, nil
+}
+
+func (h Handlers) FormDelete(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
+	id, ok := request.PathParameters["form_id"]
+	if !ok {
+		response.StatusCode = http.StatusBadRequest
+		return nil, fmt.Errorf("no form_id specified")
+	}
+
+	err = boneless.NewFormService(h.Repo).Delete(ctx, id)
+	return
+}
+
+func (h Handlers) FormList(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
+	filter := boneless.FormFilter{
+		Range: boneless.Range{End: 999},
+	}
+	forms, r, err := boneless.NewFormService(h.Repo).List(ctx, filter)
+	if err != nil {
+		return
+	}
+
+	response.Headers["Content-Range"] = r.ContentRangeHeader(FormRangeUnit)
+	response.Headers["X-Total-Count"] = fmt.Sprint(r.Size)
+	return forms, nil
+}
+
+func (h Handlers) FormUpdate(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
+	id, ok := request.PathParameters["form_id"]
+	if !ok {
+		response.StatusCode = http.StatusBadRequest
+		return nil, fmt.Errorf("no form_id specified")
+	}
+
+	var form boneless.Form
+	if err = json.NewDecoder(strings.NewReader(request.Body)).Decode(&form); err != nil {
+		response.StatusCode = http.StatusBadRequest
+		return nil, fmt.Errorf("bad json: %w", err)
+	}
+
+	form.Id = id
+	if err = boneless.NewFormService(h.Repo).Update(ctx, &form); err != nil {
+		response.StatusCode = http.StatusInternalServerError
+		return nil, err
+	}
+	return form, nil
 }
 
 func (h Handlers) TemplateById(ctx context.Context, request events.APIGatewayV2HTTPRequest, response *events.APIGatewayV2HTTPResponse) (value interface{}, err error) {
