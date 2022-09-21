@@ -121,6 +121,23 @@ export class ApiStack extends cdk.Stack {
         ],
       },
       {
+        path: '/forms',
+        integration: apiIntegration,
+        methods: [
+          apigateway.HttpMethod.GET,
+          apigateway.HttpMethod.POST,
+        ],
+      },
+      {
+        path: '/forms/{form_id}',
+        integration: apiIntegration,
+        methods: [
+          apigateway.HttpMethod.GET,
+          apigateway.HttpMethod.PUT,
+          apigateway.HttpMethod.DELETE,
+        ],
+      },
+      {
         path: '/templates',
         integration: apiIntegration,
         methods: [
