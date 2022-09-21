@@ -367,7 +367,6 @@ type DynamoDBRepository struct {
 	db        *dynamodb.Client
 	s3        *s3.Client
 	resources DynamoDBResources
-	stats     RepositoryStats
 }
 
 // Ref: https://dynobase.dev/dynamodb-golang-query-examples/
@@ -377,10 +376,6 @@ func NewDynamoDBRepository(config aws.Config, resources DynamoDBResources) Repos
 		s3:        s3.NewFromConfig(config),
 		resources: resources,
 	}
-}
-
-func (repo *DynamoDBRepository) Stats() RepositoryStats {
-	return repo.stats
 }
 
 // Class Methods
@@ -1213,8 +1208,6 @@ func (repo *DynamoDBRepository) deleteItem(ctx context.Context, pk string, sk st
 	}
 	_, err = repo.db.DeleteItem(ctx, params)
 
-	repo.stats.Deletes++
-
 	return
 }
 
@@ -1247,8 +1240,6 @@ func (repo *DynamoDBRepository) getItem(ctx context.Context, pk string, sk strin
 
 	err = attributevalue.UnmarshalMap(response.Item, dst)
 
-	repo.stats.Fetches++
-
 	return
 }
 
@@ -1263,8 +1254,6 @@ func (repo *DynamoDBRepository) putItem(ctx context.Context, item interface{}) (
 		TableName: &repo.resources.Table,
 	}
 	_, err = repo.db.PutItem(ctx, params)
-
-	repo.stats.Inserts++
 
 	return
 }
@@ -1307,8 +1296,6 @@ func (repo *DynamoDBRepository) updateItem(ctx context.Context, item dynamoItem)
 	}
 
 	_, err = repo.db.UpdateItem(ctx, params)
-
-	repo.stats.Updates++
 
 	return
 }
