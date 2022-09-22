@@ -4,8 +4,7 @@ import { AdminUI, CustomRoutes, Loading, Resource, useDataProvider } from 'react
 import { ClassCreate, ClassEdit, ClassImport, ClassList } from './classes';
 import { DocumentCreate, DocumentEdit, DocumentList, DocumentShow } from './documents';
 import { TemplateCreate, TemplateEdit, TemplateImport, TemplateList } from './templates';
-import { FormCreate, FormList } from './forms';
-import { FormEdit } from '@formio/react';
+import { FormCreate, FormEdit, FormList } from './forms';
 
 interface ClassData {
   id: string;
