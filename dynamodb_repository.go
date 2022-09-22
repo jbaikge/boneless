@@ -1071,7 +1071,13 @@ func (repo *DynamoDBRepository) GetFormById(ctx context.Context, id string) (for
 	if err = repo.getItem(ctx, dynamoFormPrefix+id, fmt.Sprintf(dynamoFormSortF, 0), dbForm); err != nil {
 		return
 	}
-	return dbForm.ToForm(), nil
+
+	form = dbForm.ToForm()
+	if err = repo.getFormSchema(ctx, &form); err != nil {
+		return
+	}
+
+	return
 }
 
 func (repo *DynamoDBRepository) GetFormList(ctx context.Context, filter FormFilter) (list []Form, r Range, err error) {
