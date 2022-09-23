@@ -1,4 +1,5 @@
-@import '~bootstrap/dist/css/bootstrap.css';
+@import '~bootstrap/dist/css/bootstrap-grid.css';
+@import 'formBuilder.css';
 @import '~formiojs/dist/formio.full.min.css';
 
 /* .field-row {} */

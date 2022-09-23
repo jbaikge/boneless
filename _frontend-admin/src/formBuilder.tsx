@@ -32,7 +32,7 @@ export const FormBuilderInput = (props: CommonInputProps) => {
   });
 
   return (
-    <div style={{ marginBottom: '1em', width: '100%' }}>
+    <div className="formbuilder-wrapper" style={{ marginBottom: '1.5em', width: '100%' }}>
       <FieldTitle label={label} source={source} resource={resource} />
       <FormBuilder
         onChange={(schema: any) => field.onChange(schema)}
