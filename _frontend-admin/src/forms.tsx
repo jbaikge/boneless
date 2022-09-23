@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Create,
   CreateProps,
@@ -35,6 +34,7 @@ export const FormEdit = (props: EditProps) => {
 const FormForm = () => {
   return (
     <SimpleForm>
+      <TextInput source="id" label="Form ID" helperText="Available after creation" disabled fullWidth />
       <TextInput source="name" fullWidth />
       <FormBuilderInput source="schema" />
     </SimpleForm>
