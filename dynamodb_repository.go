@@ -1137,7 +1137,13 @@ func (repo *DynamoDBRepository) GetFormList(ctx context.Context, filter FormFilt
 func (repo *DynamoDBRepository) UpdateForm(ctx context.Context, form *Form) (err error) {
 	dbForm := new(dynamoForm)
 	dbForm.FromForm(form)
-	return repo.updateItem(ctx, dbForm)
+	if err = repo.updateItem(ctx, dbForm); err != nil {
+		return
+	}
+	if err = repo.putFormSchema(ctx, form); err != nil {
+		return
+	}
+	return
 }
 
 // S3 Form interaction
