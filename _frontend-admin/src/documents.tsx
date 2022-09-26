@@ -45,7 +45,7 @@ const resourceRE = /([^/]+)\/([^/]+)\/.*/g;
 
 export const DocumentCreate = (props: CreateProps) => {
   return (
-    <Create {...props}>
+    <Create {...props} redirect="list">
       <DocumentForm />
     </Create>
   );
