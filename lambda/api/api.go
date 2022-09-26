@@ -352,6 +352,13 @@ func (h Handlers) DocumentList(ctx context.Context, request events.APIGatewayV2H
 		return docs, nil
 	}
 
+	for k, v := range filterParam.Fields {
+		switch k {
+		case "parent_id":
+			filter.ParentId = v
+		}
+	}
+
 	// Handle remaining GET calls
 
 	docs, r, err := documentService.List(ctx, filter)
