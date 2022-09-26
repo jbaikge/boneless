@@ -46,7 +46,7 @@ export const FormList = (props: ListProps) => {
     <List {...props} pagination={<GlobalPagination />}>
       <Datagrid sx={{
         '& td:last-child': { width: '5em' },
-        '& td:nth-last-child(2)': { width: '5em' },
+        '& td:nth-last-of-type(2)': { width: '5em' },
       }}>
         <TextField source="name" label="Form Name" />
         <ShowButton />
