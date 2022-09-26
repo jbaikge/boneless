@@ -428,7 +428,8 @@ func (h Handlers) FileCreate(ctx context.Context, request events.APIGatewayV2HTT
 
 	uploadFile.ContentType = http.DetectContentType(contentTypeBuffer)
 
-	if err = h.Repo.CreateFile(ctx, uploadFile); err != nil {
+	location, err := boneless.NewFileService(h.Repo).CreateFile(ctx, uploadFile)
+	if err != nil {
 		err = fmt.Errorf("creating file: %w", err)
 		return
 	}
@@ -436,7 +437,7 @@ func (h Handlers) FileCreate(ctx context.Context, request events.APIGatewayV2HTT
 	data := struct {
 		Location string `json:"location"`
 	}{
-		Location: uploadFile.Location,
+		Location: location,
 	}
 
 	return data, nil

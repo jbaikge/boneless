@@ -7,7 +7,6 @@ import (
 )
 
 type File struct {
-	Location    string    `json:"location"`
 	ContentType string    `json:"content_type,omitempty"`
 	Filename    string    `json:"filename,omitempty"`
 	Data        io.Reader `json:"data,omitempty"`
@@ -27,7 +26,7 @@ type FileUploadResponse struct {
 }
 
 type FileRepository interface {
-	CreateFile(context.Context, *File) error
+	CreateFile(context.Context, *File) (string, error)
 	CreateUploadUrl(context.Context, FileUploadRequest) (FileUploadResponse, error)
 }
 
@@ -39,6 +38,10 @@ func NewFileService(repo FileRepository) FileService {
 	return FileService{
 		repo: repo,
 	}
+}
+
+func (s FileService) CreateFile(ctx context.Context, file *File) (location string, err error) {
+	return s.repo.CreateFile(ctx, file)
 }
 
 func (s FileService) UploadUrl(ctx context.Context, request FileUploadRequest) (FileUploadResponse, error) {
