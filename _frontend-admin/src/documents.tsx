@@ -20,6 +20,7 @@ import {
   Loading,
   ReferenceField,
   ReferenceInput,
+  ReferenceManyField,
   RichTextField,
   SelectInput,
   Show,
@@ -30,9 +31,12 @@ import {
   SimpleShowLayout,
   TextField,
   TextInput,
+  useGetList,
   useGetOne,
+  useRecordContext,
   useResourceContext,
 } from 'react-admin';
+import { Box, Typography } from '@mui/material';
 import { FieldProps } from './field';
 import { GlobalPagination } from './pagination';
 import { TinyInput } from './tinyInput';
@@ -47,9 +51,41 @@ export const DocumentCreate = (props: CreateProps) => {
   );
 };
 
+const EditAside = () => {
+  const record = useRecordContext();
+  const { data, isLoading } = useGetList('classes');
+
+  if (isLoading || !record) {
+    return <Loading />;
+  }
+
+  const filtered = data?.filter((value) => value.parent_id === record.class_id);
+  if (filtered?.length === 0) {
+    return <></>
+  }
+
+  return (
+    <Box sx={{ width: '240px', margin: '1em' }}>
+      {filtered?.map((c) => {
+        const resource = `classes/${c.id}/documents`;
+        return (
+          <React.Fragment key={c.id}>
+            <Typography variant="h6">{c.name}</Typography>
+            <ReferenceManyField reference={resource} target="parent_id">
+              <Datagrid bulkActionButtons={false} rowClick="edit">
+                <TextField source="values.title" label="Title" />
+              </Datagrid>
+            </ReferenceManyField>
+          </React.Fragment>
+        );
+      })}
+    </Box>
+  );
+}
+
 export const DocumentEdit = (props: EditProps) => {
   return (
-    <Edit {...props}>
+    <Edit {...props} aside={<EditAside />}>
       <DocumentForm />
     </Edit>
   );
@@ -86,9 +122,9 @@ export const DocumentForm = () => {
             return <DateTimeInput key={field.name} source={source} label={field.label} inputProps={{ min: field.min, max: field.max, step: field.step }} />
           case 'multi-class':
             return (
-              <ArrayInput source={source} label={field.label}>
+              <ArrayInput key={field.name} source={source} label={field.label}>
                 <SimpleFormIterator>
-                  <ReferenceInput reference={'/classes/' + field.class_id + '/documents'} source="id" perPage={1000} sort={{ field: field.field, order: 'ASC' }}>
+                  <ReferenceInput reference={'/classes/' + field.class_id + '/documents'} source="id" perPage={100} sort={{ field: field.field, order: 'ASC' }}>
                     <SelectInput optionText={'values.' + field.field} label={field.label} />
                   </ReferenceInput>
                 </SimpleFormIterator>
@@ -98,7 +134,7 @@ export const DocumentForm = () => {
             return (
               <ArrayInput source={source} label={field.label}>
                 <SimpleFormIterator>
-                  <ReferenceInput reference={'/classes/' + field.class_id + '/documents'} source='id' perPage={1000} sort={{ field: field.field, order: 'ASC' }}>
+                  <ReferenceInput reference={'/classes/' + field.class_id + '/documents'} source='id' perPage={100} sort={{ field: field.field, order: 'ASC' }}>
                     <SelectInput optionText={'values.' + field.field} label={field.label} />
                   </ReferenceInput>
                   <TextInput source='label' />
@@ -109,7 +145,7 @@ export const DocumentForm = () => {
             return <RichTextInput key={field.name} source={source} label={field.label} fullWidth />
           case 'select-class':
             return (
-              <ReferenceInput reference={'/classes/' + field.class_id + '/documents'} source={source} perPage={1000} sort={{ field: field.field, order: 'ASC' }}>
+              <ReferenceInput reference={'/classes/' + field.class_id + '/documents'} source={source} perPage={100} sort={{ field: field.field, order: 'ASC' }}>
                 <SelectInput optionText={'values.' + field.field} label={field.label} fullWidth />
               </ReferenceInput>
             );
