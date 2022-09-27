@@ -22,6 +22,7 @@ import {
   ReferenceInput,
   ReferenceManyField,
   RichTextField,
+  SearchInput,
   SelectInput,
   Show,
   ShowButton,
@@ -189,6 +190,10 @@ export const DocumentList = (props: ListProps) => {
     return <Loading />;
   }
 
+  const filters = [
+    <SearchInput source="q" alwaysOn />
+  ];
+
   let parentField = null;
   if (data.parent_id !== '') {
     parentField = (
@@ -196,10 +201,15 @@ export const DocumentList = (props: ListProps) => {
         <TextField source="values.title" />
       </ReferenceField>
     );
+    filters.push(
+      <ReferenceInput reference={`classes/${data.parent_id}/documents`} source="parent_id" label="Parent" alwaysOn>
+        <SelectInput optionText="values.title" />
+      </ReferenceInput>
+    );
   }
 
   return (
-    <List {...props} pagination={<GlobalPagination />}>
+    <List {...props} pagination={<GlobalPagination />} filters={filters}>
       <Datagrid sx={{
         '& td:last-child': { width: '5em' },
         '& td:nth-last-of-type(2)': { width: '5em' },
