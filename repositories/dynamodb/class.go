@@ -1,6 +1,7 @@
 package dynamodb
 
 import (
+	"context"
 	"time"
 
 	"github.com/jbaikge/boneless"
@@ -48,5 +49,25 @@ func (dyn *dynamoClass) ToClass() (c boneless.Class) {
 		Fields:   make([]boneless.Field, len(dyn.Data)),
 	}
 	copy(c.Fields, dyn.Data)
+	return
+}
+
+func (repo *DynamoDBRepository) CreateClass(context.Context, *boneless.Class) (err error) {
+	return
+}
+
+func (repo *DynamoDBRepository) DeleteClass(context.Context, string) (err error) {
+	return
+}
+
+func (repo *DynamoDBRepository) GetClassById(context.Context, string) (class boneless.Class, err error) {
+	return
+}
+
+func (repo *DynamoDBRepository) GetClassList(context.Context, boneless.ClassFilter) (classes []boneless.Class, r boneless.Range, err error) {
+	return
+}
+
+func (repo *DynamoDBRepository) UpdateClass(context.Context, *boneless.Class) (err error) {
 	return
 }
