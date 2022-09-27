@@ -2,7 +2,7 @@ package boneless
 
 import "time"
 
-func testClasses() []Class {
+func ClassData() []Class {
 	return []Class{
 		{
 			Id:   "page",
@@ -69,7 +69,7 @@ func testClasses() []Class {
 	}
 }
 
-func testDocuments() []Document {
+func DocumentData() []Document {
 	loc, _ := time.LoadLocation("America/New_York")
 	return []Document{
 		{

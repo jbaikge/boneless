@@ -553,11 +553,11 @@ func TestDynamoDBRepositoryDocumentList(t *testing.T) {
 
 	ctx := context.Background()
 
-	for _, class := range testClasses() {
+	for _, class := range ClassData() {
 		assert.NoError(t, repo.CreateClass(ctx, &class))
 	}
 
-	for _, document := range testDocuments() {
+	for _, document := range DocumentData() {
 		assert.NoError(t, repo.CreateDocument(ctx, &document))
 	}
 
