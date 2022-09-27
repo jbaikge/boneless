@@ -601,7 +601,7 @@ func TestDynamoDBRepositoryDocumentList(t *testing.T) {
 	})
 
 	t.Run("EmptyFilter", func(t *testing.T) {
-		// Should list all documents, sorted by creation date
+		// Should list all documents, sorted by descending creation date
 		filter := DocumentFilter{
 			Range: Range{End: 99},
 		}
@@ -609,13 +609,13 @@ func TestDynamoDBRepositoryDocumentList(t *testing.T) {
 		assert.NoError(t, err)
 		assert.DeepEqual(t, Range{End: 19, Size: 20}, r)
 		assert.Equal(t, 20, len(docs))
-		assert.Equal(t, "event-1", docs[0].Id)
-		assert.Equal(t, "speaker-6", docs[19].Id)
+		assert.Equal(t, "speaker-6", docs[0].Id)
+		assert.Equal(t, "event-1", docs[19].Id)
 	})
 
 	t.Run("AllChildren", func(t *testing.T) {
 		// Should give all children of a parent document, regardless of class
-		// then sorted by creation date
+		// then sorted by descending creation date
 		filter := DocumentFilter{
 			ParentId: "event-1",
 			Range:    Range{End: 99},
@@ -624,8 +624,8 @@ func TestDynamoDBRepositoryDocumentList(t *testing.T) {
 		assert.NoError(t, err)
 		assert.DeepEqual(t, Range{End: 2, Size: 3}, r)
 		assert.Equal(t, 3, len(docs))
-		assert.Equal(t, "session-1", docs[0].Id)
-		assert.Equal(t, "session-3", docs[2].Id)
+		assert.Equal(t, "session-3", docs[0].Id)
+		assert.Equal(t, "session-1", docs[2].Id)
 	})
 }
 
