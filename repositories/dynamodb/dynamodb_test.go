@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"testing"
@@ -152,7 +153,7 @@ func TestDynamoDBRepository(t *testing.T) {
 
 	t.Run("GetClassByIdFail", func(t *testing.T) {
 		_, err := repo.GetClassById(ctx, "get_fail")
-		assert.Equal(t, ErrNotExist, err)
+		assert.True(t, errors.Is(err, ErrNotExist))
 	})
 
 	t.Run("UpdateClass", func(t *testing.T) {
