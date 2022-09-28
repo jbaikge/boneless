@@ -17,6 +17,8 @@ const (
 	sortValueLen = 64
 )
 
+var _ dynamoDocumentInterface = &dynamoSort{}
+
 func dynamoSortIds(classId string, key string, docId string, value interface{}) (pk string, sk string) {
 	pk = sortPrefix + classId + "#" + key
 	if t, ok := value.(time.Time); ok {

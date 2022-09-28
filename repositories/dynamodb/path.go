@@ -9,6 +9,8 @@ import (
 
 const pathPrefix = "path#"
 
+var _ dynamoDocumentInterface = &dynamoPath{}
+
 func dynamoPathIds(path string) (pk string, sk string) {
 	pk = pathPrefix + path
 	sk = "path"
