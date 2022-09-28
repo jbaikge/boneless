@@ -97,6 +97,89 @@ func TestDocumentList(t *testing.T) {
 	})
 }
 
+func TestTableScan(t *testing.T) {
+	resources := DynamoDBResources{
+		Bucket: dynamoPrefix + "tablescan",
+		Table:  dynamoPrefix + "TableScan",
+	}
+	repo, err := newRepository(resources)
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	class := boneless.Class{
+		Id:      "class",
+		Name:    "Class",
+		Created: time.Now(),
+		Updated: time.Now(),
+		Fields: []boneless.Field{
+			{Name: "sort_field", Sort: true},
+			{Name: "scan_field"},
+			{Name: "empty_field"},
+		},
+	}
+	assert.NoError(t, repo.CreateClass(ctx, &class))
+
+	doc := boneless.Document{
+		ClassId: "class",
+		Values:  make(map[string]interface{}),
+	}
+	data := [][]string{
+		{"doc1", "B", "C"},
+		{"doc2", "D", "A"},
+		{"doc3", "C", "D"},
+		{"doc4", "A", "B"},
+	}
+	for _, set := range data {
+		doc.Id = set[0]
+		doc.Values["sort_field"] = set[1]
+		doc.Values["scan_field"] = set[2]
+		assert.NoError(t, repo.CreateDocument(ctx, &doc))
+	}
+
+	testTable := []struct {
+		Name   string
+		Filter boneless.DocumentFilter
+		Expect []string
+	}{
+		{
+			Name: "UseSort",
+			Filter: boneless.DocumentFilter{
+				Range: boneless.Range{End: 9},
+				Sort:  boneless.DocumentFilterSort{Field: "sort_field"},
+			},
+			Expect: []string{"doc4", "doc1", "doc3", "doc2"},
+		},
+		{
+			Name: "UseScan",
+			Filter: boneless.DocumentFilter{
+				Range: boneless.Range{End: 9},
+				Sort:  boneless.DocumentFilterSort{Field: "scan_field"},
+			},
+			Expect: []string{"doc2", "doc4", "doc1", "doc3"},
+		},
+		{
+			Name: "UseEmpty",
+			Filter: boneless.DocumentFilter{
+				Range: boneless.Range{End: 9},
+				Sort:  boneless.DocumentFilterSort{Field: "empty_field"},
+			},
+			Expect: []string{"doc2", "doc4", "doc3", "doc1"},
+		},
+	}
+
+	for _, test := range testTable {
+		t.Run(test.Name, func(t *testing.T) {
+			docs, r, err := repo.GetDocumentList(ctx, test.Filter)
+			assert.NoError(t, err)
+			assert.Equal(t, len(data), r.Size)
+			for i, doc := range docs {
+				assert.Equal(t, test.Expect[i], doc.Id)
+			}
+		})
+	}
+}
+
 func TestValues(t *testing.T) {
 	resources := DynamoDBResources{
 		Bucket: dynamoPrefix + "values",
