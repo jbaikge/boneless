@@ -28,7 +28,7 @@ func init() {
 	flag.BoolVar(&useLocalStack, "localstack", useLocalStack, "Force path style URLs for LocalStack compatibility")
 }
 
-func testDynamoNewRepository(resources DynamoDBResources) (repo *DynamoDBRepository, err error) {
+func newRepository(resources DynamoDBResources) (repo *DynamoDBRepository, err error) {
 	endpointResolverFunc := func(service string, region string, options ...interface{}) (endpoint aws.Endpoint, err error) {
 		endpoint = aws.Endpoint{
 			PartitionID:   "aws",
@@ -96,7 +96,7 @@ func testDynamoNewRepository(resources DynamoDBResources) (repo *DynamoDBReposit
 	}, nil
 }
 
-func testDynamoEmptyTable(repo *DynamoDBRepository, table string) (err error) {
+func emptyTable(repo *DynamoDBRepository, table string) (err error) {
 	params := &dynamodb.ScanInput{
 		TableName: &table,
 	}
@@ -125,7 +125,7 @@ func TestDynamoDBRepository(t *testing.T) {
 		Bucket: dynamoPrefix + "test",
 		Table:  dynamoPrefix + "Test",
 	}
-	repo, err := testDynamoNewRepository(resources)
+	repo, err := newRepository(resources)
 	assert.NoError(t, err)
 
 	ctx := context.Background()
@@ -190,7 +190,7 @@ func TestDynamoDBRepository(t *testing.T) {
 	})
 
 	t.Run("ClassList", func(t *testing.T) {
-		assert.NoError(t, testDynamoEmptyTable(repo, resources.Table))
+		assert.NoError(t, emptyTable(repo, resources.Table))
 
 		t.Run("Empty", func(t *testing.T) {
 			filter := boneless.ClassFilter{Range: boneless.Range{End: 9}}
@@ -287,7 +287,7 @@ func TestDynamoDBRepository(t *testing.T) {
 	})
 
 	t.Run("CreateDocumentWithSort", func(t *testing.T) {
-		assert.NoError(t, testDynamoEmptyTable(repo, resources.Table))
+		assert.NoError(t, emptyTable(repo, resources.Table))
 
 		class := boneless.Class{
 			Id:   "sort_class",
@@ -521,7 +521,7 @@ func TestDynamoDBRepositoryDocumentList(t *testing.T) {
 		Bucket: dynamoPrefix + "list",
 		Table:  dynamoPrefix + "List",
 	}
-	repo, err := testDynamoNewRepository(resources)
+	repo, err := newRepository(resources)
 	assert.NoError(t, err)
 
 	ctx := context.Background()
@@ -607,7 +607,7 @@ func TestDynamoDBRepositoryValues(t *testing.T) {
 		Bucket: dynamoPrefix + "values",
 		Table:  dynamoPrefix + "Values",
 	}
-	repo, err := testDynamoNewRepository(resources)
+	repo, err := newRepository(resources)
 	assert.NoError(t, err)
 
 	ctx := context.Background()
@@ -675,7 +675,7 @@ func TestDynamoDBRepositoryTemplates(t *testing.T) {
 		Bucket: dynamoPrefix + "templates",
 		Table:  dynamoPrefix + "Templates",
 	}
-	repo, err := testDynamoNewRepository(resources)
+	repo, err := newRepository(resources)
 	assert.NoError(t, err)
 
 	ctx := context.Background()
