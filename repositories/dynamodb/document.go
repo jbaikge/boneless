@@ -13,10 +13,16 @@ import (
 
 const documentPrefix = "doc#"
 
+var _ dynamoDocumentInterface = &dynamoDocument{}
+
 func dynamoDocumentIds(id string, version int) (pk string, sk string) {
 	pk = documentPrefix + id
 	sk = documentPrefix + fmt.Sprintf("v%06d", version)
 	return
+}
+
+type dynamoDocumentInterface interface {
+	ToDocument() boneless.Document
 }
 
 type dynamoDocument struct {
@@ -158,6 +164,7 @@ func (repo *DynamoDBRepository) GetDocumentById(ctx context.Context, id string) 
 }
 
 func (repo *DynamoDBRepository) GetDocumentList(ctx context.Context, filter boneless.DocumentFilter) (docs []boneless.Document, r boneless.Range, err error) {
+
 	return
 }
 
