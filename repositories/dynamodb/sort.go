@@ -141,12 +141,7 @@ func (repo *DynamoDBRepository) putSortDocuments(ctx context.Context, doc *bonel
 	}
 
 	dbSort := newDynamoSortBase(doc)
-	for _, field := range class.Fields {
-		if !field.Sort {
-			continue
-		}
-
-		key := field.Name
+	for _, key := range class.SortFields() {
 		value, ok := doc.Values[key]
 		if !ok {
 			continue
