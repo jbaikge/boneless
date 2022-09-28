@@ -16,8 +16,9 @@ import (
 )
 
 var (
-	ErrBadRange = errors.New("invalid range")
-	ErrNotExist = errors.New("item does not exist")
+	ErrBadRange  = errors.New("invalid range")
+	ErrNotExist  = errors.New("item does not exist")
+	ErrBadFilter = errors.New("filter not valid")
 )
 
 type DynamoDBResources struct {
