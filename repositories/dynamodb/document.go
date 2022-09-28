@@ -3,11 +3,13 @@ package dynamodb
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/jbaikge/boneless"
 )
 
@@ -75,6 +77,52 @@ func (dyn *dynamoDocument) ToDocument() (doc boneless.Document) {
 	}
 	return
 }
+
+// Sorters
+
+type dynamoDocumentByCreated []*dynamoDocument
+
+func (arr dynamoDocumentByCreated) Len() int           { return len(arr) }
+func (arr dynamoDocumentByCreated) Less(i, j int) bool { return arr[i].Created.Before(arr[j].Created) }
+func (arr dynamoDocumentByCreated) Swap(i, j int)      { arr[i], arr[j] = arr[j], arr[i] }
+
+type dynamoDocumentByUpdated []*dynamoDocument
+
+func (arr dynamoDocumentByUpdated) Len() int           { return len(arr) }
+func (arr dynamoDocumentByUpdated) Less(i, j int) bool { return arr[i].Updated.Before(arr[j].Updated) }
+func (arr dynamoDocumentByUpdated) Swap(i, j int)      { arr[i], arr[j] = arr[j], arr[i] }
+
+type dynamoDocumentByValue struct {
+	Key  string
+	Docs []*dynamoDocument
+}
+
+func (sorter dynamoDocumentByValue) Len() int { return len(sorter.Docs) }
+func (sorter dynamoDocumentByValue) Less(i, j int) bool {
+	iVal, iFound := sorter.Docs[i].Data[sorter.Key]
+	if !iFound {
+		iVal = ""
+	}
+
+	jVal, jFound := sorter.Docs[j].Data[sorter.Key]
+	if !jFound {
+		jVal = ""
+	}
+
+	switch v := iVal.(type) {
+	case string:
+		return v < jVal.(string)
+	case int:
+		return v < jVal.(int)
+	default:
+		return fmt.Sprint(iVal) < fmt.Sprint(jVal)
+	}
+}
+func (sorter dynamoDocumentByValue) Swap(i, j int) {
+	sorter.Docs[i], sorter.Docs[j] = sorter.Docs[j], sorter.Docs[i]
+}
+
+// API Methods
 
 func (repo *DynamoDBRepository) CreateDocument(ctx context.Context, doc *boneless.Document) (err error) {
 	if doc.ClassId == "" {
@@ -183,6 +231,96 @@ func (repo *DynamoDBRepository) GetDocumentList(ctx context.Context, filter bone
 	}
 
 	// Pass through and perform an expensive scan and sort
+
+	key, err := repo.marshalKey(dynamoDocumentIds("", 0))
+	if err != nil {
+		err = fmt.Errorf("marshal key: %w", err)
+		return
+	}
+
+	filterExpression := "SK = :sk"
+	params := &dynamodb.ScanInput{
+		TableName: &repo.resources.Table,
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":sk": key["SK"],
+		},
+	}
+
+	if filter.ParentId != "" {
+		filterExpression += " AND ParentId = :parent_id"
+		params.ExpressionAttributeValues[":parent_id"], err = attributevalue.Marshal(filter.ParentId)
+		if err != nil {
+			err = fmt.Errorf("marshal parent_id: %w", err)
+			return
+		}
+	}
+
+	if filter.ClassId != "" {
+		filterExpression += " AND ClassId = :class_id"
+		params.ExpressionAttributeValues[":class_id"], err = attributevalue.Marshal(filter.ClassId)
+		if err != nil {
+			err = fmt.Errorf("marshal class_id: %w", err)
+			return
+		}
+	}
+
+	params.FilterExpression = &filterExpression
+
+	// Pull the data out of the database
+	var response *dynamodb.ScanOutput
+	dbDocs := make([]*dynamoDocument, 0, 64)
+	paginator := dynamodb.NewScanPaginator(repo.db, params)
+	for paginator.HasMorePages() {
+		response, err = paginator.NextPage(ctx)
+		if err != nil {
+			err = fmt.Errorf("unable to next page: %w", err)
+			return
+		}
+		tmp := make([]*dynamoDocument, 0, len(response.Items))
+		if err = attributevalue.UnmarshalListOfMaps(response.Items, &tmp); err != nil {
+			err = fmt.Errorf("unmarshal list of maps: %w", err)
+			return
+		}
+		dbDocs = append(dbDocs, tmp...)
+	}
+
+	// Crank up the sorter
+	var sorter sort.Interface
+	switch filter.Sort.Field {
+	case "":
+		sorter = sort.Reverse(dynamoDocumentByCreated(dbDocs))
+	case "created":
+		sorter = dynamoDocumentByCreated(dbDocs)
+	case "updated":
+		sorter = dynamoDocumentByUpdated(dbDocs)
+	default:
+		sorter = dynamoDocumentByValue{
+			Docs: dbDocs,
+			Key:  filter.Sort.Field,
+		}
+	}
+
+	// Reverse the sorter if explicitly requested or the sort field is blank
+	if filter.Sort.Descending() {
+		sorter = sort.Reverse(sorter)
+	}
+
+	// Sort documents
+	sort.Sort(sorter)
+
+	r.Size = len(dbDocs)
+
+	// Pull out the requested slice
+	list = make([]boneless.Document, 0, r.SliceLen())
+	for i := filter.Range.Start; i < len(dbDocs) && i <= filter.Range.End; i++ {
+		list = append(list, dbDocs[i].ToDocument())
+	}
+
+	r.Start = filter.Range.Start
+	r.End = filter.Range.Start
+	if length := len(list); length > 0 {
+		r.End += length - 1
+	}
 
 	return
 }
