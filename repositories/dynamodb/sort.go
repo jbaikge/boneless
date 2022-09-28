@@ -3,6 +3,7 @@ package dynamodb
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -125,6 +126,95 @@ func (repo *DynamoDBRepository) deleteSortDocuments(ctx context.Context, id stri
 				return err
 			}
 		}
+	}
+
+	return
+}
+
+// Gets items using the sort indexes. This is preferred as it is much faster
+// than manually sorting after a table scan.
+func (repo *DynamoDBRepository) getSortDocuments(ctx context.Context, filter boneless.DocumentFilter) (list []boneless.Document, r boneless.Range, err error) {
+	// Class ID and sort field are required to proceed.
+	if filter.ClassId == "" || filter.Sort.Field == "" {
+		err = ErrBadFilter
+		return
+	}
+
+	// Fetch class to cross-reference sort field
+	class, err := repo.GetClassById(ctx, filter.ClassId)
+	if err != nil {
+		return
+	}
+
+	// Verify sort field is valid
+	keys := class.SortFields()
+	if i := sort.SearchStrings(keys, filter.Sort.Field); i < len(keys) && keys[i] != filter.Sort.Field {
+		err = ErrBadFilter
+		return
+	}
+
+	// Get pre-marshalled pk out of key
+	key, err := repo.marshalKey(dynamoSortIds(filter.ClassId, filter.Sort.Field, "", ""))
+	if err != nil {
+		return
+	}
+	params := &dynamodb.QueryInput{
+		TableName:              &repo.resources.Table,
+		ScanIndexForward:       aws.Bool(filter.Sort.Ascending()),
+		KeyConditionExpression: aws.String("PK = :pk"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":pk": key["PK"],
+		},
+	}
+
+	// Add parent ID filter if necessary
+	if filter.ParentId != "" {
+		params.ExpressionAttributeValues[":parent_id"], err = attributevalue.Marshal(filter.ParentId)
+		if err != nil {
+			err = fmt.Errorf("marshal parent_id: %w", err)
+			return
+		}
+		params.FilterExpression = aws.String("ParentId = :parent_id")
+	}
+
+	list = make([]boneless.Document, 0, filter.Range.End-filter.Range.Start+1)
+	seen := 0
+	var response *dynamodb.QueryOutput
+	paginator := dynamodb.NewQueryPaginator(repo.db, params)
+	for paginator.HasMorePages() {
+		response, err = paginator.NextPage(ctx)
+		if err != nil {
+			err = fmt.Errorf("retrieving next page: %w", err)
+			return
+		}
+
+		// Annoyingly, need to iterate over the entire query response to get the
+		// final size.
+		r.Size += len(response.Items)
+
+		for _, item := range response.Items {
+			// Break out if there is no reason to process items
+			if seen > filter.Range.End {
+				break
+			}
+			// Skip if not within slice range
+			if seen < filter.Range.Start {
+				continue
+			}
+			seen++
+			dbSort := new(dynamoSort)
+			if err = attributevalue.UnmarshalMap(item, dbSort); err != nil {
+				err = fmt.Errorf("unmarshal item: %w", err)
+				return
+			}
+			list = append(list, dbSort.ToDocument())
+		}
+	}
+
+	r.Start = filter.Range.Start
+	r.End = filter.Range.Start
+	if length := len(list); length > 0 {
+		r.End += length - 1
 	}
 
 	return

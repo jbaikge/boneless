@@ -163,7 +163,26 @@ func (repo *DynamoDBRepository) GetDocumentById(ctx context.Context, id string) 
 	return dbDoc.ToDocument(), nil
 }
 
-func (repo *DynamoDBRepository) GetDocumentList(ctx context.Context, filter boneless.DocumentFilter) (docs []boneless.Document, r boneless.Range, err error) {
+func (repo *DynamoDBRepository) GetDocumentList(ctx context.Context, filter boneless.DocumentFilter) (list []boneless.Document, r boneless.Range, err error) {
+	list, r, err = repo.getSortDocuments(ctx, filter)
+
+	// Success!
+	if err == nil {
+		return
+	}
+
+	// A bad filter means we didn't have enough valid information to pull
+	// sorted documents. Reset the error and process below.
+	if err == ErrBadFilter {
+		err = nil
+	}
+
+	// Something serious happened and we need to let the user know
+	if err != nil {
+		return
+	}
+
+	// Pass through and perform an expensive scan and sort
 
 	return
 }
