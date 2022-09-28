@@ -178,7 +178,12 @@ func (repo *DynamoDBRepository) UpdateDocument(ctx context.Context, doc *boneles
 		return
 	}
 
-	// Update the "current" (v0) version of the document
+	// Force data to an empty map, otherwise it is stored as a null - don't want
+	// unmarshal issues later.
+	data := doc.Values
+	if data == nil {
+		data = make(map[string]interface{})
+	}
 	values := map[string]interface{}{
 		"ClassId":    doc.ClassId,
 		"ParentId":   doc.ParentId,
@@ -186,8 +191,10 @@ func (repo *DynamoDBRepository) UpdateDocument(ctx context.Context, doc *boneles
 		"Version":    doc.Version,
 		"Path":       doc.Path,
 		"Updated":    doc.Updated,
-		"Data":       doc.Values,
+		"Data":       data,
 	}
+
+	// Update the "current" (v0) version of the document
 	if err = repo.updateItem(ctx, pk, sk, values); err != nil {
 		return
 	}
