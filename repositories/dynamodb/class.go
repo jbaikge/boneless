@@ -148,7 +148,7 @@ func (repo *DynamoDBRepository) UpdateClass(ctx context.Context, class *boneless
 	values := map[string]interface{}{
 		"ParentId": class.ParentId,
 		"Name":     class.Name,
-		"Fields":   class.Fields,
+		"Data":     class.Fields,
 		"Updated":  class.Updated,
 	}
 	return repo.updateItem(ctx, pk, sk, values)
