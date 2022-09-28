@@ -152,3 +152,7 @@ func (r *Range) ParseParams(params map[string]string) (err error) {
 	r.End = 9
 	return
 }
+
+func (r Range) SliceLen() int {
+	return r.End - r.Start + 1
+}
