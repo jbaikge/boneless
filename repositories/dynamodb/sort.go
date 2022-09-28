@@ -177,7 +177,7 @@ func (repo *DynamoDBRepository) getSortDocuments(ctx context.Context, filter bon
 		params.FilterExpression = aws.String("ParentId = :parent_id")
 	}
 
-	list = make([]boneless.Document, 0, filter.Range.End-filter.Range.Start+1)
+	list = make([]boneless.Document, 0, filter.Range.SliceLen())
 	seen := 0
 	var response *dynamodb.QueryOutput
 	paginator := dynamodb.NewQueryPaginator(repo.db, params)
