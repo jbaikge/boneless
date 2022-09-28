@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/jbaikge/boneless"
 )
 
@@ -79,6 +83,48 @@ func (dyn dynamoSort) ToDocument() (doc boneless.Document) {
 	for k, v := range dyn.Data {
 		doc.Values[k] = v
 	}
+	return
+}
+
+func (repo *DynamoDBRepository) deleteSortDocuments(ctx context.Context, id string) (err error) {
+	var key struct {
+		PK string
+		SK string
+	}
+
+	prefix, err := attributevalue.Marshal(sortPrefix)
+	if err != nil {
+		return
+	}
+	idValue, err := attributevalue.Marshal(id)
+	if err != nil {
+		return
+	}
+	params := &dynamodb.ScanInput{
+		TableName:            &repo.resources.Table,
+		ProjectionExpression: aws.String("PK,SK"),
+		FilterExpression:     aws.String("begins_with(PK, :prefix) AND DocumentId = :id"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":prefix": prefix,
+			":id":     idValue,
+		},
+	}
+	paginator := dynamodb.NewScanPaginator(repo.db, params)
+	for paginator.HasMorePages() {
+		response, err := paginator.NextPage(ctx)
+		if err != nil {
+			return err
+		}
+		for _, item := range response.Items {
+			if err = attributevalue.UnmarshalMap(item, &key); err != nil {
+				return err
+			}
+			if err = repo.deleteItem(ctx, key.PK, key.SK); err != nil {
+				return err
+			}
+		}
+	}
+
 	return
 }
 

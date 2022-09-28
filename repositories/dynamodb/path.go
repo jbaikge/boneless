@@ -66,6 +66,24 @@ func (dyn dynamoPath) ToDocument() (doc boneless.Document) {
 	return
 }
 
+func (repo *DynamoDBRepository) GetDocumentByPath(ctx context.Context, path string) (doc boneless.Document, err error) {
+	pk, sk := dynamoPathIds(path)
+	dbPath := new(dynamoPath)
+	if err = repo.getItem(ctx, pk, sk, dbPath); err != nil {
+		return
+	}
+	return dbPath.ToDocument(), nil
+}
+
+func (repo *DynamoDBRepository) deletePathDocument(ctx context.Context, path string) (err error) {
+	if path == "" {
+		return
+	}
+
+	pk, sk := dynamoPathIds(path)
+	return repo.deleteItem(ctx, pk, sk)
+}
+
 func (repo *DynamoDBRepository) putPathDocument(ctx context.Context, doc *boneless.Document) (err error) {
 	if doc.Path == "" {
 		return
