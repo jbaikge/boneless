@@ -186,7 +186,7 @@ func TestDynamoDBRepository(t *testing.T) {
 		assert.NoError(t, repo.CreateClass(ctx, &class))
 		assert.NoError(t, repo.DeleteClass(ctx, class.Id))
 		_, err := repo.GetClassById(ctx, class.Id)
-		assert.Equal(t, ErrNotExist, err)
+		assert.True(t, errors.Is(err, ErrNotExist))
 	})
 
 	t.Run("ClassList", func(t *testing.T) {
