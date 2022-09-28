@@ -67,26 +67,49 @@ func (dyn *dynamoDocument) ToDocument() (doc boneless.Document) {
 	return
 }
 
-func (repo *DynamoDBRepository) CreateDocument(context.Context, *boneless.Document) (err error) {
+func (repo *DynamoDBRepository) CreateDocument(ctx context.Context, doc *boneless.Document) (err error) {
+	if doc.ClassId == "" {
+		return fmt.Errorf("class ID required")
+	}
+
+	doc.Version = 1
+	dbDoc := newDynamoDocument(doc)
+
+	// Insert two copies of the document: v1 and the latest (v0)
+	for _, version := range []int{0, 1} {
+		_, dbDoc.SK = dynamoDocumentIds(doc.Id, version)
+		if err = repo.putItem(ctx, dbDoc); err != nil {
+			return fmt.Errorf("put document failed: %w", err)
+		}
+	}
+
+	if err = repo.putPathDocument(ctx, doc); err != nil {
+		return fmt.Errorf("put path document failed: %w", err)
+	}
+
+	if err = repo.putSortDocuments(ctx, doc); err != nil {
+		return fmt.Errorf("put sort documents failed: %w", err)
+	}
+
 	return
 }
 
-func (repo *DynamoDBRepository) DeleteDocument(context.Context, string) (err error) {
+func (repo *DynamoDBRepository) DeleteDocument(ctx context.Context, id string) (err error) {
 	return
 }
 
-func (repo *DynamoDBRepository) GetDocumentById(context.Context, string) (doc boneless.Document, err error) {
+func (repo *DynamoDBRepository) GetDocumentById(ctx context.Context, id string) (doc boneless.Document, err error) {
 	return
 }
 
-func (repo *DynamoDBRepository) GetDocumentByPath(context.Context, string) (doc boneless.Document, err error) {
+func (repo *DynamoDBRepository) GetDocumentByPath(ctx context.Context, path string) (doc boneless.Document, err error) {
 	return
 }
 
-func (repo *DynamoDBRepository) GetDocumentList(context.Context, boneless.DocumentFilter) (docs []boneless.Document, r boneless.Range, err error) {
+func (repo *DynamoDBRepository) GetDocumentList(ctx context.Context, filter boneless.DocumentFilter) (docs []boneless.Document, r boneless.Range, err error) {
 	return
 }
 
-func (repo *DynamoDBRepository) UpdateDocument(context.Context, *boneless.Document) (err error) {
+func (repo *DynamoDBRepository) UpdateDocument(ctx context.Context, doc *boneless.Document) (err error) {
 	return
 }
