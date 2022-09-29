@@ -62,7 +62,7 @@ func Documents() []boneless.Document {
 		{
 			Id:      "blog-3",
 			ClassId: "blog",
-			Path:    "/blogs/blog-1",
+			Path:    "/blogs/blog-3",
 			Created: time.Date(2022, time.August, 8, 9, 42, 0, 0, loc),
 			Updated: time.Date(2022, time.August, 8, 9, 42, 0, 0, loc),
 			Values: map[string]interface{}{
