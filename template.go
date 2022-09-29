@@ -53,7 +53,6 @@ func (s TemplateService) Create(ctx context.Context, template *Template) (err er
 
 	now := time.Now()
 	template.Id = idProvider.NewWithTime(now)
-	template.Version = 1
 	template.Created = now
 	template.Updated = now
 
