@@ -2,6 +2,8 @@ package dynamodb
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jbaikge/boneless"
@@ -86,9 +88,19 @@ func (repo *DynamoDBRepository) deletePathDocument(ctx context.Context, path str
 	return repo.deleteItem(ctx, pk, sk)
 }
 
+func (repo *DynamoDBRepository) hasPathDocument(ctx context.Context, doc *boneless.Document) (exists bool) {
+	pk, sk := dynamoPathIds(doc.Path)
+	dbPath := new(dynamoPath)
+	return !errors.Is(repo.getItem(ctx, pk, sk, dbPath), ErrNotExist)
+}
+
 func (repo *DynamoDBRepository) putPathDocument(ctx context.Context, doc *boneless.Document) (err error) {
 	if doc.Path == "" {
 		return
+	}
+
+	if repo.hasPathDocument(ctx, doc) {
+		return fmt.Errorf("document already exists for path (%s)", doc.Path)
 	}
 
 	return repo.putItem(ctx, newDynamoPath(doc))

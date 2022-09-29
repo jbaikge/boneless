@@ -333,6 +333,11 @@ func (repo *DynamoDBRepository) UpdateDocument(ctx context.Context, doc *boneles
 		return
 	}
 
+	// Check for path conflict before continuing.
+	if oldDoc.Path != doc.Path && repo.hasPathDocument(ctx, doc) {
+		return fmt.Errorf("document already exists for path (%s)", doc.Path)
+	}
+
 	// Increment version based on the current version in the database
 	doc.Version = oldDoc.Version + 1
 
@@ -371,6 +376,15 @@ func (repo *DynamoDBRepository) UpdateDocument(ctx context.Context, doc *boneles
 	// Replace sort items with new ones
 	if err = repo.putSortDocuments(ctx, doc); err != nil {
 		return fmt.Errorf("put sort documents: %w", err)
+	}
+
+	if oldDoc.Path != doc.Path {
+		if err = repo.deletePathDocument(ctx, oldDoc.Path); err != nil {
+			return fmt.Errorf("delete path document: %w", err)
+		}
+		if err = repo.putPathDocument(ctx, doc); err != nil {
+			return fmt.Errorf("put path document: %w", err)
+		}
 	}
 
 	return
