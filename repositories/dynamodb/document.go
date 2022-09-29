@@ -362,5 +362,16 @@ func (repo *DynamoDBRepository) UpdateDocument(ctx context.Context, doc *boneles
 	if err = repo.updateItem(ctx, pk, sk, values); err != nil {
 		return
 	}
+
+	// Pull out sort items
+	if err = repo.deleteSortDocuments(ctx, doc.Id); err != nil {
+		return fmt.Errorf("delete sort documents: %w", err)
+	}
+
+	// Replace sort items with new ones
+	if err = repo.putSortDocuments(ctx, doc); err != nil {
+		return fmt.Errorf("put sort documents: %w", err)
+	}
+
 	return
 }
