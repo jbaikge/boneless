@@ -1,13 +1,13 @@
 package testdata
 
-import "github.com/jbaikge/boneless"
+import "github.com/jbaikge/boneless/models"
 
-func Classes() []boneless.Class {
-	return []boneless.Class{
+func Classes() []models.Class {
+	return []models.Class{
 		{
 			Id:   "page",
 			Name: "Page",
-			Fields: []boneless.Field{
+			Fields: []models.Field{
 				{Name: "title", Sort: true},
 				{Name: "content"},
 			},
@@ -15,7 +15,7 @@ func Classes() []boneless.Class {
 		{
 			Id:   "blog",
 			Name: "Blog",
-			Fields: []boneless.Field{
+			Fields: []models.Field{
 				{Name: "title", Sort: true},
 				{Name: "published", Sort: true},
 				{Name: "excerpt"},
@@ -25,7 +25,7 @@ func Classes() []boneless.Class {
 		{
 			Id:   "news",
 			Name: "News",
-			Fields: []boneless.Field{
+			Fields: []models.Field{
 				{Name: "title", Sort: true},
 				{Name: "published", Sort: true},
 				{Name: "excerpt"},
@@ -35,7 +35,7 @@ func Classes() []boneless.Class {
 		{
 			Id:   "event",
 			Name: "Event",
-			Fields: []boneless.Field{
+			Fields: []models.Field{
 				{Name: "title", Sort: true},
 				{Name: "start", Sort: true},
 				{Name: "end"},
@@ -46,7 +46,7 @@ func Classes() []boneless.Class {
 		{
 			Id:   "session",
 			Name: "Session",
-			Fields: []boneless.Field{
+			Fields: []models.Field{
 				{Name: "title"},
 				{Name: "start", Sort: true},
 				{Name: "end"},
@@ -56,7 +56,7 @@ func Classes() []boneless.Class {
 		{
 			Id:   "speaker",
 			Name: "Speaker",
-			Fields: []boneless.Field{
+			Fields: []models.Field{
 				{Name: "name"},
 				{Name: "prefix"},
 				{Name: "first_name"},

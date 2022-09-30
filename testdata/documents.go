@@ -3,12 +3,12 @@ package testdata
 import (
 	"time"
 
-	"github.com/jbaikge/boneless"
+	"github.com/jbaikge/boneless/models"
 )
 
-func Documents() []boneless.Document {
+func Documents() []models.Document {
 	loc, _ := time.LoadLocation("America/New_York")
-	return []boneless.Document{
+	return []models.Document{
 		{
 			Id:      "page-1",
 			ClassId: "page",
