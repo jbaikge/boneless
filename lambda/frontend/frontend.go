@@ -16,8 +16,9 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/jbaikge/boneless"
+	"github.com/jbaikge/boneless/models"
 	"github.com/jbaikge/boneless/repositories/dynamodb"
+	"github.com/jbaikge/boneless/services"
 )
 
 var (
@@ -26,16 +27,16 @@ var (
 )
 
 type TemplateVars struct {
-	Document boneless.Document
+	Document models.Document
 }
 
 type Frontend struct {
-	Repo boneless.Repository
+	Repo services.Repository
 }
 
 func (frontend Frontend) HandleRequest(ctx context.Context, request events.APIGatewayV2HTTPRequest) (response events.APIGatewayV2HTTPResponse, err error) {
 	start := time.Now()
-	documentService := boneless.NewDocumentService(frontend.Repo)
+	documentService := services.NewDocumentService(frontend.Repo)
 	document, byPathErr := documentService.ByPath(ctx, request.RawPath)
 	if byPathErr != nil {
 		response.StatusCode = http.StatusNotFound
@@ -64,8 +65,8 @@ func (frontend Frontend) HandleRequest(ctx context.Context, request events.APIGa
 }
 
 func (frontend Frontend) compileTemplates(ctx context.Context, vars TemplateVars, w io.Writer) (err error) {
-	templateService := boneless.NewTemplateService(frontend.Repo)
-	filter := boneless.TemplateFilter{Range: boneless.Range{End: 1000}}
+	templateService := services.NewTemplateService(frontend.Repo)
+	filter := models.TemplateFilter{Range: models.Range{End: 1000}}
 	templates, _, err := templateService.List(ctx, filter)
 	if err != nil {
 		return fmt.Errorf("fetch templates: %w", err)
@@ -90,7 +91,7 @@ func (frontend Frontend) compileTemplates(ctx context.Context, vars TemplateVars
 	return t.ExecuteTemplate(w, vars.Document.TemplateId, vars)
 }
 
-func (frontend Frontend) decodeFilter(s string) (filter boneless.DocumentFilter, err error) {
+func (frontend Frontend) decodeFilter(s string) (filter models.DocumentFilter, err error) {
 	for _, arg := range strings.Split(s, ";") {
 		key, value, found := strings.Cut(arg, ":")
 		if !found {
@@ -127,7 +128,7 @@ func (frontend Frontend) decodeFilter(s string) (filter boneless.DocumentFilter,
 }
 
 func (frontend Frontend) funcMap() (funcs template.FuncMap, err error) {
-	classService := boneless.NewClassService(frontend.Repo)
+	classService := services.NewClassService(frontend.Repo)
 	classes, err := classService.All(context.Background())
 	if err != nil {
 		return
@@ -139,10 +140,10 @@ func (frontend Frontend) funcMap() (funcs template.FuncMap, err error) {
 	}
 
 	return template.FuncMap{
-		"get_document": func(id string) (doc boneless.Document, err error) {
-			return boneless.NewDocumentService(frontend.Repo).ById(context.Background(), id)
+		"get_document": func(id string) (doc models.Document, err error) {
+			return services.NewDocumentService(frontend.Repo).ById(context.Background(), id)
 		},
-		"list_documents": func(className string, args string) (docs []boneless.Document, err error) {
+		"list_documents": func(className string, args string) (docs []models.Document, err error) {
 			id, found := classNameMap[className]
 			if !found {
 				err = fmt.Errorf("invalid class name: %s", className)
@@ -155,13 +156,13 @@ func (frontend Frontend) funcMap() (funcs template.FuncMap, err error) {
 			}
 			filter.ClassId = id
 
-			documentService := boneless.NewDocumentService(frontend.Repo)
+			documentService := services.NewDocumentService(frontend.Repo)
 			docs, _, err = documentService.List(context.Background(), filter)
 			return
 		},
-		"many_documents": func(ids []string) (docs []boneless.Document, err error) {
-			docs = make([]boneless.Document, 0, len(ids))
-			documentService := boneless.NewDocumentService(frontend.Repo)
+		"many_documents": func(ids []string) (docs []models.Document, err error) {
+			docs = make([]models.Document, 0, len(ids))
+			documentService := services.NewDocumentService(frontend.Repo)
 			for _, id := range ids {
 				doc, err := documentService.ById(context.Background(), id)
 				if err != nil {
@@ -171,19 +172,19 @@ func (frontend Frontend) funcMap() (funcs template.FuncMap, err error) {
 			}
 			return
 		},
-		"child_documents": func(className string, parentId string) (docs []boneless.Document, err error) {
+		"child_documents": func(className string, parentId string) (docs []models.Document, err error) {
 			id, found := classNameMap[className]
 			if !found {
 				err = fmt.Errorf("invalid class name: %s", className)
 				return
 			}
 
-			filter := boneless.DocumentFilter{
+			filter := models.DocumentFilter{
 				ClassId:  id,
 				ParentId: parentId,
-				Range:    boneless.Range{End: 100},
+				Range:    models.Range{End: 100},
 			}
-			docs, _, err = boneless.NewDocumentService(frontend.Repo).List(context.Background(), filter)
+			docs, _, err = services.NewDocumentService(frontend.Repo).List(context.Background(), filter)
 			return
 		},
 		"split": strings.Fields,
