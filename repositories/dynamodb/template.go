@@ -4,11 +4,16 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/jbaikge/boneless"
 )
 
@@ -73,6 +78,39 @@ func (repo *DynamoDBRepository) CreateTemplate(ctx context.Context, template *bo
 }
 
 func (repo *DynamoDBRepository) DeleteTemplate(ctx context.Context, id string) (err error) {
+	pk, sk := dynamoTemplateIds(id, 0)
+	dbTemplate := new(dynamoTemplate)
+	if err = repo.getItem(ctx, pk, sk, dbTemplate); err != nil {
+		return
+	}
+
+	// Delete past template versions
+	objects := make([]s3types.ObjectIdentifier, 0, dbTemplate.Version)
+	for version := 0; version <= dbTemplate.Version; version++ {
+		_, delSk := dynamoTemplateIds(id, version)
+		if err = repo.deleteItem(ctx, pk, delSk); err != nil {
+			return
+		}
+
+		// Version zero has no HTML
+		if version == 0 {
+			continue
+		}
+
+		objects = append(objects, s3types.ObjectIdentifier{
+			Key: aws.String(repo.templateKey(id, version)),
+		})
+	}
+
+	// Delete all the S3 objects at once
+	params := &s3.DeleteObjectsInput{
+		Bucket: &repo.resources.Bucket,
+		Delete: &s3types.Delete{
+			Objects: objects,
+		},
+	}
+	_, err = repo.s3.DeleteObjects(ctx, params)
+
 	return
 }
 
@@ -89,22 +127,100 @@ func (repo *DynamoDBRepository) GetTemplateById(ctx context.Context, id string) 
 	return
 }
 
-func (repo *DynamoDBRepository) GetTemplateList(ctx context.Context, filter boneless.TemplateFilter) (templates []boneless.Template, r boneless.Range, err error) {
+func (repo *DynamoDBRepository) GetTemplateList(ctx context.Context, filter boneless.TemplateFilter) (list []boneless.Template, r boneless.Range, err error) {
+	var response *dynamodb.ScanOutput
+	dbTemplates := make([]*dynamoTemplate, 0, 64)
+
+	key, err := repo.marshalKey(dynamoTemplateIds("", 0))
+	if err != nil {
+		return
+	}
+
+	params := &dynamodb.ScanInput{
+		TableName:        &repo.resources.Table,
+		FilterExpression: aws.String("SK = :sk"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":sK": key["SK"],
+		},
+	}
+	paginator := dynamodb.NewScanPaginator(repo.db, params)
+	for paginator.HasMorePages() {
+		response, err = paginator.NextPage(ctx)
+		if err != nil {
+			return
+		}
+		tmp := make([]*dynamoTemplate, 0, len(response.Items))
+		if err = attributevalue.UnmarshalListOfMaps(response.Items, &dbTemplates); err != nil {
+			return
+		}
+		dbTemplates = append(dbTemplates, tmp...)
+	}
+
+	sort.Sort(dynamoTemplateByName(dbTemplates))
+
+	r.Size = len(dbTemplates)
+	list = make([]boneless.Template, 0, filter.Range.SliceLen())
+	for i := filter.Range.Start; i < len(dbTemplates) && i <= filter.Range.End; i++ {
+		template := dbTemplates[i].ToTemplate()
+		if err = repo.getTemplateBody(ctx, &template); err != nil {
+			return
+		}
+		list = append(list, template)
+	}
+
+	if filter.Range.Start > 0 && len(list) == 0 {
+		err = ErrBadRange
+		return
+	}
+
+	r.Start = filter.Range.Start
+	r.End = filter.Range.End
+	if length := len(list); length > 0 {
+		r.End += length - 1
+	}
+
 	return
 }
 
 func (repo *DynamoDBRepository) UpdateTemplate(ctx context.Context, template *boneless.Template) (err error) {
-	return
+	// Fetch current template
+	oldTemplate := new(dynamoTemplate)
+	pk, sk := dynamoTemplateIds(template.Id, 0)
+	if err = repo.getItem(ctx, pk, sk, oldTemplate); err != nil {
+		return
+	}
+
+	// Increment version based on current version in database
+	template.Version = oldTemplate.Version
+
+	// Add new template with new version
+	dbTemplate := newDynamoTemplate(template)
+	if err = repo.putItem(ctx, dbTemplate); err != nil {
+		return
+	}
+
+	// Update values in v0
+	values := map[string]interface{}{
+		"Name":    template.Name,
+		"Version": template.Version,
+		"Updated": template.Updated,
+	}
+	if err = repo.updateItem(ctx, pk, sk, values); err != nil {
+		return
+	}
+
+	// Add new version of body to S3
+	return repo.putTemplateBody(ctx, template)
 }
 
-func (repo *DynamoDBRepository) templateKey(template *boneless.Template) string {
-	return fmt.Sprintf("templates/%s/v%06d.html", template.Id, template.Version)
+func (repo *DynamoDBRepository) templateKey(id string, version int) string {
+	return fmt.Sprintf("templates/%s/v%06d.html", id, version)
 }
 
 func (repo *DynamoDBRepository) getTemplateBody(ctx context.Context, template *boneless.Template) (err error) {
 	params := &s3.GetObjectInput{
 		Bucket: &repo.resources.Bucket,
-		Key:    aws.String(repo.templateKey(template)),
+		Key:    aws.String(repo.templateKey(template.Id, template.Version)),
 	}
 	response, err := repo.s3.GetObject(ctx, params)
 	if err != nil {
@@ -122,7 +238,7 @@ func (repo *DynamoDBRepository) getTemplateBody(ctx context.Context, template *b
 func (repo *DynamoDBRepository) putTemplateBody(ctx context.Context, template *boneless.Template) (err error) {
 	params := &s3.PutObjectInput{
 		Bucket:      &repo.resources.Bucket,
-		Key:         aws.String(repo.templateKey(template)),
+		Key:         aws.String(repo.templateKey(template.Id, template.Version)),
 		Body:        strings.NewReader(template.Body),
 		ContentType: aws.String("text/html"),
 	}
