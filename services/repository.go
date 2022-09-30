@@ -1,4 +1,4 @@
-package boneless
+package services
 
 type Repository interface {
 	ClassRepository
