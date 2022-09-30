@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/jbaikge/boneless"
+	"github.com/jbaikge/boneless/models"
 )
 
 const classPrefix = "class#"
@@ -28,10 +28,10 @@ type dynamoClass struct {
 	Name     string
 	Created  time.Time
 	Updated  time.Time
-	Data     []boneless.Field
+	Data     []models.Field
 }
 
-func newDynamoClass(c *boneless.Class) (dyn *dynamoClass) {
+func newDynamoClass(c *models.Class) (dyn *dynamoClass) {
 	pk, sk := dynamoClassIds(c.Id)
 	dyn = &dynamoClass{
 		PK:       pk,
@@ -40,20 +40,20 @@ func newDynamoClass(c *boneless.Class) (dyn *dynamoClass) {
 		Name:     c.Name,
 		Created:  c.Created,
 		Updated:  c.Updated,
-		Data:     make([]boneless.Field, len(c.Fields)),
+		Data:     make([]models.Field, len(c.Fields)),
 	}
 	copy(dyn.Data, c.Fields)
 	return
 }
 
-func (dyn *dynamoClass) ToClass() (c boneless.Class) {
-	c = boneless.Class{
+func (dyn *dynamoClass) ToClass() (c models.Class) {
+	c = models.Class{
 		Id:       dyn.PK[len(classPrefix):],
 		ParentId: dyn.ParentId,
 		Name:     dyn.Name,
 		Created:  dyn.Created,
 		Updated:  dyn.Updated,
-		Fields:   make([]boneless.Field, len(dyn.Data)),
+		Fields:   make([]models.Field, len(dyn.Data)),
 	}
 	copy(c.Fields, dyn.Data)
 	return
@@ -65,7 +65,7 @@ func (arr dynamoClassByName) Len() int           { return len(arr) }
 func (arr dynamoClassByName) Swap(i, j int)      { arr[i], arr[j] = arr[j], arr[i] }
 func (arr dynamoClassByName) Less(i, j int) bool { return arr[i].Name < arr[j].Name }
 
-func (repo *DynamoDBRepository) CreateClass(ctx context.Context, class *boneless.Class) (err error) {
+func (repo *DynamoDBRepository) CreateClass(ctx context.Context, class *models.Class) (err error) {
 	return repo.putItem(ctx, newDynamoClass(class))
 }
 
@@ -74,7 +74,7 @@ func (repo *DynamoDBRepository) DeleteClass(ctx context.Context, id string) (err
 	return repo.deleteItem(ctx, pk, sk)
 }
 
-func (repo *DynamoDBRepository) GetClassById(ctx context.Context, id string) (class boneless.Class, err error) {
+func (repo *DynamoDBRepository) GetClassById(ctx context.Context, id string) (class models.Class, err error) {
 	pk, sk := dynamoClassIds(id)
 	dbClass := new(dynamoClass)
 	if err = repo.getItem(ctx, pk, sk, dbClass); err != nil {
@@ -84,7 +84,7 @@ func (repo *DynamoDBRepository) GetClassById(ctx context.Context, id string) (cl
 	return dbClass.ToClass(), nil
 }
 
-func (repo *DynamoDBRepository) GetClassList(ctx context.Context, filter boneless.ClassFilter) (list []boneless.Class, r boneless.Range, err error) {
+func (repo *DynamoDBRepository) GetClassList(ctx context.Context, filter models.ClassFilter) (list []models.Class, r models.Range, err error) {
 	dbClasses := make([]*dynamoClass, 0, 16)
 
 	_, sk := dynamoClassIds("")
@@ -122,7 +122,7 @@ func (repo *DynamoDBRepository) GetClassList(ctx context.Context, filter boneles
 	r.Size = len(dbClasses)
 
 	// Convert dynamo classes to boneless classes, but only ones within range
-	list = make([]boneless.Class, 0, filter.Range.End-filter.Range.Start+1)
+	list = make([]models.Class, 0, filter.Range.End-filter.Range.Start+1)
 	for i := filter.Range.Start; i < len(dbClasses) && i <= filter.Range.End; i++ {
 		list = append(list, dbClasses[i].ToClass())
 	}
@@ -143,7 +143,7 @@ func (repo *DynamoDBRepository) GetClassList(ctx context.Context, filter boneles
 	return
 }
 
-func (repo *DynamoDBRepository) UpdateClass(ctx context.Context, class *boneless.Class) (err error) {
+func (repo *DynamoDBRepository) UpdateClass(ctx context.Context, class *models.Class) (err error) {
 	pk, sk := dynamoClassIds(class.Id)
 	values := map[string]interface{}{
 		"ParentId": class.ParentId,

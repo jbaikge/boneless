@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/jbaikge/boneless"
+	"github.com/jbaikge/boneless/models"
 )
 
 const templatePrefix = "template#"
@@ -34,7 +34,7 @@ type dynamoTemplate struct {
 	Updated time.Time
 }
 
-func newDynamoTemplate(template *boneless.Template) (dyn *dynamoTemplate) {
+func newDynamoTemplate(template *models.Template) (dyn *dynamoTemplate) {
 	pk, sk := dynamoTemplateIds(template.Id, template.Version)
 	dyn = &dynamoTemplate{
 		PK:      pk,
@@ -47,8 +47,8 @@ func newDynamoTemplate(template *boneless.Template) (dyn *dynamoTemplate) {
 	return
 }
 
-func (dyn *dynamoTemplate) ToTemplate() (template boneless.Template) {
-	template = boneless.Template{
+func (dyn *dynamoTemplate) ToTemplate() (template models.Template) {
+	template = models.Template{
 		Id:      dyn.PK[len(templatePrefix):],
 		Name:    dyn.Name,
 		Version: dyn.Version,
@@ -65,7 +65,7 @@ func (arr dynamoTemplateByName) Len() int           { return len(arr) }
 func (arr dynamoTemplateByName) Swap(i, j int)      { arr[i], arr[j] = arr[j], arr[i] }
 func (arr dynamoTemplateByName) Less(i, j int) bool { return arr[i].Name < arr[j].Name }
 
-func (repo *DynamoDBRepository) CreateTemplate(ctx context.Context, template *boneless.Template) (err error) {
+func (repo *DynamoDBRepository) CreateTemplate(ctx context.Context, template *models.Template) (err error) {
 	template.Version = 1
 	dbTemplate := newDynamoTemplate(template)
 	for _, version := range []int{0, 1} {
@@ -114,7 +114,7 @@ func (repo *DynamoDBRepository) DeleteTemplate(ctx context.Context, id string) (
 	return
 }
 
-func (repo *DynamoDBRepository) GetTemplateById(ctx context.Context, id string) (template boneless.Template, err error) {
+func (repo *DynamoDBRepository) GetTemplateById(ctx context.Context, id string) (template models.Template, err error) {
 	pk, sk := dynamoTemplateIds(id, 0)
 	dbTemplate := new(dynamoTemplate)
 	if err = repo.getItem(ctx, pk, sk, dbTemplate); err != nil {
@@ -127,7 +127,7 @@ func (repo *DynamoDBRepository) GetTemplateById(ctx context.Context, id string) 
 	return
 }
 
-func (repo *DynamoDBRepository) GetTemplateList(ctx context.Context, filter boneless.TemplateFilter) (list []boneless.Template, r boneless.Range, err error) {
+func (repo *DynamoDBRepository) GetTemplateList(ctx context.Context, filter models.TemplateFilter) (list []models.Template, r models.Range, err error) {
 	var response *dynamodb.ScanOutput
 	dbTemplates := make([]*dynamoTemplate, 0, 64)
 
@@ -159,7 +159,7 @@ func (repo *DynamoDBRepository) GetTemplateList(ctx context.Context, filter bone
 	sort.Sort(dynamoTemplateByName(dbTemplates))
 
 	r.Size = len(dbTemplates)
-	list = make([]boneless.Template, 0, filter.Range.SliceLen())
+	list = make([]models.Template, 0, filter.Range.SliceLen())
 	for i := filter.Range.Start; i < len(dbTemplates) && i <= filter.Range.End; i++ {
 		template := dbTemplates[i].ToTemplate()
 		if err = repo.getTemplateBody(ctx, &template); err != nil {
@@ -182,7 +182,7 @@ func (repo *DynamoDBRepository) GetTemplateList(ctx context.Context, filter bone
 	return
 }
 
-func (repo *DynamoDBRepository) UpdateTemplate(ctx context.Context, template *boneless.Template) (err error) {
+func (repo *DynamoDBRepository) UpdateTemplate(ctx context.Context, template *models.Template) (err error) {
 	// Fetch current template
 	oldTemplate := new(dynamoTemplate)
 	pk, sk := dynamoTemplateIds(template.Id, 0)
@@ -217,7 +217,7 @@ func (repo *DynamoDBRepository) templateKey(id string, version int) string {
 	return fmt.Sprintf("templates/%s/v%06d.html", id, version)
 }
 
-func (repo *DynamoDBRepository) getTemplateBody(ctx context.Context, template *boneless.Template) (err error) {
+func (repo *DynamoDBRepository) getTemplateBody(ctx context.Context, template *models.Template) (err error) {
 	params := &s3.GetObjectInput{
 		Bucket: &repo.resources.Bucket,
 		Key:    aws.String(repo.templateKey(template.Id, template.Version)),
@@ -235,7 +235,7 @@ func (repo *DynamoDBRepository) getTemplateBody(ctx context.Context, template *b
 	return
 }
 
-func (repo *DynamoDBRepository) putTemplateBody(ctx context.Context, template *boneless.Template) (err error) {
+func (repo *DynamoDBRepository) putTemplateBody(ctx context.Context, template *models.Template) (err error) {
 	params := &s3.PutObjectInput{
 		Bucket:      &repo.resources.Bucket,
 		Key:         aws.String(repo.templateKey(template.Id, template.Version)),

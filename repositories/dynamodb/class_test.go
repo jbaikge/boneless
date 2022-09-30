@@ -3,15 +3,15 @@ package dynamodb
 import (
 	"testing"
 
-	"github.com/jbaikge/boneless"
+	"github.com/jbaikge/boneless/models"
 	"github.com/zeebo/assert"
 )
 
 func TestNewDynamoClass(t *testing.T) {
-	class := boneless.Class{
+	class := models.Class{
 		Id:     "from_class",
 		Name:   t.Name(),
-		Fields: []boneless.Field{{Name: "field_1"}},
+		Fields: []models.Field{{Name: "field_1"}},
 	}
 
 	dc := newDynamoClass(&class)
@@ -28,7 +28,7 @@ func TestToClass(t *testing.T) {
 		PK:   classPrefix + id,
 		SK:   "class",
 		Name: t.Name(),
-		Data: []boneless.Field{{Name: "field_1"}},
+		Data: []models.Field{{Name: "field_1"}},
 	}
 	class := dc.ToClass()
 

@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	dynamotypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/jbaikge/boneless"
+	"github.com/jbaikge/boneless/services"
 )
 
 var (
@@ -41,7 +41,7 @@ type DynamoDBRepository struct {
 	resources DynamoDBResources
 }
 
-func NewRepository(config aws.Config, resources DynamoDBResources) boneless.Repository {
+func NewRepository(config aws.Config, resources DynamoDBResources) services.Repository {
 	return &DynamoDBRepository{
 		db:        dynamodb.NewFromConfig(config),
 		s3:        s3.NewFromConfig(config),

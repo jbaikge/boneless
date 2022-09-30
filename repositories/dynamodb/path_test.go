@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jbaikge/boneless"
+	"github.com/jbaikge/boneless/models"
 	"github.com/zeebo/assert"
 )
 
@@ -20,14 +20,14 @@ func TestPathUpdate(t *testing.T) {
 
 	ctx := context.Background()
 
-	class := boneless.Class{
+	class := models.Class{
 		Id:     "class",
 		Name:   "Class",
-		Fields: []boneless.Field{},
+		Fields: []models.Field{},
 	}
 	assert.NoError(t, repo.CreateClass(ctx, &class))
 
-	docs := []boneless.Document{
+	docs := []models.Document{
 		{
 			Id:      "doc1",
 			ClassId: "class",

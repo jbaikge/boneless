@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jbaikge/boneless"
+	"github.com/jbaikge/boneless/models"
 	"github.com/zeebo/assert"
 )
 
@@ -19,16 +19,16 @@ func TestSortUpdate(t *testing.T) {
 
 	ctx := context.Background()
 
-	class := boneless.Class{
+	class := models.Class{
 		Id:   "class",
 		Name: "Class",
-		Fields: []boneless.Field{
+		Fields: []models.Field{
 			{Name: "sort_field_1", Sort: true},
 		},
 	}
 	assert.NoError(t, repo.CreateClass(ctx, &class))
 
-	docs := []boneless.Document{
+	docs := []models.Document{
 		{
 			Id:      "doc1",
 			ClassId: "class",
@@ -48,12 +48,12 @@ func TestSortUpdate(t *testing.T) {
 		assert.NoError(t, repo.CreateDocument(ctx, &doc))
 	}
 
-	filter := boneless.DocumentFilter{
-		Sort: boneless.DocumentFilterSort{
+	filter := models.DocumentFilter{
+		Sort: models.DocumentFilterSort{
 			Field:     class.Fields[0].Name,
 			Direction: "ASC",
 		},
-		Range: boneless.Range{
+		Range: models.Range{
 			End: 9,
 		},
 	}

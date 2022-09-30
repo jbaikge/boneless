@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jbaikge/boneless"
+	"github.com/jbaikge/boneless/models"
 	"github.com/zeebo/assert"
 )
 
@@ -20,7 +20,7 @@ func TestTemplates(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("BasicInOut", func(t *testing.T) {
-		template := boneless.Template{
+		template := models.Template{
 			Id:      "template-1",
 			Name:    "Test Template",
 			Created: time.Now(),
@@ -35,7 +35,7 @@ func TestTemplates(t *testing.T) {
 	})
 
 	t.Run("Version2", func(t *testing.T) {
-		template := boneless.Template{
+		template := models.Template{
 			Id:      "two-versions",
 			Name:    "Version 1",
 			Created: time.Now(),
@@ -54,7 +54,7 @@ func TestTemplates(t *testing.T) {
 	})
 
 	t.Run("DeleteMultiVersion", func(t *testing.T) {
-		template := boneless.Template{
+		template := models.Template{
 			Id:      "delete-me",
 			Name:    "Delete Me v1",
 			Created: time.Now(),

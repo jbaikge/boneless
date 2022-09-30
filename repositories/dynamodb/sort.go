@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/jbaikge/boneless"
+	"github.com/jbaikge/boneless/models"
 )
 
 const (
@@ -43,7 +43,7 @@ type dynamoSort struct {
 	Data       map[string]interface{}
 }
 
-// func newDynamoSort(doc *boneless.Document, key string) (dyn *dynamoSort, ok bool) {
+// func newDynamoSort(doc *models.Document, key string) (dyn *dynamoSort, ok bool) {
 // 	value, ok := doc.Values[key]
 // 	if !ok {
 // 		return
@@ -53,7 +53,7 @@ type dynamoSort struct {
 // 	return
 // }
 
-func newDynamoSortBase(doc *boneless.Document) (dyn *dynamoSort) {
+func newDynamoSortBase(doc *models.Document) (dyn *dynamoSort) {
 	dyn = &dynamoSort{
 		DocumentId: doc.Id,
 		ClassId:    doc.ClassId,
@@ -71,8 +71,8 @@ func newDynamoSortBase(doc *boneless.Document) (dyn *dynamoSort) {
 	return
 }
 
-func (dyn dynamoSort) ToDocument() (doc boneless.Document) {
-	doc = boneless.Document{
+func (dyn dynamoSort) ToDocument() (doc models.Document) {
+	doc = models.Document{
 		Id:         dyn.DocumentId,
 		ClassId:    dyn.ClassId,
 		ParentId:   dyn.ParentId,
@@ -133,7 +133,7 @@ func (repo *DynamoDBRepository) deleteSortDocuments(ctx context.Context, id stri
 
 // Gets items using the sort indexes. This is preferred as it is much faster
 // than manually sorting after a table scan.
-func (repo *DynamoDBRepository) getSortDocuments(ctx context.Context, filter boneless.DocumentFilter) (list []boneless.Document, r boneless.Range, err error) {
+func (repo *DynamoDBRepository) getSortDocuments(ctx context.Context, filter models.DocumentFilter) (list []models.Document, r models.Range, err error) {
 	// Class ID and sort field are required to proceed.
 	if filter.ClassId == "" || filter.Sort.Field == "" {
 		err = ErrBadFilter
@@ -177,7 +177,7 @@ func (repo *DynamoDBRepository) getSortDocuments(ctx context.Context, filter bon
 		params.FilterExpression = aws.String("ParentId = :parent_id")
 	}
 
-	list = make([]boneless.Document, 0, filter.Range.SliceLen())
+	list = make([]models.Document, 0, filter.Range.SliceLen())
 	seen := 0
 	var response *dynamodb.QueryOutput
 	paginator := dynamodb.NewQueryPaginator(repo.db, params)
@@ -220,7 +220,7 @@ func (repo *DynamoDBRepository) getSortDocuments(ctx context.Context, filter bon
 	return
 }
 
-func (repo *DynamoDBRepository) putSortDocuments(ctx context.Context, doc *boneless.Document) (err error) {
+func (repo *DynamoDBRepository) putSortDocuments(ctx context.Context, doc *models.Document) (err error) {
 	if doc.ClassId == "" {
 		return fmt.Errorf("no class ID")
 	}

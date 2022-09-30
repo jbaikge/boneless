@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/jbaikge/boneless"
+	"github.com/jbaikge/boneless/models"
 	"github.com/zeebo/assert"
 )
 
@@ -130,7 +130,7 @@ func TestDynamoDBRepository(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("CreateClass", func(t *testing.T) {
-		class := boneless.Class{
+		class := models.Class{
 			Id:   "class_create",
 			Name: t.Name(),
 		}
@@ -138,7 +138,7 @@ func TestDynamoDBRepository(t *testing.T) {
 	})
 
 	t.Run("GetClassByIdSuccess", func(t *testing.T) {
-		class := boneless.Class{
+		class := models.Class{
 			Id:   "get_success",
 			Name: t.Name(),
 		}
@@ -156,18 +156,18 @@ func TestDynamoDBRepository(t *testing.T) {
 	})
 
 	t.Run("UpdateClass", func(t *testing.T) {
-		class := boneless.Class{
+		class := models.Class{
 			Id:      "update_class",
 			Name:    t.Name(),
 			Created: time.Now(),
 			Updated: time.Now(),
-			Fields:  []boneless.Field{{Name: "field_2"}, {Name: "field_1"}},
+			Fields:  []models.Field{{Name: "field_2"}, {Name: "field_1"}},
 		}
 		assert.NoError(t, repo.CreateClass(ctx, &class))
 
 		class.Name = t.Name() + "-Updated"
 		class.Updated = time.UnixMicro(time.Now().UnixMicro())
-		class.Fields = append(class.Fields, boneless.Field{Name: "field_3"})
+		class.Fields = append(class.Fields, models.Field{Name: "field_3"})
 		assert.NoError(t, repo.UpdateClass(ctx, &class))
 
 		check, err := repo.GetClassById(ctx, class.Id)
@@ -178,7 +178,7 @@ func TestDynamoDBRepository(t *testing.T) {
 	})
 
 	t.Run("DeleteClass", func(t *testing.T) {
-		class := boneless.Class{
+		class := models.Class{
 			Id:   "delete_class",
 			Name: t.Name(),
 		}
@@ -192,15 +192,15 @@ func TestDynamoDBRepository(t *testing.T) {
 		assert.NoError(t, emptyTable(repo, resources.Table))
 
 		t.Run("Empty", func(t *testing.T) {
-			filter := boneless.ClassFilter{Range: boneless.Range{End: 9}}
+			filter := models.ClassFilter{Range: models.Range{End: 9}}
 			classes, r, err := repo.GetClassList(ctx, filter)
 			assert.NoError(t, err)
-			assert.DeepEqual(t, boneless.Range{}, r)
+			assert.DeepEqual(t, models.Range{}, r)
 			assert.Equal(t, 0, len(classes))
 		})
 
 		for i := 0; i < 10; i++ {
-			class := boneless.Class{
+			class := models.Class{
 				Id:   fmt.Sprintf("class_list_%02d", i),
 				Name: fmt.Sprintf("Class List (%02d)", i+1),
 			}
@@ -208,62 +208,62 @@ func TestDynamoDBRepository(t *testing.T) {
 		}
 
 		t.Run("All", func(t *testing.T) {
-			filter := boneless.ClassFilter{Range: boneless.Range{End: 9}}
+			filter := models.ClassFilter{Range: models.Range{End: 9}}
 			classes, r, err := repo.GetClassList(ctx, filter)
 			assert.NoError(t, err)
-			assert.DeepEqual(t, boneless.Range{End: 9, Size: 10}, r)
+			assert.DeepEqual(t, models.Range{End: 9, Size: 10}, r)
 			assert.Equal(t, 10, len(classes))
 		})
 
 		t.Run("LargeWindow", func(t *testing.T) {
-			filter := boneless.ClassFilter{Range: boneless.Range{End: 99}}
+			filter := models.ClassFilter{Range: models.Range{End: 99}}
 			classes, r, err := repo.GetClassList(ctx, filter)
 			assert.NoError(t, err)
-			assert.DeepEqual(t, boneless.Range{End: 9, Size: 10}, r)
+			assert.DeepEqual(t, models.Range{End: 9, Size: 10}, r)
 			assert.Equal(t, 10, len(classes))
 		})
 
 		t.Run("InvalidRange", func(t *testing.T) {
-			filter := boneless.ClassFilter{Range: boneless.Range{Start: 90, End: 99}}
+			filter := models.ClassFilter{Range: models.Range{Start: 90, End: 99}}
 			classes, r, err := repo.GetClassList(ctx, filter)
 			assert.Equal(t, ErrBadRange, err)
-			assert.DeepEqual(t, boneless.Range{Size: 10}, r)
+			assert.DeepEqual(t, models.Range{Size: 10}, r)
 			assert.Equal(t, 0, len(classes))
 		})
 
 		t.Run("Beginning", func(t *testing.T) {
-			filter := boneless.ClassFilter{Range: boneless.Range{Start: 0, End: 4}}
+			filter := models.ClassFilter{Range: models.Range{Start: 0, End: 4}}
 			classes, r, err := repo.GetClassList(ctx, filter)
 			assert.NoError(t, err)
-			assert.DeepEqual(t, boneless.Range{End: 4, Size: 10}, r)
+			assert.DeepEqual(t, models.Range{End: 4, Size: 10}, r)
 			assert.Equal(t, 5, len(classes))
 		})
 
 		t.Run("End", func(t *testing.T) {
-			filter := boneless.ClassFilter{Range: boneless.Range{Start: 5, End: 9}}
+			filter := models.ClassFilter{Range: models.Range{Start: 5, End: 9}}
 			classes, r, err := repo.GetClassList(ctx, filter)
 			assert.NoError(t, err)
-			assert.DeepEqual(t, boneless.Range{Start: 5, End: 9, Size: 10}, r)
+			assert.DeepEqual(t, models.Range{Start: 5, End: 9, Size: 10}, r)
 			assert.Equal(t, 5, len(classes))
 		})
 
 		t.Run("Middle", func(t *testing.T) {
-			filter := boneless.ClassFilter{Range: boneless.Range{Start: 3, End: 6}}
+			filter := models.ClassFilter{Range: models.Range{Start: 3, End: 6}}
 			classes, r, err := repo.GetClassList(ctx, filter)
 			assert.NoError(t, err)
-			assert.DeepEqual(t, boneless.Range{Start: 3, End: 6, Size: 10}, r)
+			assert.DeepEqual(t, models.Range{Start: 3, End: 6, Size: 10}, r)
 			assert.Equal(t, 4, len(classes))
 		})
 	})
 
 	t.Run("CreateDocument", func(t *testing.T) {
-		class := boneless.Class{
+		class := models.Class{
 			Id:   "create_document_class",
 			Name: "Create Document Class",
 		}
 		assert.NoError(t, repo.CreateClass(ctx, &class))
 
-		doc := boneless.Document{
+		doc := models.Document{
 			Id:      "create_document",
 			ClassId: class.Id,
 		}
@@ -271,13 +271,13 @@ func TestDynamoDBRepository(t *testing.T) {
 	})
 
 	t.Run("CreateDocumentWithPath", func(t *testing.T) {
-		class := boneless.Class{
+		class := models.Class{
 			Id:   "create_document_path_class",
 			Name: "Create Document with Path Class",
 		}
 		assert.NoError(t, repo.CreateClass(ctx, &class))
 
-		doc := boneless.Document{
+		doc := models.Document{
 			Id:      "document_with_path",
 			ClassId: class.Id,
 			Path:    "/doc/with/path",
@@ -288,10 +288,10 @@ func TestDynamoDBRepository(t *testing.T) {
 	t.Run("CreateDocumentWithSort", func(t *testing.T) {
 		assert.NoError(t, emptyTable(repo, resources.Table))
 
-		class := boneless.Class{
+		class := models.Class{
 			Id:   "sort_class",
 			Name: "Sort Class",
-			Fields: []boneless.Field{
+			Fields: []models.Field{
 				{
 					Name: "existing_field",
 					Sort: true,
@@ -312,7 +312,7 @@ func TestDynamoDBRepository(t *testing.T) {
 		}
 		assert.NoError(t, repo.CreateClass(ctx, &class))
 
-		doc := boneless.Document{
+		doc := models.Document{
 			Id:      "sort_doc",
 			ClassId: class.Id,
 			Values: map[string]interface{}{
@@ -326,13 +326,13 @@ func TestDynamoDBRepository(t *testing.T) {
 	})
 
 	t.Run("GetDocumentByIdSuccess", func(t *testing.T) {
-		class := boneless.Class{
+		class := models.Class{
 			Id:   "get_document_success_class",
 			Name: "Get Document Success Class",
 		}
 		assert.NoError(t, repo.CreateClass(ctx, &class))
 
-		doc := boneless.Document{
+		doc := models.Document{
 			Id:      "get_document_by_id_success",
 			ClassId: class.Id,
 		}
@@ -350,13 +350,13 @@ func TestDynamoDBRepository(t *testing.T) {
 	})
 
 	t.Run("GetDocumentByPath", func(t *testing.T) {
-		class := boneless.Class{
+		class := models.Class{
 			Id:   "document_by_path_class",
 			Name: "Get Document By Path Class",
 		}
 		assert.NoError(t, repo.CreateClass(ctx, &class))
 
-		doc := boneless.Document{
+		doc := models.Document{
 			Id:      "document_by_path",
 			ClassId: class.Id,
 			Path:    "/document/by/path",
@@ -372,10 +372,10 @@ func TestDynamoDBRepository(t *testing.T) {
 	})
 
 	t.Run("UpdateDocument", func(t *testing.T) {
-		class := boneless.Class{
+		class := models.Class{
 			Id:   "update_document_class",
 			Name: "Update Document Class",
-			Fields: []boneless.Field{
+			Fields: []models.Field{
 				{Name: "field1", Sort: true},
 				{Name: "field2"},
 				{Name: "field3", Sort: true},
@@ -384,7 +384,7 @@ func TestDynamoDBRepository(t *testing.T) {
 		assert.NoError(t, repo.CreateClass(ctx, &class))
 
 		t.Run("NoPathNoPath", func(t *testing.T) {
-			doc := boneless.Document{
+			doc := models.Document{
 				Id:      "no_path_no_path",
 				ClassId: class.Id,
 				Path:    "",
@@ -395,7 +395,7 @@ func TestDynamoDBRepository(t *testing.T) {
 		})
 
 		t.Run("NoPathYesPath", func(t *testing.T) {
-			doc := boneless.Document{
+			doc := models.Document{
 				Id:      "no_path_yes_path",
 				ClassId: class.Id,
 				Path:    "",
@@ -407,7 +407,7 @@ func TestDynamoDBRepository(t *testing.T) {
 		})
 
 		t.Run("YesPathNoPath", func(t *testing.T) {
-			doc := boneless.Document{
+			doc := models.Document{
 				Id:      "yes_path_no_path",
 				ClassId: class.Id,
 				Path:    "/yes/path/no/path",
@@ -419,7 +419,7 @@ func TestDynamoDBRepository(t *testing.T) {
 		})
 
 		t.Run("YesPathYesPath", func(t *testing.T) {
-			doc := boneless.Document{
+			doc := models.Document{
 				Id:      "yes_path_yes_path",
 				ClassId: class.Id,
 				Path:    "/yes/path/yes/path",
@@ -431,7 +431,7 @@ func TestDynamoDBRepository(t *testing.T) {
 		})
 
 		t.Run("ForceTableScan", func(t *testing.T) {
-			doc := boneless.Document{
+			doc := models.Document{
 				Id:      "force_table_scan",
 				ClassId: class.Id,
 				Path:    "/force/scan/original",
@@ -465,7 +465,7 @@ func TestDynamoDBRepository(t *testing.T) {
 		})
 
 		t.Run("SortUpdates", func(t *testing.T) {
-			doc := boneless.Document{
+			doc := models.Document{
 				Id:      "sort_update",
 				ClassId: class.Id,
 				Values: map[string]interface{}{
@@ -488,10 +488,10 @@ func TestDynamoDBRepository(t *testing.T) {
 	})
 
 	t.Run("DeleteDocument", func(t *testing.T) {
-		class := boneless.Class{
+		class := models.Class{
 			Id:   "delete_document_class",
 			Name: "Delete Document Class",
-			Fields: []boneless.Field{
+			Fields: []models.Field{
 				{Name: "field_1", Sort: true},
 				{Name: "field_2", Sort: true},
 				{Name: "field_3", Sort: true},
@@ -499,7 +499,7 @@ func TestDynamoDBRepository(t *testing.T) {
 		}
 		assert.NoError(t, repo.CreateClass(ctx, &class))
 
-		doc := boneless.Document{
+		doc := models.Document{
 			Id:      "delete_me",
 			ClassId: class.Id,
 			Path:    "/delete/me",

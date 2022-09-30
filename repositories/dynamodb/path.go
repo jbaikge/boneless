@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jbaikge/boneless"
+	"github.com/jbaikge/boneless/models"
 )
 
 const pathPrefix = "path#"
@@ -32,7 +32,7 @@ type dynamoPath struct {
 	Data       map[string]interface{}
 }
 
-func newDynamoPath(doc *boneless.Document) (dyn *dynamoPath) {
+func newDynamoPath(doc *models.Document) (dyn *dynamoPath) {
 	pk, sk := dynamoPathIds(doc.Path)
 	dyn = &dynamoPath{
 		PK:         pk,
@@ -52,8 +52,8 @@ func newDynamoPath(doc *boneless.Document) (dyn *dynamoPath) {
 	return
 }
 
-func (dyn dynamoPath) ToDocument() (doc boneless.Document) {
-	doc = boneless.Document{
+func (dyn dynamoPath) ToDocument() (doc models.Document) {
+	doc = models.Document{
 		Id:         dyn.DocumentId,
 		Path:       dyn.PK[len(pathPrefix):],
 		ClassId:    dyn.ClassId,
@@ -70,7 +70,7 @@ func (dyn dynamoPath) ToDocument() (doc boneless.Document) {
 	return
 }
 
-func (repo *DynamoDBRepository) GetDocumentByPath(ctx context.Context, path string) (doc boneless.Document, err error) {
+func (repo *DynamoDBRepository) GetDocumentByPath(ctx context.Context, path string) (doc models.Document, err error) {
 	pk, sk := dynamoPathIds(path)
 	dbPath := new(dynamoPath)
 	if err = repo.getItem(ctx, pk, sk, dbPath); err != nil {
@@ -88,13 +88,13 @@ func (repo *DynamoDBRepository) deletePathDocument(ctx context.Context, path str
 	return repo.deleteItem(ctx, pk, sk)
 }
 
-func (repo *DynamoDBRepository) hasPathDocument(ctx context.Context, doc *boneless.Document) (exists bool) {
+func (repo *DynamoDBRepository) hasPathDocument(ctx context.Context, doc *models.Document) (exists bool) {
 	pk, sk := dynamoPathIds(doc.Path)
 	dbPath := new(dynamoPath)
 	return !errors.Is(repo.getItem(ctx, pk, sk, dbPath), ErrNotExist)
 }
 
-func (repo *DynamoDBRepository) putPathDocument(ctx context.Context, doc *boneless.Document) (err error) {
+func (repo *DynamoDBRepository) putPathDocument(ctx context.Context, doc *models.Document) (err error) {
 	if doc.Path == "" {
 		return
 	}

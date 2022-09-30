@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/jbaikge/boneless"
+	"github.com/jbaikge/boneless/models"
 )
 
 const formPrefix = "form#"
@@ -29,7 +29,7 @@ type dynamoForm struct {
 	Data    interface{}
 }
 
-func newDynamoForm(form *boneless.Form) (dyn *dynamoForm) {
+func newDynamoForm(form *models.Form) (dyn *dynamoForm) {
 	pk, sk := dynamoFormIds(form.Id)
 	dyn = &dynamoForm{
 		PK:      pk,
@@ -42,8 +42,8 @@ func newDynamoForm(form *boneless.Form) (dyn *dynamoForm) {
 	return
 }
 
-func (dyn *dynamoForm) ToForm() (form boneless.Form) {
-	form = boneless.Form{
+func (dyn *dynamoForm) ToForm() (form models.Form) {
+	form = models.Form{
 		Id:      dyn.PK[len(formPrefix):],
 		Name:    dyn.Name,
 		Created: dyn.Created,
@@ -59,7 +59,7 @@ func (arr dynamoFormByName) Len() int           { return len(arr) }
 func (arr dynamoFormByName) Swap(i, j int)      { arr[i], arr[j] = arr[j], arr[i] }
 func (arr dynamoFormByName) Less(i, j int) bool { return arr[i].Name < arr[j].Name }
 
-func (repo *DynamoDBRepository) CreateForm(ctx context.Context, form *boneless.Form) (err error) {
+func (repo *DynamoDBRepository) CreateForm(ctx context.Context, form *models.Form) (err error) {
 	return repo.putItem(ctx, newDynamoForm(form))
 }
 
@@ -68,7 +68,7 @@ func (repo *DynamoDBRepository) DeleteForm(ctx context.Context, id string) (err 
 	return repo.deleteItem(ctx, pk, sk)
 }
 
-func (repo *DynamoDBRepository) GetFormById(ctx context.Context, id string) (form boneless.Form, err error) {
+func (repo *DynamoDBRepository) GetFormById(ctx context.Context, id string) (form models.Form, err error) {
 	pk, sk := dynamoFormIds(id)
 	dbForm := new(dynamoForm)
 	if err = repo.getItem(ctx, pk, sk, dbForm); err != nil {
@@ -77,7 +77,7 @@ func (repo *DynamoDBRepository) GetFormById(ctx context.Context, id string) (for
 	return dbForm.ToForm(), nil
 }
 
-func (repo *DynamoDBRepository) GetFormList(ctx context.Context, filter boneless.FormFilter) (list []boneless.Form, r boneless.Range, err error) {
+func (repo *DynamoDBRepository) GetFormList(ctx context.Context, filter models.FormFilter) (list []models.Form, r models.Range, err error) {
 	var response *dynamodb.ScanOutput
 	dbForms := make([]*dynamoForm, 0, 64)
 
@@ -109,7 +109,7 @@ func (repo *DynamoDBRepository) GetFormList(ctx context.Context, filter boneless
 	sort.Sort(dynamoFormByName(dbForms))
 
 	r.Size = len(dbForms)
-	list = make([]boneless.Form, 0, filter.Range.SliceLen())
+	list = make([]models.Form, 0, filter.Range.SliceLen())
 	for i := filter.Range.Start; i < len(dbForms) && i <= filter.Range.End; i++ {
 		list = append(list, dbForms[i].ToForm())
 	}
@@ -128,7 +128,7 @@ func (repo *DynamoDBRepository) GetFormList(ctx context.Context, filter boneless
 	return
 }
 
-func (repo *DynamoDBRepository) UpdateForm(ctx context.Context, form *boneless.Form) (err error) {
+func (repo *DynamoDBRepository) UpdateForm(ctx context.Context, form *models.Form) (err error) {
 	pk, sk := dynamoFormIds(form.Id)
 	values := map[string]interface{}{
 		"Name":    form.Name,

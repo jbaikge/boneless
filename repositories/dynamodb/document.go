@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/jbaikge/boneless"
+	"github.com/jbaikge/boneless/models"
 )
 
 const documentPrefix = "doc#"
@@ -24,7 +24,7 @@ func dynamoDocumentIds(id string, version int) (pk string, sk string) {
 }
 
 type dynamoDocumentInterface interface {
-	ToDocument() boneless.Document
+	ToDocument() models.Document
 }
 
 type dynamoDocument struct {
@@ -40,7 +40,7 @@ type dynamoDocument struct {
 	Data       map[string]interface{}
 }
 
-func newDynamoDocument(doc *boneless.Document) (dyn *dynamoDocument) {
+func newDynamoDocument(doc *models.Document) (dyn *dynamoDocument) {
 	pk, sk := dynamoDocumentIds(doc.Id, doc.Version)
 	dyn = &dynamoDocument{
 		PK:         pk,
@@ -60,8 +60,8 @@ func newDynamoDocument(doc *boneless.Document) (dyn *dynamoDocument) {
 	return
 }
 
-func (dyn *dynamoDocument) ToDocument() (doc boneless.Document) {
-	doc = boneless.Document{
+func (dyn *dynamoDocument) ToDocument() (doc models.Document) {
+	doc = models.Document{
 		Id:         dyn.PK[len(documentPrefix):],
 		ClassId:    dyn.ClassId,
 		ParentId:   dyn.ParentId,
@@ -124,7 +124,7 @@ func (sorter dynamoDocumentByValue) Swap(i, j int) {
 
 // API Methods
 
-func (repo *DynamoDBRepository) CreateDocument(ctx context.Context, doc *boneless.Document) (err error) {
+func (repo *DynamoDBRepository) CreateDocument(ctx context.Context, doc *models.Document) (err error) {
 	if doc.ClassId == "" {
 		return fmt.Errorf("class ID required")
 	}
@@ -202,7 +202,7 @@ func (repo *DynamoDBRepository) DeleteDocument(ctx context.Context, id string) (
 }
 
 // Always fetches the latest version (v0)
-func (repo *DynamoDBRepository) GetDocumentById(ctx context.Context, id string) (doc boneless.Document, err error) {
+func (repo *DynamoDBRepository) GetDocumentById(ctx context.Context, id string) (doc models.Document, err error) {
 	pk, sk := dynamoDocumentIds(id, 0)
 	dbDoc := new(dynamoDocument)
 	if err = repo.getItem(ctx, pk, sk, dbDoc); err != nil {
@@ -211,7 +211,7 @@ func (repo *DynamoDBRepository) GetDocumentById(ctx context.Context, id string) 
 	return dbDoc.ToDocument(), nil
 }
 
-func (repo *DynamoDBRepository) GetDocumentList(ctx context.Context, filter boneless.DocumentFilter) (list []boneless.Document, r boneless.Range, err error) {
+func (repo *DynamoDBRepository) GetDocumentList(ctx context.Context, filter models.DocumentFilter) (list []models.Document, r models.Range, err error) {
 	list, r, err = repo.getSortDocuments(ctx, filter)
 
 	// Success!
@@ -311,7 +311,7 @@ func (repo *DynamoDBRepository) GetDocumentList(ctx context.Context, filter bone
 	r.Size = len(dbDocs)
 
 	// Pull out the requested slice
-	list = make([]boneless.Document, 0, r.SliceLen())
+	list = make([]models.Document, 0, r.SliceLen())
 	for i := filter.Range.Start; i < len(dbDocs) && i <= filter.Range.End; i++ {
 		list = append(list, dbDocs[i].ToDocument())
 	}
@@ -325,7 +325,7 @@ func (repo *DynamoDBRepository) GetDocumentList(ctx context.Context, filter bone
 	return
 }
 
-func (repo *DynamoDBRepository) UpdateDocument(ctx context.Context, doc *boneless.Document) (err error) {
+func (repo *DynamoDBRepository) UpdateDocument(ctx context.Context, doc *models.Document) (err error) {
 	// Fetch the current version of the document in the database
 	oldDoc := new(dynamoDocument)
 	pk, sk := dynamoDocumentIds(doc.Id, 0)

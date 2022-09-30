@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jbaikge/boneless"
+	"github.com/jbaikge/boneless/models"
 	"github.com/jbaikge/boneless/testdata"
 	"github.com/zeebo/assert"
 )
@@ -30,52 +30,52 @@ func TestDocumentList(t *testing.T) {
 	}
 
 	t.Run("ListPagesByTitle", func(t *testing.T) {
-		filter := boneless.DocumentFilter{
+		filter := models.DocumentFilter{
 			ClassId: "page",
-			Sort:    boneless.DocumentFilterSort{Field: "title"},
-			Range:   boneless.Range{End: 9},
+			Sort:    models.DocumentFilterSort{Field: "title"},
+			Range:   models.Range{End: 9},
 		}
 		docs, r, err := repo.GetDocumentList(ctx, filter)
 		assert.NoError(t, err)
-		assert.DeepEqual(t, boneless.Range{End: 1, Size: 2}, r)
+		assert.DeepEqual(t, models.Range{End: 1, Size: 2}, r)
 		assert.Equal(t, 2, len(docs))
 		assert.Equal(t, "page-2", docs[0].Id)
 		assert.Equal(t, "page-1", docs[1].Id)
 	})
 
 	t.Run("ListSessionsByStart", func(t *testing.T) {
-		filter := boneless.DocumentFilter{
+		filter := models.DocumentFilter{
 			ClassId: "session",
-			Sort:    boneless.DocumentFilterSort{Field: "start"},
-			Range:   boneless.Range{End: 9},
+			Sort:    models.DocumentFilterSort{Field: "start"},
+			Range:   models.Range{End: 9},
 		}
 		docs, r, err := repo.GetDocumentList(ctx, filter)
 		assert.NoError(t, err)
-		assert.DeepEqual(t, boneless.Range{End: 4, Size: 5}, r)
+		assert.DeepEqual(t, models.Range{End: 4, Size: 5}, r)
 		assert.Equal(t, 5, len(docs))
 	})
 
 	t.Run("ListSessionsByEvent", func(t *testing.T) {
-		filter := boneless.DocumentFilter{
+		filter := models.DocumentFilter{
 			ClassId:  "session",
 			ParentId: "event-1",
-			Sort:     boneless.DocumentFilterSort{Field: "start"},
-			Range:    boneless.Range{End: 9},
+			Sort:     models.DocumentFilterSort{Field: "start"},
+			Range:    models.Range{End: 9},
 		}
 		docs, r, err := repo.GetDocumentList(ctx, filter)
 		assert.NoError(t, err)
-		assert.DeepEqual(t, boneless.Range{End: 2, Size: 3}, r)
+		assert.DeepEqual(t, models.Range{End: 2, Size: 3}, r)
 		assert.Equal(t, 3, len(docs))
 	})
 
 	t.Run("EmptyFilter", func(t *testing.T) {
 		// Should list all documents, sorted by descending creation date
-		filter := boneless.DocumentFilter{
-			Range: boneless.Range{End: 99},
+		filter := models.DocumentFilter{
+			Range: models.Range{End: 99},
 		}
 		docs, r, err := repo.GetDocumentList(ctx, filter)
 		assert.NoError(t, err)
-		assert.DeepEqual(t, boneless.Range{End: 19, Size: 20}, r)
+		assert.DeepEqual(t, models.Range{End: 19, Size: 20}, r)
 		assert.Equal(t, 20, len(docs))
 		assert.Equal(t, "speaker-6", docs[0].Id)
 		assert.Equal(t, "event-1", docs[19].Id)
@@ -84,13 +84,13 @@ func TestDocumentList(t *testing.T) {
 	t.Run("AllChildren", func(t *testing.T) {
 		// Should give all children of a parent document, regardless of class
 		// then sorted by descending creation date
-		filter := boneless.DocumentFilter{
+		filter := models.DocumentFilter{
 			ParentId: "event-1",
-			Range:    boneless.Range{End: 99},
+			Range:    models.Range{End: 99},
 		}
 		docs, r, err := repo.GetDocumentList(ctx, filter)
 		assert.NoError(t, err)
-		assert.DeepEqual(t, boneless.Range{End: 2, Size: 3}, r)
+		assert.DeepEqual(t, models.Range{End: 2, Size: 3}, r)
 		assert.Equal(t, 3, len(docs))
 		assert.Equal(t, "session-3", docs[0].Id)
 		assert.Equal(t, "session-1", docs[2].Id)
@@ -107,12 +107,12 @@ func TestTableScan(t *testing.T) {
 
 	ctx := context.Background()
 
-	class := boneless.Class{
+	class := models.Class{
 		Id:      "class",
 		Name:    "Class",
 		Created: time.Now(),
 		Updated: time.Now(),
-		Fields: []boneless.Field{
+		Fields: []models.Field{
 			{Name: "sort_field", Sort: true},
 			{Name: "scan_field"},
 			{Name: "empty_field"},
@@ -120,7 +120,7 @@ func TestTableScan(t *testing.T) {
 	}
 	assert.NoError(t, repo.CreateClass(ctx, &class))
 
-	doc := boneless.Document{
+	doc := models.Document{
 		ClassId: "class",
 		Values:  make(map[string]interface{}),
 	}
@@ -139,30 +139,30 @@ func TestTableScan(t *testing.T) {
 
 	testTable := []struct {
 		Name   string
-		Filter boneless.DocumentFilter
+		Filter models.DocumentFilter
 		Expect []string
 	}{
 		{
 			Name: "UseSort",
-			Filter: boneless.DocumentFilter{
-				Range: boneless.Range{End: 9},
-				Sort:  boneless.DocumentFilterSort{Field: "sort_field"},
+			Filter: models.DocumentFilter{
+				Range: models.Range{End: 9},
+				Sort:  models.DocumentFilterSort{Field: "sort_field"},
 			},
 			Expect: []string{"doc4", "doc1", "doc3", "doc2"},
 		},
 		{
 			Name: "UseScan",
-			Filter: boneless.DocumentFilter{
-				Range: boneless.Range{End: 9},
-				Sort:  boneless.DocumentFilterSort{Field: "scan_field"},
+			Filter: models.DocumentFilter{
+				Range: models.Range{End: 9},
+				Sort:  models.DocumentFilterSort{Field: "scan_field"},
 			},
 			Expect: []string{"doc2", "doc4", "doc1", "doc3"},
 		},
 		{
 			Name: "UseEmpty",
-			Filter: boneless.DocumentFilter{
-				Range: boneless.Range{End: 9},
-				Sort:  boneless.DocumentFilterSort{Field: "empty_field"},
+			Filter: models.DocumentFilter{
+				Range: models.Range{End: 9},
+				Sort:  models.DocumentFilterSort{Field: "empty_field"},
 			},
 			Expect: []string{"doc2", "doc4", "doc3", "doc1"},
 		},
@@ -190,12 +190,12 @@ func TestValues(t *testing.T) {
 
 	ctx := context.Background()
 
-	class := boneless.Class{
+	class := models.Class{
 		Id:      "class",
 		Name:    "Class",
 		Created: time.Now(),
 		Updated: time.Now(),
-		Fields: []boneless.Field{
+		Fields: []models.Field{
 			{Name: "field1", Sort: true},
 			{Name: "field2"},
 			{Name: "field3", Sort: true},
@@ -204,7 +204,7 @@ func TestValues(t *testing.T) {
 	}
 	assert.NoError(t, repo.CreateClass(ctx, &class))
 
-	doc := boneless.Document{
+	doc := models.Document{
 		Id:      "doc",
 		ClassId: "class",
 		Values: map[string]interface{}{
@@ -226,7 +226,7 @@ func TestValues(t *testing.T) {
 		assert.Equal(t, fmt.Sprint(expect), fmt.Sprint(docCheck.Values[key]))
 	}
 
-	extra := boneless.Document{
+	extra := models.Document{
 		Id:      "extra",
 		ClassId: "class",
 		Values: map[string]interface{}{
