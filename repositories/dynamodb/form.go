@@ -122,7 +122,7 @@ func (repo *DynamoDBRepository) GetFormList(ctx context.Context, filter boneless
 	r.Start = filter.Range.Start
 	r.End = filter.Range.Start
 	if length := len(list); length > 0 {
-		r.End = length - 1
+		r.End += length - 1
 	}
 
 	return
