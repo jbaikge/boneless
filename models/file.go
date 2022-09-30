@@ -1,7 +1,6 @@
-package boneless
+package models
 
 import (
-	"context"
 	"io"
 	"net/http"
 )
@@ -23,27 +22,4 @@ type FileUploadResponse struct {
 	Method   string      `json:"method"`
 	Headers  http.Header `json:"headers"`
 	Location string      `json:"location"`
-}
-
-type FileRepository interface {
-	CreateFile(context.Context, *File) (string, error)
-	CreateUploadUrl(context.Context, FileUploadRequest) (FileUploadResponse, error)
-}
-
-type FileService struct {
-	repo FileRepository
-}
-
-func NewFileService(repo FileRepository) FileService {
-	return FileService{
-		repo: repo,
-	}
-}
-
-func (s FileService) CreateFile(ctx context.Context, file *File) (location string, err error) {
-	return s.repo.CreateFile(ctx, file)
-}
-
-func (s FileService) UploadUrl(ctx context.Context, request FileUploadRequest) (FileUploadResponse, error) {
-	return s.repo.CreateUploadUrl(ctx, request)
 }

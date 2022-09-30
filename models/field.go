@@ -1,4 +1,4 @@
-package boneless
+package models
 
 type Field struct {
 	Type    string `json:"type"`

@@ -1,4 +1,4 @@
-package boneless
+package models
 
 import (
 	"encoding/json"
