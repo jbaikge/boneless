@@ -1,4 +1,4 @@
-LAMBDAS := $(wildcard lambda/*)
+LAMBDAS := $(wildcard bin/lambda-*)
 HANDLERS := $(addsuffix /handler,$(LAMBDAS))
 
 .PHONY: all admin clean lambdas
@@ -18,5 +18,5 @@ deploy: lambdas admin
 
 lambdas: $(HANDLERS)
 
-lambda/%/handler: lambda/%/*.go models/*.go services/*.go repositories/*/*.go
+bin/%/handler: bin/%/*.go models/*.go services/*.go repositories/*/*.go
 	CGO_ENABLED=0 go build -o $@ ./$(dir $<)

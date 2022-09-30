@@ -10,7 +10,7 @@ export class FrontendStack extends cdk.Stack {
   constructor(scope: constructs.Construct, id: string, props: lsp.LambdaStackProps) {
     super(scope, id, props);
 
-    const handlerDir = path.resolve(__dirname, '..', '..', 'lambda', 'frontend');
+    const handlerDir = path.resolve(__dirname, '..', '..', 'bin', 'lambda-frontend');
     const frontendLambda = new lambda.Function(this, 'FrontendHandler', {
       code: lambda.Code.fromAsset(handlerDir),
       runtime: lambda.Runtime.GO_1_X,
