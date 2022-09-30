@@ -18,5 +18,5 @@ deploy: lambdas admin
 
 lambdas: $(HANDLERS)
 
-lambda/%/handler: lambda/%/*.go *.go
+lambda/%/handler: lambda/%/*.go models/*.go services/*.go repositories/*/*.go
 	CGO_ENABLED=0 go build -o $@ ./$(dir $<)
