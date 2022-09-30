@@ -140,7 +140,7 @@ func (repo *DynamoDBRepository) GetTemplateList(ctx context.Context, filter mode
 		TableName:        &repo.resources.Table,
 		FilterExpression: aws.String("SK = :sk"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":sK": key["SK"],
+			":sk": key["SK"],
 		},
 	}
 	paginator := dynamodb.NewScanPaginator(repo.db, params)
