@@ -105,3 +105,20 @@ func (repo *DynamoDBRepository) putPathDocument(ctx context.Context, doc *models
 
 	return repo.putItem(ctx, newDynamoPath(doc))
 }
+
+func (repo *DynamoDBRepository) updatePathDocument(ctx context.Context, doc *models.Document) (err error) {
+	pk, sk := dynamoPathIds(doc.Path)
+	data := doc.Values
+	if data == nil {
+		data = make(map[string]interface{})
+	}
+	values := map[string]interface{}{
+		"ClassId":    doc.ClassId,
+		"ParentId":   doc.ParentId,
+		"TemplateId": doc.TemplateId,
+		"Version":    doc.Version,
+		"Updated":    doc.Updated,
+		"Data":       data,
+	}
+	return repo.updateItem(ctx, pk, sk, values)
+}

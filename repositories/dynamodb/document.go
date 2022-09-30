@@ -385,6 +385,10 @@ func (repo *DynamoDBRepository) UpdateDocument(ctx context.Context, doc *models.
 		if err = repo.putPathDocument(ctx, doc); err != nil {
 			return fmt.Errorf("put path document: %w", err)
 		}
+	} else {
+		if err = repo.updatePathDocument(ctx, doc); err != nil {
+			return fmt.Errorf("update path document: %w", err)
+		}
 	}
 
 	return
