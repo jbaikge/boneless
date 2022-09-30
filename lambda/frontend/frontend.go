@@ -17,11 +17,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/jbaikge/boneless"
+	"github.com/jbaikge/boneless/repositories/dynamodb"
 )
 
 var (
 	awsConfig aws.Config
-	resources boneless.DynamoDBResources
+	resources dynamodb.DynamoDBResources
 )
 
 type TemplateVars struct {
@@ -199,7 +200,7 @@ func main() {
 	resources.FromEnv()
 
 	frontend := Frontend{
-		Repo: boneless.NewDynamoDBRepository(awsConfig, resources),
+		Repo: dynamodb.NewRepository(awsConfig, resources),
 	}
 
 	lambda.Start(frontend.HandleRequest)

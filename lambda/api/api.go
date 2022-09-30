@@ -19,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/jbaikge/boneless"
+	"github.com/jbaikge/boneless/repositories/dynamodb"
 )
 
 type Error struct {
@@ -65,7 +66,7 @@ const (
 
 var (
 	awsConfig aws.Config
-	resources boneless.DynamoDBResources
+	resources dynamodb.DynamoDBResources
 )
 
 type HandlerFunc func(context.Context, events.APIGatewayV2HTTPRequest, *events.APIGatewayV2HTTPResponse) (interface{}, error)
@@ -167,7 +168,7 @@ func main() {
 	resources.FromEnv()
 
 	handlers := Handlers{
-		Repo: boneless.NewDynamoDBRepository(awsConfig, resources),
+		Repo: dynamodb.NewRepository(awsConfig, resources),
 	}
 	lambda.Start(handlers.HandleRequest)
 }
