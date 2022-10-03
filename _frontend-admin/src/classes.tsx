@@ -103,8 +103,8 @@ export const ClassEdit = (props: EditUpdateProps) => {
           <SimpleFormIterator className="field-row">
             <TextInput source="label" validate={[ required('A label is required') ]} />
             <TextInput source="name" validate={[ required('A field name is required'), regex(/^[a-z0-9_]+$/, 'Names can only contain lowercase letters, numbers and underscores') ]} />
-            <BooleanInput source="sort" />
-            <NumberInput source="column" />
+            <BooleanInput source="sort" defaultValue={false} label="Index this data for sorting" />
+            <NumberInput source="column" defaultValue={0} label="List Column (0 = hidden)" />
             <SelectInput source="type" choices={FieldChoices} defaultValue="text" validate={[ required('A type is required') ]} />
             <FormDataConsumer>
               {({
@@ -119,7 +119,7 @@ export const ClassEdit = (props: EditUpdateProps) => {
                       <DateInput source={getSrc('min')} />
                       <DateInput source={getSrc('max')} />
                       <TextInput source={getSrc('step')} label="Step (days)" />
-                      <TextInput source={getSrc('format')} label="Format (Jan 2, 2006 3:04pm)" />
+                      <TextInput source={getSrc('format')} defaultValue="Jan 2, 2006" label="Format (Jan 2, 2006)" />
                     </>
                   );
                 case 'datetime':
@@ -128,13 +128,13 @@ export const ClassEdit = (props: EditUpdateProps) => {
                       <DateTimeInput source={getSrc('min')} />
                       <DateTimeInput source={getSrc('max')} />
                       <TextInput source={getSrc('step')} label="Step (days)" />
-                      <TextInput source={getSrc('format')} label="Format (Jan 2, 2006 3:04pm)" />
+                      <TextInput source={getSrc('format')} defaultValue="Jan 2, 2006 3:04pm" label="Format (Jan 2, 2006 3:04pm)" />
                     </>
                   );
                 case 'time':
                   return (
                     <>
-                      <TextInput source={getSrc('format')} label="Format (3:04pm)" />
+                      <TextInput source={getSrc('format')} defaultValue="3:04pm" label="Format (3:04pm)" />
                     </>
                   );
                 case 'number':
