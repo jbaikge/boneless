@@ -70,6 +70,8 @@ const ListActions = () => (
 export const TemplateList = (props: ListProps) => (
   <List {...props} actions={<ListActions />} exporter={jsonExporter('templates')} pagination={<GlobalPagination />}>
     <Datagrid sx={{
+      '& td:nth-last-of-type(3)': { width: '8em' },
+      '& td:nth-last-of-type(2)': { width: '8em' },
       '& td:last-child': { width: '5em' },
     }}>
       <TextField source="name" />
