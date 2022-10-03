@@ -65,9 +65,9 @@ interface ClassProps {
 export const ClassCreate = (props: CreateUpdateProps) => {
   const { update, ...rest } = props;
   const redirect = useRedirect();
-  const onSuccess = () => {
+  const onSuccess = (data: ClassProps) => {
     update((new Date()).getTime());
-    redirect('list', 'classes');
+    redirect('edit', 'classes', data.id);
   };
 
   const ensureFields = (data: TransformData) => ({
