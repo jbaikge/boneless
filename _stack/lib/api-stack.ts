@@ -12,7 +12,7 @@ export class ApiStack extends cdk.Stack {
   constructor(scope: constructs.Construct, id: string, props: lsp.LambdaStackProps) {
     super(scope, id, props);
 
-    const handlerDir = path.resolve(__dirname, '..', '..', 'bin', 'lambda-api');
+    const handlerDir = path.resolve(__dirname, '..', '..', 'cmd', 'lambda-api');
     const apiLambda = new lambda.Function(this, 'ApiHandler', {
       code: lambda.Code.fromAsset(handlerDir),
       runtime: lambda.Runtime.GO_1_X,
