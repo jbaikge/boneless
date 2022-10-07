@@ -1,4 +1,4 @@
-interface FieldProps {
+export interface FieldProps {
   type: string;
   name: string;
   label: string;
@@ -12,5 +12,3 @@ interface FieldProps {
   class_id: string;
   field: string;
 };
-
-export default FieldProps;

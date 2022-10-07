@@ -6,8 +6,7 @@ import {
   required,
   useRedirect,
 } from 'react-admin';
-import ClassProps from './ClassProps';
-import CreateUpdateProps from './CreateUpdateProps';
+import { ClassProps, CreateUpdateProps } from './Props';
 
 const ClassCreate = (props: CreateUpdateProps) => {
   const { update, ...rest } = props;
