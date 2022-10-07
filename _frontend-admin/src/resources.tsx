@@ -1,12 +1,13 @@
 import * as React from 'react';
 import { Route } from 'react-router-dom';
 import { AdminUI, CustomRoutes, Loading, Resource, useDataProvider } from 'react-admin';
+import ClassCreate from './components/class/ClassCreate';
 import { ClassEdit, ClassImport, ClassList } from './classes';
 import { DocumentCreate, DocumentEdit, DocumentList, DocumentShow } from './documents';
 import { TemplateCreate, TemplateEdit, TemplateImport, TemplateList } from './templates';
 import { FormCreate, FormEdit, FormList } from './forms';
 
-const ClassCreate = React.lazy(() => import('./components/class/ClassCreate'));
+// const ClassCreate = React.lazy(() => import('./components/class/ClassCreate'));
 
 interface ClassData {
   id: string;
