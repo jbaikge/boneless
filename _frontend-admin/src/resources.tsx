@@ -1,10 +1,12 @@
 import * as React from 'react';
 import { Route } from 'react-router-dom';
 import { AdminUI, CustomRoutes, Loading, Resource, useDataProvider } from 'react-admin';
-import { ClassCreate, ClassEdit, ClassImport, ClassList } from './classes';
+import { ClassEdit, ClassImport, ClassList } from './classes';
 import { DocumentCreate, DocumentEdit, DocumentList, DocumentShow } from './documents';
 import { TemplateCreate, TemplateEdit, TemplateImport, TemplateList } from './templates';
 import { FormCreate, FormEdit, FormList } from './forms';
+
+const ClassCreate = React.lazy(() => import('./components/class/ClassCreate'));
 
 interface ClassData {
   id: string;
@@ -29,42 +31,44 @@ export const AsyncResources = () => {
     }, [updateResources, dataProvider]);
 
     return (
-      <AdminUI ready={Loading}>
-        {resources.map(resource => (
+      <React.Suspense>
+        <AdminUI ready={Loading}>
+          {resources.map(resource => (
+            <Resource
+              options={{ label: resource.name }}
+              key={resource.id}
+              name={`classes/${resource.id}/documents`}
+              create={DocumentCreate}
+              edit={DocumentEdit}
+              list={DocumentList}
+              show={DocumentShow}
+            />
+          ))}
           <Resource
-            options={{ label: resource.name }}
-            key={resource.id}
-            name={`classes/${resource.id}/documents`}
-            create={DocumentCreate}
-            edit={DocumentEdit}
-            list={DocumentList}
-            show={DocumentShow}
+            name="classes"
+            options={{ label: 'Manage Classes' }}
+            create={<ClassCreate update={setUpdateResources} />}
+            edit={<ClassEdit update={setUpdateResources} />}
+            list={ClassList}
           />
-        ))}
-        <Resource
-          name="classes"
-          options={{ label: 'Manage Classes' }}
-          create={<ClassCreate update={setUpdateResources} />}
-          edit={<ClassEdit update={setUpdateResources} />}
-          list={ClassList}
-        />
-        <Resource
-          name="forms"
-          options={{ label: 'Manage Forms' }}
-          create={FormCreate}
-          edit={FormEdit}
-          list={FormList}
-        />
-        <Resource
-          name="templates"
-          create={TemplateCreate}
-          edit={TemplateEdit}
-          list={TemplateList}
-        />
-        <CustomRoutes>
-          <Route path="/class-import" element={<ClassImport update={setUpdateResources} />} />
-          <Route path="/template-import" element={<TemplateImport />} />
-        </CustomRoutes>
-      </AdminUI>
+          <Resource
+            name="forms"
+            options={{ label: 'Manage Forms' }}
+            create={FormCreate}
+            edit={FormEdit}
+            list={FormList}
+          />
+          <Resource
+            name="templates"
+            create={TemplateCreate}
+            edit={TemplateEdit}
+            list={TemplateList}
+          />
+          <CustomRoutes>
+            <Route path="/class-import" element={<ClassImport update={setUpdateResources} />} />
+            <Route path="/template-import" element={<TemplateImport />} />
+          </CustomRoutes>
+        </AdminUI>
+      </React.Suspense>
     )
   }
