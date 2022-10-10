@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Route } from 'react-router-dom';
 import { AdminUI, CustomRoutes, Loading, Resource, useDataProvider } from 'react-admin';
 import { ClassCreate, ClassEdit, ClassImport, ClassList } from './components/class';
-import { DocumentCreate, DocumentEdit, DocumentList, DocumentShow } from './documents';
+import { DocumentCreate, DocumentEdit, DocumentList, DocumentShow } from './components/document';
 import { TemplateCreate, TemplateEdit, TemplateImport, TemplateList } from './templates';
 import { FormCreate, FormEdit, FormList } from './forms';
 
