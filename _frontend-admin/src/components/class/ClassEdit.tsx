@@ -17,7 +17,7 @@ import {
     useRedirect,
 } from 'react-admin';
 import { EditUpdateProps } from './Props';
-import { FieldChoices } from '../../field';
+import { FieldChoices } from '../field';
 
 const ClassEdit = (props: EditUpdateProps) => {
     const { update, ...rest } = props;
@@ -26,7 +26,7 @@ const ClassEdit = (props: EditUpdateProps) => {
       update((new Date()).getTime());
       redirect('list', 'classes');
     };
-  
+
     return (
       <Edit {...rest} mutationOptions={{ onSuccess }} mutationMode="pessimistic">
         <SimpleForm>
@@ -110,4 +110,3 @@ const ClassEdit = (props: EditUpdateProps) => {
   };
 
   export default ClassEdit;
-  

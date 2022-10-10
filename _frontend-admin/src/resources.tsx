@@ -3,7 +3,7 @@ import { Route } from 'react-router-dom';
 import { AdminUI, CustomRoutes, Loading, Resource, useDataProvider } from 'react-admin';
 import { ClassCreate, ClassEdit, ClassImport, ClassList } from './components/class';
 import { DocumentCreate, DocumentEdit, DocumentList, DocumentShow } from './components/document';
-import { TemplateCreate, TemplateEdit, TemplateImport, TemplateList } from './templates';
+import { TemplateCreate, TemplateEdit, TemplateImport, TemplateList } from './components/template';
 import { FormCreate, FormEdit, FormList } from './forms';
 
 // const ClassCreate = React.lazy(() => import('./components/class/ClassCreate'));

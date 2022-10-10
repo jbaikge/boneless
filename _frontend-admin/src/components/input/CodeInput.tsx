@@ -9,10 +9,10 @@ import 'prismjs/components/prism-css';
 import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-javascript';
 
-const LightTheme = React.lazy(() => import('./codeInputLight'));
-const DarkTheme = React.lazy(() => import('./codeInputDark'));
+const LightTheme = React.lazy(() => import('./CodeInputLight'));
+const DarkTheme = React.lazy(() => import('./CodeInputDark'));
 
-export const CodeInput = (props: CommonInputProps) => {
+const CodeInput = (props: CommonInputProps) => {
   // This mess ganked from TextInput. Would love to know if there is a better
   // way to accomplish this.
   const {
@@ -77,3 +77,4 @@ const ThemeSelector = ({ children }: { children: React.ReactNode }) => {
   )
 }
 
+export default CodeInput;
