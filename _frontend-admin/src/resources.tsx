@@ -4,7 +4,7 @@ import { AdminUI, CustomRoutes, Loading, Resource, useDataProvider } from 'react
 import { ClassCreate, ClassEdit, ClassImport, ClassList } from './components/class';
 import { DocumentCreate, DocumentEdit, DocumentList, DocumentShow } from './components/document';
 import { TemplateCreate, TemplateEdit, TemplateImport, TemplateList } from './components/template';
-import { FormCreate, FormEdit, FormList } from './forms';
+import { FormCreate, FormEdit, FormList } from './components/form';
 
 // const ClassCreate = React.lazy(() => import('./components/class/ClassCreate'));
 
