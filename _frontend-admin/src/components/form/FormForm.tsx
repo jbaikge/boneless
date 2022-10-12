@@ -1,6 +1,5 @@
 import {
   ArrayInput,
-  BooleanInput,
   FormTab,
   NumberInput,
   SelectInput,
@@ -22,11 +21,10 @@ const FormForm = () => {
           <SimpleFormIterator className="field-row">
             <TextInput source="label" validate={[ required('A label is required') ]} />
             <TextInput source="name" validate={[ required('A name is required') ]} />
-            <BooleanInput source="required" defaultValue={false} label="Required" />
             <NumberInput source="column" defaultValue={0} label="List Column (0 = hidden)" />
             <SelectInput source="type" choices={[{ id: 'text', name: 'Text' }]} defaultValue="text" validate={[ required('A type is required') ]} />
-            <ArrayInput source="validations">
-              <SimpleFormIterator>
+            <ArrayInput source="validations" className="validations" defaultValue={[ { type: 'required' } ]}>
+              <SimpleFormIterator className="validation-row">
                 <SelectInput source="type" choices={[{id: 'required', name: 'Required'}]}></SelectInput>
               </SimpleFormIterator>
             </ArrayInput>

@@ -3,13 +3,27 @@
   .field-row .RaSimpleFormIterator-form {
     grid-template-columns: repeat(3, 1fr);
   }
+  .validation-row .RaSimpleFormIterator-form {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 @media (min-width: 1200px) {
   .field-row .RaSimpleFormIterator-form {
     grid-template-columns: repeat(5, 1fr);
   }
+  .validation-row .RaSimpleFormIterator-form {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 .field-row .RaSimpleFormIterator-form {
   display: grid !important;
   column-gap: 2em;
+}
+.validation-row .RaSimpleFormIterator-form {
+  display: grid !important;
+  column-gap: 2em;
+}
+
+.validations {
+  grid-column: 1 / 6;
 }
