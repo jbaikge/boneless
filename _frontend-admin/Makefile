@@ -1,6 +1,6 @@
 .PHONY: clean start
 
-build/index.html: node_modules src/* .env.production.local
+build/index.html: node_modules src/* src/*/* src/*/*/* .env.production.local
 	npm run build
 
 clean:
