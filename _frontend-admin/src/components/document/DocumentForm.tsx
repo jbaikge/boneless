@@ -15,7 +15,7 @@ import {
   useGetOne,
   useResourceContext,
 } from 'react-admin';
-import { reResource } from '.';
+import { reResource } from './Constants';
 import { FieldProps } from '../field/Props';
 import { TinyInput } from '../input';
 
