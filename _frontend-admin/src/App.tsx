@@ -1,6 +1,6 @@
 import { AdminContext, defaultI18nProvider, defaultTheme, localStorageStore } from 'react-admin';
 import dataProvider from './dataProvider';
-import { AsyncResources } from './resources';
+import AsyncResources from './components/AsyncResources';
 import './App.css';
 
 const store = localStorageStore();
