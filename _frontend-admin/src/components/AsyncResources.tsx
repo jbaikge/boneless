@@ -1,26 +1,26 @@
 import * as React from 'react';
 import { Route } from 'react-router-dom';
 import { AdminUI, CustomRoutes, Loading, Resource, useDataProvider } from 'react-admin';
-// import { ClassCreate, ClassEdit, ClassImport, ClassList } from './class';
-// import { DocumentCreate, DocumentEdit, DocumentList, DocumentShow } from './document';
-// import { TemplateCreate, TemplateEdit, TemplateImport, TemplateList } from './template';
-// import { FormCreate, FormEdit, FormList } from './form';
+import { ClassCreate, ClassEdit, ClassImport, ClassList } from './class';
+import { DocumentCreate, DocumentEdit, DocumentList, DocumentShow } from './document';
+import { TemplateCreate, TemplateEdit, TemplateImport, TemplateList } from './template';
+import { FormCreate, FormEdit, FormList } from './form';
 
-const ClassCreate = React.lazy(() => import('./class/ClassCreate'));
-const ClassEdit = React.lazy(() => import('./class/ClassEdit'));
-const ClassImport = React.lazy(() => import('./class/ClassImport'));
-const ClassList = React.lazy(() => import('./class/ClassList'));
-const DocumentCreate = React.lazy(() => import('./document/DocumentCreate'));
-const DocumentEdit = React.lazy(() => import('./document/DocumentEdit'));
-const DocumentList = React.lazy(() => import('./document/DocumentList'));
-const DocumentShow = React.lazy(() => import('./document/DocumentShow'));
-const TemplateCreate = React.lazy(() => import('./template/TemplateCreate'));
-const TemplateEdit = React.lazy(() => import('./template/TemplateEdit'));
-const TemplateImport = React.lazy(() => import('./template/TemplateImport'));
-const TemplateList = React.lazy(() => import('./template/TemplateList'));
-const FormCreate = React.lazy(() => import('./form/FormCreate'));
-const FormEdit = React.lazy(() => import('./form/FormEdit'));
-const FormList = React.lazy(() => import('./form/FormList'));
+// const ClassCreate = React.lazy(() => import('./class/ClassCreate'));
+// const ClassEdit = React.lazy(() => import('./class/ClassEdit'));
+// const ClassImport = React.lazy(() => import('./class/ClassImport'));
+// const ClassList = React.lazy(() => import('./class/ClassList'));
+// const DocumentCreate = React.lazy(() => import('./document/DocumentCreate'));
+// const DocumentEdit = React.lazy(() => import('./document/DocumentEdit'));
+// const DocumentList = React.lazy(() => import('./document/DocumentList'));
+// const DocumentShow = React.lazy(() => import('./document/DocumentShow'));
+// const TemplateCreate = React.lazy(() => import('./template/TemplateCreate'));
+// const TemplateEdit = React.lazy(() => import('./template/TemplateEdit'));
+// const TemplateImport = React.lazy(() => import('./template/TemplateImport'));
+// const TemplateList = React.lazy(() => import('./template/TemplateList'));
+// const FormCreate = React.lazy(() => import('./form/FormCreate'));
+// const FormEdit = React.lazy(() => import('./form/FormEdit'));
+// const FormList = React.lazy(() => import('./form/FormList'));
 
 interface ClassData {
   id: string;
