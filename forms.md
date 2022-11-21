@@ -18,7 +18,7 @@ As the Boneless CMS is currently built on serverless infrastructure with Lambda 
 Each submission enters into DynamoDB with the following layout:
 
 | PK      | SK            | Metadata | Data           |
-|---------|---------------|----------|----------------|
+| ------- | ------------- | -------- | -------------- |
 | Form ID | Submission ID | Metadata | Submitted Data |
 
 All IDs are [xid](https://github.com/rs/xid) to allow for maintaining the same order of entry. Submitted data may be a map or JSON document.
@@ -47,3 +47,23 @@ The engine does not matter, but the cost does. Some of the sites Boneless CMS wi
 2. Sort available with `ORDER BY`
 3. Search available with full text indexes or rudimentary `LIKE` clauses
 4. Export is very straightforward
+
+## Access Patterns
+
+Table below taken from [identify your data access patterns](https://docs.aws.amazon.com/prescriptive-guidance/latest/dynamodb-data-modeling/step3.html) on AWS docs.
+
+| Access Pattern | Priority | R/W | Description | Type (Single, Multiple, All) | Key | Filters | Ordering |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Create Form | Low | Write | Admin creates a new form | Single | Form ID | NA | NA |
+| List Forms | Low | Read | Admin lists configured forms | All | NA | NA | Name or Date Created |
+| View Form Config | Low | Read | Admin views form layout & config | Single | Form ID | Form ID | NA |
+| Update Form | Low | Write | Admin updates form layout or config | Single | Form ID | Form ID | NA |
+| Delete Form | Low | Write | Admin deletes form and associated entries | Multiple | Form ID | Form ID | NA |
+| Form Submission | High | Write | User submits validated data from form | Single | Submission ID | NA | NA |
+| List Submissions | Medium | Read | Admin lists user submissions from a form | Multiple | Form ID | Form ID | Date Created or Any field |
+| Export Submissions | Low | Read | Admin exports submission data to CSV | Multiple | Form ID | Form ID | NA |
+| Filter Submissions | Medium | Read | Admin filters/searches submissions | Multiple | NA | Any field | Date Created or Any field |
+| View Submission | Medium | Read | Admin views individual form submission | Single | Submission ID | Submission ID | NA |
+| Edit Submission | Low | Write | Modify a user submission | Single | Submission ID | Submission ID | NA |
+| Delete Submission | Low | Write | Delete a user submission | Single | Submission ID | Submission ID | NA |
+| Delete Submissions | Low | Write | Delete a selection of submissions | Multiple | Submission ID | Submission IDs | NA |
