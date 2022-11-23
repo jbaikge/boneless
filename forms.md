@@ -15,19 +15,19 @@ As the Boneless CMS is currently built on serverless infrastructure with Lambda 
 
 ## DynamoDB
 
+A single DynamoDB table will hold all forms and their submissions. All IDs are [xid](https://github.com/rs/xid) to allow for maintaining the same order of entry.
+
 Each form is defined by a JSON object which is stored in a file on S3. The following information is stored in DynamoDB to make it easier to generate a list of forms in the API. Metadata is a map with a `title` key (for now).
 
 | PK     | Metadata |
 | ------ | -------- |
 | FormID | Metadata |
 
-Each submission enters into the database with the following layout; again Metadata is a map with keys like `date`, `ip`, etc.
+Each submission enters into the database with the following layout; again Metadata is a map with keys like `date`, `ip`, etc. Submitted data may be a map or JSON document.
 
 | PK                  | Metadata | Data           |
 | ------------------- | -------- | -------------- |
 | FormID#SubmissionID | Metadata | Submitted Data |
-
-All IDs are [xid](https://github.com/rs/xid) to allow for maintaining the same order of entry. Submitted data may be a map or JSON document.
 
 Satisfying the requirements requires some trade-offs, though:
 
@@ -59,7 +59,7 @@ Table below taken from [identify your data access patterns](https://docs.aws.ama
 | Form Submission | High | Write | User submits validated data from form | Single | Submission ID | NA | NA |
 | List Submissions | Medium | Read | Admin lists user submissions from a form | Multiple | Form ID | Form ID | Date Created or Any field |
 | Export Submissions | Low | Read | Admin exports submission data to CSV | Multiple | Form ID | Form ID | NA |
-| Filter Submissions | Medium | Read | Admin filters/searches submissions | Multiple | NA | Any field | Date Created or Any field |
+| Filter Submissions | Medium | Read | Admin filters submissions | Multiple | NA | Any field | Date Created or Any field |
 | View Submission | Medium | Read | Admin views individual form submission | Single | Submission ID | Submission ID | NA |
 | Edit Submission | Low | Write | Modify a user submission | Single | Submission ID | Submission ID | NA |
 | Delete Submission | Low | Write | Delete a user submission | Single | Submission ID | Submission ID | NA |
