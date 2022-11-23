@@ -15,11 +15,17 @@ As the Boneless CMS is currently built on serverless infrastructure with Lambda 
 
 ## DynamoDB
 
-Each submission enters into DynamoDB with the following layout:
+Each form is defined by a JSON object which is stored in a file on S3. The following information is stored in DynamoDB to make it easier to generate a list of forms in the API. Metadata is a map with a `title` key (for now).
 
-| PK      | SK            | Metadata | Data           |
-| ------- | ------------- | -------- | -------------- |
-| Form ID | Submission ID | Metadata | Submitted Data |
+| PK     | Metadata |
+| ------ | -------- |
+| FormID | Metadata |
+
+Each submission enters into the database with the following layout; again Metadata is a map with keys like `date`, `ip`, etc.
+
+| PK                  | Metadata | Data           |
+| ------------------- | -------- | -------------- |
+| FormID#SubmissionID | Metadata | Submitted Data |
 
 All IDs are [xid](https://github.com/rs/xid) to allow for maintaining the same order of entry. Submitted data may be a map or JSON document.
 
@@ -37,15 +43,6 @@ Each submission is stored as a JSON file in an S3 bucket. A recurring Lambda fun
 1. Pagination available with `LIMIT` and `OFFSET`
 2. Sort available with `ORDER BY`
 3. Search available with full text indexes available inside SQLite
-4. Export is very straightforward
-
-## Relational Database
-
-The engine does not matter, but the cost does. Some of the sites Boneless CMS will support may be microsites that stand up, take some traffic, take some event registrations, then sit idle as an archive of the event the site supported.
-
-1. Pagination available with `LIMIT` and `OFFSET`
-2. Sort available with `ORDER BY`
-3. Search available with full text indexes or rudimentary `LIKE` clauses
 4. Export is very straightforward
 
 ## Access Patterns
