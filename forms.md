@@ -36,14 +36,24 @@ Satisfying the requirements requires some trade-offs, though:
 3. Searching, like sorting, will require iterating over each unmarshalled entry to find matches, then sorting the results; or querying a copy of entries in an indexing service (Open Search)
 4. Export is very straightforward
 
+### Forseeable Problems
+
+1. Table scans with filter and sort processing inside Lambdas may incur memory issues if not careful
+
 ## SQLite on S3
 
 Each submission is stored as a JSON file in an S3 bucket. A recurring Lambda function reconciles all of the JSON documents into a single SQLite file on a regular basis. There are a few different ways to lay the database out - either with a single table or two tables (entry & attributes).
 
 1. Pagination available with `LIMIT` and `OFFSET`
 2. Sort available with `ORDER BY`
-3. Search available with full text indexes available inside SQLite
+3. Search available with `fulltext` indexes available inside SQLite
 4. Export is very straightforward
+
+### Forseeable Problems
+
+1. Unable to query database without first downloading
+2. Generating `fulltext` indexes could take a while, doubles the size of each database
+3. Editing a submission would require rebuilding the corresponding JSON document and rebuilding the database in realtime
 
 ## Access Patterns
 
