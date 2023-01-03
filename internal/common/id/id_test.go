@@ -8,7 +8,7 @@ import (
 	"github.com/zeebo/assert"
 )
 
-func TestXidProvider(t *testing.T) {
+func TestID(t *testing.T) {
 	loc, _ := time.LoadLocation("America/New_York")
 	stamp := time.Date(2023, time.January, 3, 12, 0, 0, 0, loc)
 
