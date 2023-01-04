@@ -51,3 +51,7 @@ func NewClass(classId string, parentId string, name string, created time.Time, u
 func (c Class) ID() string {
 	return c.id
 }
+
+func (c Class) Name() string {
+	return c.name
+}

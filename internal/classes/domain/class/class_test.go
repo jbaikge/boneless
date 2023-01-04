@@ -88,3 +88,11 @@ func TestClassID(t *testing.T) {
 		assert.Equal(t, classId, c.ID())
 	})
 }
+
+func TestClassName(t *testing.T) {
+	t.Parallel()
+
+	c, err := class.NewClass("", "", t.Name(), time.Time{}, time.Time{}, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, t.Name(), c.Name())
+}
