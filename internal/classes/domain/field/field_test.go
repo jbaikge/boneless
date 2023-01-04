@@ -8,6 +8,8 @@ import (
 )
 
 func TestNewField(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		Title      string
 		Valid      bool
@@ -57,22 +59,25 @@ func TestNewField(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.Title, func(t *testing.T) {
+		data := test
+		t.Run(data.Title, func(t *testing.T) {
+			t.Parallel()
+
 			_, err := field.NewField(
-				test.Type,
-				test.Name,
-				test.Label,
-				test.Sort,
-				test.Column,
-				test.Min,
-				test.Max,
-				test.Step,
-				test.Format,
-				test.Options,
-				test.ClassId,
-				test.ClassField,
+				data.Type,
+				data.Name,
+				data.Label,
+				data.Sort,
+				data.Column,
+				data.Min,
+				data.Max,
+				data.Step,
+				data.Format,
+				data.Options,
+				data.ClassId,
+				data.ClassField,
 			)
-			if test.Valid {
+			if data.Valid {
 				assert.NoError(t, err)
 			} else {
 				assert.Error(t, err)

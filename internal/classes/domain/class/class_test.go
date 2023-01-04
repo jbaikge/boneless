@@ -11,6 +11,8 @@ import (
 )
 
 func TestNewClass(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		Title    string
 		Valid    bool
@@ -50,16 +52,19 @@ func TestNewClass(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.Title, func(t *testing.T) {
+		data := test
+		t.Run(data.Title, func(t *testing.T) {
+			t.Parallel()
+
 			_, err := class.NewClass(
-				test.Id,
-				test.ParentId,
-				test.Name,
-				test.Created,
-				test.Updated,
-				test.Fields,
+				data.Id,
+				data.ParentId,
+				data.Name,
+				data.Created,
+				data.Updated,
+				data.Fields,
 			)
-			if test.Valid {
+			if data.Valid {
 				assert.NoError(t, err)
 			} else {
 				assert.Error(t, err)
