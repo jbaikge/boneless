@@ -72,3 +72,20 @@ func TestNewClass(t *testing.T) {
 		})
 	}
 }
+
+func TestClassID(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Automatic ID", func(t *testing.T) {
+		c, err := class.NewClass("", "", t.Name(), time.Time{}, time.Time{}, nil)
+		assert.NoError(t, err)
+		assert.True(t, id.IsValid(c.ID()))
+	})
+
+	t.Run("Explicit ID", func(t *testing.T) {
+		classId := id.New()
+		c, err := class.NewClass(classId, "", t.Name(), time.Time{}, time.Time{}, nil)
+		assert.NoError(t, err)
+		assert.Equal(t, classId, c.ID())
+	})
+}

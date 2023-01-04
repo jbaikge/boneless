@@ -48,3 +48,7 @@ func NewClass(classId string, parentId string, name string, created time.Time, u
 	copy(c.fields, fields)
 	return c, nil
 }
+
+func (c Class) ID() string {
+	return c.id
+}
