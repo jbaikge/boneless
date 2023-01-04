@@ -1,9 +1,9 @@
-package field_test
+package class_test
 
 import (
 	"testing"
 
-	"github.com/jbaikge/boneless/internal/classes/domain/field"
+	"github.com/jbaikge/boneless/internal/classes/domain/class"
 	"github.com/zeebo/assert"
 )
 
@@ -63,7 +63,7 @@ func TestNewField(t *testing.T) {
 		t.Run(data.Title, func(t *testing.T) {
 			t.Parallel()
 
-			_, err := field.NewField(
+			_, err := class.NewField(
 				data.Type,
 				data.Name,
 				data.Label,

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/jbaikge/boneless/internal/classes/domain/class"
-	"github.com/jbaikge/boneless/internal/classes/domain/field"
 	"github.com/jbaikge/boneless/internal/common/id"
 	"github.com/zeebo/assert"
 )
@@ -21,7 +20,7 @@ func TestNewClass(t *testing.T) {
 		Name     string
 		Created  time.Time
 		Updated  time.Time
-		Fields   []*field.Field
+		Fields   []*class.Field
 	}{
 		{
 			Title:    "Valid Arguments",
@@ -31,7 +30,7 @@ func TestNewClass(t *testing.T) {
 			Name:     "Test",
 			Created:  time.Now(),
 			Updated:  time.Now(),
-			Fields:   make([]*field.Field, 0),
+			Fields:   make([]*class.Field, 0),
 		},
 		{
 			Title: "Automatic Everything",

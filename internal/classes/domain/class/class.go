@@ -4,7 +4,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/jbaikge/boneless/internal/classes/domain/field"
 	"github.com/jbaikge/boneless/internal/common/id"
 )
 
@@ -14,10 +13,10 @@ type Class struct {
 	name     string
 	created  time.Time
 	updated  time.Time
-	fields   []*field.Field
+	fields   []*Field
 }
 
-func NewClass(classId string, parentId string, name string, created time.Time, updated time.Time, fields []*field.Field) (*Class, error) {
+func NewClass(classId string, parentId string, name string, created time.Time, updated time.Time, fields []*Field) (*Class, error) {
 	if classId != "" && !id.IsValid(classId) {
 		return nil, errors.New("invalid class id")
 	}
@@ -43,7 +42,7 @@ func NewClass(classId string, parentId string, name string, created time.Time, u
 		name:     name,
 		created:  created,
 		updated:  updated,
-		fields:   make([]*field.Field, len(fields)),
+		fields:   make([]*Field, len(fields)),
 	}
 	copy(c.fields, fields)
 	return c, nil
