@@ -2,6 +2,7 @@ package command_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/jbaikge/boneless/internal/classes/app/command"
@@ -13,14 +14,20 @@ import (
 func TestAddClass(t *testing.T) {
 	t.Parallel()
 
-	repo := &mockAddRepository{}
-
+	ctx := context.Background()
+	repo := &mockAddRepository{
+		Classes: make(map[string]class.Class),
+	}
 	cmd := command.AddClass{
 		Class: class.NewClass(t.Name(), "", nil),
 	}
 	handler := command.NewAddClassHandler(repo, logger.Default)
-	err := handler.Handle(context.Background(), cmd)
-	assert.NoError(t, err)
+
+	// Ensure class goes in
+	assert.NoError(t, handler.Handle(ctx, cmd))
+
+	// Make sure the repository error bubbles up through the handler
+	assert.Error(t, handler.Handle(ctx, cmd))
 }
 
 type mockAddRepository struct {
@@ -28,6 +35,11 @@ type mockAddRepository struct {
 }
 
 func (r *mockAddRepository) AddClass(ctx context.Context, class *class.Class) error {
+	_, ok := r.Classes[class.ID()]
+	if ok {
+		return fmt.Errorf("class already exists with ID: %s", class.ID())
+	}
+	r.Classes[class.ID()] = *class
 	return nil
 }
 
