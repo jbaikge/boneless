@@ -45,16 +45,25 @@ func (r ClassMemoryRepository) GetClass(ctx context.Context, id string) (c *clas
 	return &value, nil
 }
 
-func (r ClassMemoryRepository) UpdateClass(ctx context.Context, c *class.Class) (err error) {
+func (r ClassMemoryRepository) UpdateClass(
+	ctx context.Context,
+	id string,
+	updateFn func(ctx context.Context, c *class.Class) (*class.Class, error),
+) (err error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	_, ok := r.classes[c.ID()]
+	existing, ok := r.classes[id]
 	if !ok {
+		return fmt.Errorf("no class exists wtih ID: %s", id)
+	}
+
+	updated, err := updateFn(ctx, &existing)
+	if err != nil {
 		return
 	}
 
-	r.classes[c.ID()] = *c
+	r.classes[id] = *updated
 
 	return
 }

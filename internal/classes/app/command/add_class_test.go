@@ -47,6 +47,10 @@ func (r *mockAddRepository) GetClass(ctx context.Context, id string) (*class.Cla
 	return nil, nil
 }
 
-func (r *mockAddRepository) UpdateClass(ctx context.Context, class *class.Class) error {
+func (r *mockAddRepository) UpdateClass(
+	ctx context.Context,
+	id string,
+	updateFn func(ctx context.Context, c *class.Class) (*class.Class, error),
+) error {
 	return nil
 }

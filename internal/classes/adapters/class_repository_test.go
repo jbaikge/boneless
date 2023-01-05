@@ -2,6 +2,7 @@ package adapters_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -50,6 +51,11 @@ func TestRepository(t *testing.T) {
 			t.Run("Update", func(t *testing.T) {
 				t.Parallel()
 				testUpdate(t, repo.Repository)
+			})
+
+			t.Run("Update Function Fail", func(t *testing.T) {
+				t.Parallel()
+				testUpdateFnFail(t, repo.Repository)
 			})
 
 			t.Run("Update Non-Existent", func(t *testing.T) {
@@ -106,14 +112,36 @@ func testUpdate(t *testing.T, repo class.Repository) {
 	initial := class.NewClass("initial", "", nil)
 	assert.NoError(t, repo.AddClass(ctx, initial))
 
-	// This might change in the future, it doesn't feel right
-	update, err := class.Unmarshal(initial.ID(), "", "update", time.Now(), time.Now(), nil)
-	assert.NoError(t, err)
-	assert.NoError(t, repo.UpdateClass(ctx, update))
+	newName := "update"
+	assert.NoError(t, repo.UpdateClass(
+		ctx,
+		initial.ID(),
+		func(ctx context.Context, c *class.Class) (*class.Class, error) {
+			c.UpdateName(newName)
+			return c, nil
+		},
+	))
 
 	check, err := repo.GetClass(ctx, initial.ID())
 	assert.NoError(t, err)
-	assert.Equal(t, update.Name(), check.Name())
+	assert.Equal(t, newName, check.Name())
+}
+
+func testUpdateFnFail(t *testing.T, repo class.Repository) {
+	t.Helper()
+
+	ctx := context.Background()
+
+	initial := class.NewClass("initial", "", nil)
+	assert.NoError(t, repo.AddClass(ctx, initial))
+
+	assert.Error(t, repo.UpdateClass(
+		ctx,
+		initial.ID(),
+		func(ctx context.Context, c *class.Class) (*class.Class, error) {
+			return nil, errors.New("bad update")
+		},
+	))
 }
 
 // This should silently do nothing, though maybe it should return an error if
@@ -123,8 +151,12 @@ func testBadUpdate(t *testing.T, repo class.Repository) {
 
 	ctx := context.Background()
 	update := class.NewClass(t.Name(), "", nil)
-	assert.NoError(t, repo.UpdateClass(ctx, update))
-
-	_, err := repo.GetClass(ctx, update.ID())
-	assert.Error(t, err)
+	assert.Error(t, repo.UpdateClass(
+		ctx,
+		update.ID(),
+		func(ctx context.Context, c *class.Class) (*class.Class, error) {
+			t.Fatal("should never reach the update function")
+			return nil, nil
+		},
+	))
 }
