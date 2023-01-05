@@ -9,7 +9,7 @@ import (
 	"github.com/zeebo/assert"
 )
 
-func TestNewClass(t *testing.T) {
+func TestUnmarshal(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -33,12 +33,7 @@ func TestNewClass(t *testing.T) {
 			Fields:   make([]*class.Field, 0),
 		},
 		{
-			Title: "Automatic Everything",
-			Valid: true,
-			Name:  "Test",
-		},
-		{
-			Title: "Empty Name",
+			Title: "Empty Everything",
 		},
 		{
 			Title: "Invalid Class ID",
@@ -46,7 +41,26 @@ func TestNewClass(t *testing.T) {
 		},
 		{
 			Title:    "Invalid Parent ID",
+			Id:       id.New(),
 			ParentId: "1234",
+		},
+		{
+			Title:    "Empty Name",
+			Id:       id.New(),
+			ParentId: "",
+		},
+		{
+			Title:    "Empty Created Time",
+			Id:       id.New(),
+			ParentId: "",
+			Name:     "Test",
+		},
+		{
+			Title:    "Empty Created Time",
+			Id:       id.New(),
+			ParentId: "",
+			Name:     "Test",
+			Created:  time.Now(),
 		},
 	}
 
@@ -55,7 +69,7 @@ func TestNewClass(t *testing.T) {
 		t.Run(data.Title, func(t *testing.T) {
 			t.Parallel()
 
-			_, err := class.NewClass(
+			_, err := class.Unmarshal(
 				data.Id,
 				data.ParentId,
 				data.Name,
@@ -76,14 +90,13 @@ func TestClassID(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Automatic ID", func(t *testing.T) {
-		c, err := class.NewClass("", "", t.Name(), time.Time{}, time.Time{}, nil)
-		assert.NoError(t, err)
+		c := class.NewClass(t.Name(), "", nil)
 		assert.True(t, id.IsValid(c.ID()))
 	})
 
 	t.Run("Explicit ID", func(t *testing.T) {
 		classId := id.New()
-		c, err := class.NewClass(classId, "", t.Name(), time.Time{}, time.Time{}, nil)
+		c, err := class.Unmarshal(classId, "", t.Name(), time.Now(), time.Now(), nil)
 		assert.NoError(t, err)
 		assert.Equal(t, classId, c.ID())
 	})
@@ -92,7 +105,6 @@ func TestClassID(t *testing.T) {
 func TestClassName(t *testing.T) {
 	t.Parallel()
 
-	c, err := class.NewClass("", "", t.Name(), time.Time{}, time.Time{}, nil)
-	assert.NoError(t, err)
+	c := class.NewClass(t.Name(), "", nil)
 	assert.Equal(t, t.Name(), c.Name())
 }

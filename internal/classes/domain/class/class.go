@@ -16,8 +16,22 @@ type Class struct {
 	fields   []*Field
 }
 
-func NewClass(classId string, parentId string, name string, created time.Time, updated time.Time, fields []*Field) (*Class, error) {
-	if classId != "" && !id.IsValid(classId) {
+func NewClass(name string, parentId string, fields []*Field) *Class {
+	created := time.Now()
+	c := &Class{
+		id:       id.NewWithTime(created),
+		parentId: parentId,
+		name:     name,
+		created:  created,
+		updated:  created,
+		fields:   make([]*Field, len(fields)),
+	}
+	copy(c.fields, fields)
+	return c
+}
+
+func Unmarshal(classId string, parentId string, name string, created time.Time, updated time.Time, fields []*Field) (*Class, error) {
+	if !id.IsValid(classId) {
 		return nil, errors.New("invalid class id")
 	}
 	if parentId != "" && !id.IsValid(parentId) {
@@ -27,13 +41,10 @@ func NewClass(classId string, parentId string, name string, created time.Time, u
 		return nil, errors.New("empty class name")
 	}
 	if created.IsZero() {
-		created = time.Now()
+		return nil, errors.New("created timestamp is zero")
 	}
 	if updated.IsZero() {
-		updated = created
-	}
-	if classId == "" {
-		classId = id.NewWithTime(created)
+		return nil, errors.New("updated timestamp is zero")
 	}
 
 	c := &Class{
