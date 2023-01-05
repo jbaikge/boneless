@@ -49,8 +49,7 @@ func testStoreRetrieve(t *testing.T, repo class.Repository) {
 
 	ctx := context.Background()
 
-	testClass, err := class.NewClass("", "", t.Name(), time.Time{}, time.Time{}, nil)
-	assert.NoError(t, err)
+	testClass := class.NewClass(t.Name(), "", nil)
 	assert.NoError(t, repo.AddClass(ctx, testClass))
 
 	check, err := repo.GetClass(ctx, testClass.ID())
@@ -63,10 +62,8 @@ func testAddSameID(t *testing.T, repo class.Repository) {
 
 	ctx := context.Background()
 
-	initial, err := class.NewClass("", "", "initial", time.Time{}, time.Time{}, nil)
-	assert.NoError(t, err)
-
-	overwrite, err := class.NewClass(initial.ID(), "", "overwrite", time.Time{}, time.Time{}, nil)
+	initial := class.NewClass("initial", "", nil)
+	overwrite, err := class.Unmarshal(initial.ID(), "", "overwrite", time.Now(), time.Now(), nil)
 	assert.NoError(t, err)
 
 	assert.NoError(t, repo.AddClass(ctx, initial))
