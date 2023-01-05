@@ -34,12 +34,6 @@ func Unmarshal(classId string, parentId string, name string, created time.Time, 
 	if !id.IsValid(classId) {
 		return nil, errors.New("invalid class id")
 	}
-	if parentId != "" && !id.IsValid(parentId) {
-		return nil, errors.New("invalid parent id")
-	}
-	if name == "" {
-		return nil, errors.New("empty class name")
-	}
 	if created.IsZero() {
 		return nil, errors.New("created timestamp is zero")
 	}
@@ -48,14 +42,14 @@ func Unmarshal(classId string, parentId string, name string, created time.Time, 
 	}
 
 	c := &Class{
-		id:       classId,
-		parentId: parentId,
-		name:     name,
-		created:  created,
-		updated:  updated,
-		fields:   make([]*Field, len(fields)),
+		id:      classId,
+		created: created,
+		fields:  make([]*Field, len(fields)),
 	}
 	copy(c.fields, fields)
+	c.UpdateName(name)
+	c.UpdateParentID(parentId)
+	c.updated = updated
 	return c, nil
 }
 
@@ -63,6 +57,50 @@ func (c Class) ID() string {
 	return c.id
 }
 
+func (c Class) ParentID() string {
+	return c.parentId
+}
+
+func (c *Class) UpdateParentID(parentId string) error {
+	if parentId != "" && !id.IsValid(parentId) {
+		return errors.New("invalid parent id")
+	}
+	c.parentId = parentId
+	c.modified()
+	return nil
+}
+
 func (c Class) Name() string {
 	return c.name
+}
+
+func (c *Class) UpdateName(name string) error {
+	if name == "" {
+		return errors.New("empty class name")
+	}
+	c.name = name
+	c.modified()
+	return nil
+}
+
+func (c Class) Created() time.Time {
+	return c.created
+}
+
+func (c Class) Updated() time.Time {
+	return c.updated
+}
+
+func (c Class) Fields() []*Field {
+	return c.fields
+}
+
+func (c *Class) UpdateFields(fields []*Field) error {
+	c.fields = fields
+	c.modified()
+	return nil
+}
+
+func (c *Class) modified() {
+	c.updated = time.Now()
 }
