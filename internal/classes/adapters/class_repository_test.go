@@ -7,6 +7,7 @@ import (
 
 	"github.com/jbaikge/boneless/internal/classes/adapters"
 	"github.com/jbaikge/boneless/internal/classes/domain/class"
+	"github.com/jbaikge/boneless/internal/common/id"
 	"github.com/zeebo/assert"
 )
 
@@ -40,6 +41,21 @@ func TestRepository(t *testing.T) {
 				t.Parallel()
 				testAddSameID(t, repo.Repository)
 			})
+
+			t.Run("Unknown ID", func(t *testing.T) {
+				t.Parallel()
+				testRetrieveUnknownID(t, repo.Repository)
+			})
+
+			t.Run("Update", func(t *testing.T) {
+				t.Parallel()
+				testUpdate(t, repo.Repository)
+			})
+
+			t.Run("Update Non-Existent", func(t *testing.T) {
+				t.Parallel()
+				testBadUpdate(t, repo.Repository)
+			})
 		})
 	}
 }
@@ -72,4 +88,43 @@ func testAddSameID(t *testing.T, repo class.Repository) {
 	check, err := repo.GetClass(ctx, initial.ID())
 	assert.NoError(t, err)
 	assert.Equal(t, initial.Name(), check.Name())
+}
+
+func testRetrieveUnknownID(t *testing.T, repo class.Repository) {
+	t.Helper()
+
+	// Nothing exists with this ID
+	_, err := repo.GetClass(context.Background(), id.New())
+	assert.Error(t, err)
+}
+
+func testUpdate(t *testing.T, repo class.Repository) {
+	t.Helper()
+
+	ctx := context.Background()
+
+	initial := class.NewClass("initial", "", nil)
+	assert.NoError(t, repo.AddClass(ctx, initial))
+
+	// This might change in the future, it doesn't feel right
+	update, err := class.Unmarshal(initial.ID(), "", "update", time.Now(), time.Now(), nil)
+	assert.NoError(t, err)
+	assert.NoError(t, repo.UpdateClass(ctx, update))
+
+	check, err := repo.GetClass(ctx, initial.ID())
+	assert.NoError(t, err)
+	assert.Equal(t, update.Name(), check.Name())
+}
+
+// This should silently do nothing, though maybe it should return an error if
+// the record is not found?
+func testBadUpdate(t *testing.T, repo class.Repository) {
+	t.Helper()
+
+	ctx := context.Background()
+	update := class.NewClass(t.Name(), "", nil)
+	assert.NoError(t, repo.UpdateClass(ctx, update))
+
+	_, err := repo.GetClass(ctx, update.ID())
+	assert.Error(t, err)
 }
