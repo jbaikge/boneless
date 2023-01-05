@@ -7,6 +7,7 @@ import (
 	"github.com/jbaikge/boneless/internal/classes/app"
 	"github.com/jbaikge/boneless/internal/classes/app/command"
 	"github.com/jbaikge/boneless/internal/classes/domain/class"
+	"github.com/jbaikge/boneless/internal/common/logger"
 	"github.com/jbaikge/boneless/internal/common/storage"
 	"golang.org/x/exp/slog"
 )
@@ -26,7 +27,7 @@ func NewApplication(ctx context.Context, store storage.Option) app.Application {
 
 	return app.Application{
 		Commands: app.Commands{
-			AddClass: command.NewAddClassHandler(classRepo),
+			AddClass: command.NewAddClassHandler(classRepo, logger.Default),
 		},
 	}
 }
