@@ -27,6 +27,6 @@ func NewAddClassHandler(classRepo class.Repository, log logger.Logger) AddClassH
 }
 
 func (h addClassHandler) Handle(ctx context.Context, cmd AddClass) (err error) {
-	h.log.Debug("adding class", "cmd", cmd)
+	h.log.Debug("adding class", "id", cmd.Class.ID())
 	return h.classRepo.AddClass(ctx, cmd.Class)
 }
